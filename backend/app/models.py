@@ -164,6 +164,12 @@ class AISummary(Base):
     content: Mapped[dict] = mapped_column(JSON)
     provider: Mapped[str] = mapped_column(String(40))
     model: Mapped[str] = mapped_column(String(80))
+    # Which version of the prompt/schema produced this (e.g. "lifestyle-v1"). Nullable so
+    # _add_missing_columns() can add it to an existing database without a migration; rows
+    # from before this existed are None, which a version-mismatch staleness check treats as
+    # stale. A later prompt change then naturally marks old summaries as refreshable without
+    # deleting their history.
+    prompt_version: Mapped[str | None] = mapped_column(String(40))
     generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     generated_by_user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
     generated_by_role: Mapped[str] = mapped_column(String(16))

@@ -31,6 +31,8 @@ def _json_block(label: str, data) -> Part:
 class ReportSummaryService:
     """AI module #1: 'What does this particular report say?'"""
 
+    PROMPT_VERSION = "report-summary-v1"
+
     SYSTEM_INSTRUCTION = (
         "You are summarizing a single medical report for informational purposes inside SUSTHITI, "
         "a diabetes-focused health record app. Do not invent values. Do not diagnose. Use only "
@@ -53,12 +55,14 @@ class ReportSummaryService:
             Part(data=file_bytes, mime_type=mime_type),
             Part(text="Summarize the attached original report."),
         ]
-        return self.client.generate_json(self.SYSTEM_INSTRUCTION, parts, ReportSummaryOutput)
+        return self.client.generate_json(self.SYSTEM_INSTRUCTION, parts, ReportSummaryOutput, prompt_version=self.PROMPT_VERSION)
 
 
 class LabValuesExtractionService:
     """Copies specific results from a report exactly as printed (used for scans and photos, which
     have no text to read). It never interprets or estimates; SUSTHITI re-checks every value."""
+
+    PROMPT_VERSION = "lab-values-extraction-v1"
 
     SYSTEM_INSTRUCTION = (
         "You read one medical laboratory report and copy specific test results exactly as printed. "
@@ -76,11 +80,13 @@ class LabValuesExtractionService:
 
     def extract(self, file_bytes: bytes, mime_type: str) -> AIResult:
         parts = [Part(data=file_bytes, mime_type=mime_type), Part(text="Copy the requested results from the attached report.")]
-        return self.client.generate_json(self.SYSTEM_INSTRUCTION, parts, LabValuesOutput)
+        return self.client.generate_json(self.SYSTEM_INSTRUCTION, parts, LabValuesOutput, prompt_version=self.PROMPT_VERSION)
 
 
 class AllReportsSummaryService:
     """'What does the patient's collection of reports show over time?'"""
+
+    PROMPT_VERSION = "all-reports-summary-v1"
 
     SYSTEM_INSTRUCTION = (
         "You are reviewing a patient's authorized collection of medical reports together, in "
@@ -110,11 +116,13 @@ class AllReportsSummaryService:
                 parts.append(Part(data=report["file_bytes"], mime_type=report["mime_type"]))
             elif not report.get("individual_summary"):
                 parts.append(Part(text=f"Report {index}: original file not included (size limit); only metadata is available."))
-        return self.client.generate_json(self.SYSTEM_INSTRUCTION, parts, AllReportsSummaryOutput)
+        return self.client.generate_json(self.SYSTEM_INSTRUCTION, parts, AllReportsSummaryOutput, prompt_version=self.PROMPT_VERSION)
 
 
 class PatientSummaryService:
     """Longitudinal summary across all authorized patient information (useful for a new doctor)."""
+
+    PROMPT_VERSION = "patient-summary-v1"
 
     SYSTEM_INSTRUCTION = (
         "Summarize the authorized longitudinal patient information for a clinician. Preserve "
@@ -137,12 +145,15 @@ class PatientSummaryService:
 
     def summarize(self, record: dict) -> AIResult:
         return self.client.generate_json(
-            self.SYSTEM_INSTRUCTION, [_json_block("Authorized patient record", record)], PatientSummaryOutput
+            self.SYSTEM_INSTRUCTION, [_json_block("Authorized patient record", record)], PatientSummaryOutput, prompt_version=self.PROMPT_VERSION
         )
 
 
 class LifestyleAIService:
     """Lifestyle analysis and suggestions; also the forward-looking interpretation of an assessment."""
+
+    PROMPT_VERSION = "lifestyle-v1"
+    INTERPRETATION_PROMPT_VERSION = "assessment-interpretation-v1"
 
     SYSTEM_INSTRUCTION = (
         "Analyze the supplied lifestyle trends (activity, sleep, heart rate, food log, glucose, "
@@ -175,7 +186,7 @@ class LifestyleAIService:
 
     def suggest(self, lifestyle: dict) -> AIResult:
         return self.client.generate_json(
-            self.SYSTEM_INSTRUCTION, [_json_block("Lifestyle data", lifestyle)], LifestyleOutput
+            self.SYSTEM_INSTRUCTION, [_json_block("Lifestyle data", lifestyle)], LifestyleOutput, prompt_version=self.PROMPT_VERSION
         )
 
     def interpret_assessment(self, assessment: dict, lifestyle: dict) -> AIResult:
@@ -183,6 +194,7 @@ class LifestyleAIService:
             self.INTERPRETATION_INSTRUCTION,
             [_json_block("Model assessment", assessment), _json_block("Recent lifestyle context", lifestyle)],
             AssessmentInterpretationOutput,
+            prompt_version=self.INTERPRETATION_PROMPT_VERSION,
         )
 
 

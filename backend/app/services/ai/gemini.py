@@ -35,6 +35,7 @@ class AIResult:
     content: dict
     provider: str = "google-ai-studio"
     model: str = ""
+    prompt_version: str = ""
     extra: dict = field(default_factory=dict)
 
 
@@ -51,7 +52,7 @@ class GeminiClient:
     def configured(self) -> bool:
         return bool(self.api_key)
 
-    def generate_json(self, system_instruction: str, parts: list[Part], schema: type[BaseModel]) -> AIResult:
+    def generate_json(self, system_instruction: str, parts: list[Part], schema: type[BaseModel], prompt_version: str = "") -> AIResult:
         if not self.configured:
             raise errors.ai_unavailable(
                 "AI features are not configured on the server yet.", code="ai_not_configured"
@@ -74,7 +75,7 @@ class GeminiClient:
         log.info("ai request model=%s status=%s", self.model, response.status_code)
         if response.status_code != 200:
             raise errors.ai_unavailable()
-        return AIResult(content=parse_json_output(response.json(), schema), model=self.model)
+        return AIResult(content=parse_json_output(response.json(), schema), model=self.model, prompt_version=prompt_version)
 
 
 def parse_json_output(payload: dict, schema: type[BaseModel]) -> dict:

@@ -70,7 +70,7 @@ def _store(db: Session, current: CurrentUser, patient: Patient, kind: str, resul
     content = {**result.content, "disclaimer": DISCLAIMER}
     summary = AISummary(
         patient_id=patient.id, kind=kind, subject_id=subject_id, source_ids=source_ids, source_fingerprint=fingerprint,
-        content=content, provider=result.provider, model=result.model,
+        content=content, provider=result.provider, model=result.model, prompt_version=result.prompt_version,
         generated_by_user_id=current.id, generated_by_role=current.role,
     )
     db.add(summary)
@@ -102,7 +102,10 @@ def get_report_summary(report_id: str, current: CurrentUser = Depends(require_re
         raise errors.not_found("Report")
     authorize_patient(db, current, report.patient_id)
     summary = _latest(db, report.patient_id, "individual_report", report.id)
-    return {"summary": summary_out(summary, based_on=_report_codes(db, summary.source_ids)) if summary else None}
+    if summary is None:
+        return {"summary": None}
+    stale = summary.prompt_version != ReportSummaryService.PROMPT_VERSION
+    return {"summary": summary_out(summary, stale, based_on=_report_codes(db, summary.source_ids))}
 
 
 @router.post("/reports/{report_id}/summary", status_code=201)
@@ -131,7 +134,7 @@ def get_all_reports_summary(patient_id: str, current: CurrentUser = Depends(requ
     summary = _latest(db, patient.id, "all_reports")
     if summary is None:
         return {"summary": None, "report_count": len(_all_report_ids(db, patient.id))}
-    stale = set(_all_report_ids(db, patient.id)) != set(summary.source_ids)
+    stale = set(_all_report_ids(db, patient.id)) != set(summary.source_ids) or summary.prompt_version != AllReportsSummaryService.PROMPT_VERSION
     return {"summary": summary_out(summary, stale, _report_codes(db, summary.source_ids)), "report_count": len(_all_report_ids(db, patient.id))}
 
 
@@ -245,7 +248,8 @@ def get_patient_summary(patient_id: str, current: CurrentUser = Depends(require_
     summary = _latest(db, patient.id, "patient_summary")
     if summary is None:
         return {"summary": None}
-    return {"summary": summary_out(summary, summary.source_fingerprint != _record_version(db, patient.id), ["Full authorized patient record"])}
+    stale = summary.source_fingerprint != _record_version(db, patient.id) or summary.prompt_version != PatientSummaryService.PROMPT_VERSION
+    return {"summary": summary_out(summary, stale, ["Full authorized patient record"])}
 
 
 @router.post("/patients/{patient_id}/patient-summary", status_code=201)
@@ -291,7 +295,7 @@ def get_lifestyle_insight(patient_id: str, current: CurrentUser = Depends(requir
     if summary is None:
         return {"summary": None}
     generated = summary.generated_at if summary.generated_at.tzinfo else summary.generated_at.replace(tzinfo=timezone.utc)
-    stale = datetime.now(timezone.utc) - generated > timedelta(days=1)
+    stale = datetime.now(timezone.utc) - generated > timedelta(days=1) or summary.prompt_version != LifestyleAIService.PROMPT_VERSION
     return {"summary": summary_out(summary, stale, ["Lifestyle, food and glucose data (last 7-30 days)"])}
 
 

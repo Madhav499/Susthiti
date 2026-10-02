@@ -11,6 +11,7 @@ from ..db import get_db
 from ..deps import CurrentUser, authorize_patient, require_record_reader
 from ..models import AISummary, DiabetesAssessment
 from ..schemas import assessment_out, summary_out
+from ..services.ai.services import LifestyleAIService
 
 router = APIRouter(tags=["diabetes (earlier model)"])
 
@@ -37,4 +38,7 @@ def get_assessment(assessment_id: str, current: CurrentUser = Depends(require_re
         select(AISummary).where(AISummary.kind == "assessment_interpretation", AISummary.subject_id == assessment.id)
         .order_by(AISummary.generated_at.desc()).limit(1)
     )
-    return assessment_out(assessment, summary_out(interpretation) if interpretation else None)
+    if interpretation is None:
+        return assessment_out(assessment, None)
+    stale = interpretation.prompt_version != LifestyleAIService.INTERPRETATION_PROMPT_VERSION
+    return assessment_out(assessment, summary_out(interpretation, stale))

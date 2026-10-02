@@ -361,6 +361,24 @@ def test_ai_not_configured(env):
     assert r.status_code == 503 and r.json()["detail"]["code"] == "ai_not_configured"
 
 
+def test_prompt_version_is_stored_and_a_later_bump_marks_the_summary_stale(env, monkeypatch):
+    client, _, gemini = env
+    from app import db as db_module
+    from app.models import AISummary
+    from app.services.ai.services import ReportSummaryService
+
+    headers, patient = register_patient(client)
+    report = upload(client, headers, patient["patient_id"]).json()
+    gemini.queue_json({"summary": "HbA1c recorded."})
+    r = client.post(f"{API}/reports/{report['id']}/summary", headers=headers)
+    assert r.status_code == 201 and r.json()["summary"]["is_stale"] is False
+    with db_module.SessionLocal() as db:
+        stored = db.query(AISummary).filter_by(patient_id=patient["patient_id"]).one()
+        assert stored.prompt_version == ReportSummaryService.PROMPT_VERSION
+    monkeypatch.setattr(ReportSummaryService, "PROMPT_VERSION", "report-summary-v2")
+    assert client.get(f"{API}/reports/{report['id']}/summary", headers=headers).json()["summary"]["is_stale"] is True
+
+
 # ---------- Allergies & doctor restrictions ----------
 
 def test_patient_can_record_their_own_allergies(env):
