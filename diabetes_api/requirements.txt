@@ -1,0 +1,12 @@
+fastapi>=0.115,<1
+uvicorn[standard]>=0.30,<1
+pydantic>=2.7,<3
+pandas>=2.2,<3
+# The model artifact was saved with scikit-learn 1.8.0. Loading a pickle with another version
+# can fail or change behaviour, so pin it exactly.
+scikit-learn==1.8.0
+joblib>=1.4,<2
+
+# Tests
+pytest>=8
+httpx>=0.27

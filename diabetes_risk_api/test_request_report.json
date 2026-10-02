@@ -1,0 +1,23 @@
+{
+  "data": {
+    "age": 75,
+    "sex": "Female",
+    "height_cm": 178,
+    "weight_kg": 65,
+    "family_history_diabetes": 1,
+    "previous_prediabetes": 0,
+    "physical_activity_level": "Low",
+    "diet_quality": "Poor",
+    "hypertension": 0,
+    "high_cholesterol": 0,
+    "polyuria": 0,
+    "polydipsia": 1,
+    "unexplained_weight_loss": 0,
+    "polyphagia": 1,
+    "hba1c": 5.5,
+    "fasting_glucose": 100,
+    "random_glucose": 125,
+    "previous_ogtt_2h": 95,
+    "previous_health_report_status": "Normal"
+  }
+}

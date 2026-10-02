@@ -1,0 +1,67 @@
+# SUSTHITI on a Linux server. Only Caddy is reachable from the internet (ports 80/443, HTTPS);
+# the backend and the diabetes model service are private to this Docker network.
+#
+#   cp .env.example .env      # then fill it in
+#   docker compose up -d --build
+#
+# See DEPLOY.md for the whole procedure.
+name: susthiti
+
+services:
+  model:
+    build: ../diabetes_risk_api  # SUSTHITI Future Diabetes Risk API v4
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).status == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+
+  backend:
+    build: ../backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SUSTHITI_ENV: production
+      DATABASE_URL: sqlite:////data/susthiti.db
+      STORAGE_DIR: /data/storage
+      ML_SERVICE_URL: http://model:8000
+      CORS_ORIGINS: https://${DOMAIN:?Set DOMAIN in deploy/.env}
+      ENABLE_DEMO_WEARABLE: "false"
+      DEV_EXPOSE_RESET_TOKEN: "false"
+      AUTH_RATE_LIMIT_ENABLED: "true"
+    volumes:
+      - susthiti-data:/data
+    depends_on:
+      model:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).status == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./web:/srv/web:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  susthiti-data:   # database and uploaded reports: back this up
+  caddy-data:      # HTTPS certificates
+  caddy-config:

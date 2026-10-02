@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SUSTHITI launch screen: the official emblem on the app background, then the in-app splash. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/launch_background" />
+    <item>
+        <bitmap android:gravity="center" android:src="@drawable/launch_logo" />
+    </item>
+</layer-list>

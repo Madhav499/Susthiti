@@ -1,0 +1,29 @@
+# Caddy obtains and renews the HTTPS certificate for DOMAIN automatically (Let's Encrypt).
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Report uploads are limited to 20 MB by the backend; leave room for the form fields.
+	request_body {
+		max_size 25MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+
+	# The API and its health check go to the backend.
+	@api path /api/* /health
+	handle @api {
+		reverse_proxy backend:8000
+	}
+
+	# Everything else is the SUSTHITI web app (for iPhones and computers), built into ./web.
+	handle {
+		root * /srv/web
+		file_server
+	}
+}

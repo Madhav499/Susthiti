@@ -1,0 +1,92 @@
+{
+  "model_version": "4.0.0",
+  "target": "developed_diabetes_future",
+  "features": [
+    "age",
+    "sex",
+    "height_cm",
+    "weight_kg",
+    "bmi",
+    "family_history_diabetes",
+    "previous_prediabetes",
+    "previous_gestational_diabetes",
+    "physical_activity_level",
+    "sedentary_hours_per_day",
+    "diet_quality",
+    "sugary_drink_frequency",
+    "smoking_status",
+    "alcohol_frequency",
+    "hypertension",
+    "high_cholesterol",
+    "pcos",
+    "cardiovascular_disease",
+    "fatty_liver_disease",
+    "sleep_hours",
+    "stress_level",
+    "polyuria",
+    "polydipsia",
+    "unexplained_weight_loss",
+    "polyphagia",
+    "hba1c",
+    "fasting_glucose",
+    "random_glucose",
+    "previous_ogtt_2h",
+    "previous_health_report_status"
+  ],
+  "report_fields_masked_for_no_report": [
+    "hba1c",
+    "fasting_glucose",
+    "random_glucose",
+    "previous_ogtt_2h",
+    "previous_health_report_status"
+  ],
+  "full_report_test": {
+    "accuracy": 0.8962,
+    "balanced_accuracy": 0.814438336372346,
+    "precision": 0.7995469988674971,
+    "recall": 0.6736641221374046,
+    "specificity": 0.9552125506072875,
+    "f1": 0.7312273433454168,
+    "roc_auc": 0.9321731966807801,
+    "pr_auc": 0.8174957030967924,
+    "brier_score": 0.07659332434942344,
+    "confusion_matrix": [
+      [
+        3775,
+        177
+      ],
+      [
+        342,
+        706
+      ]
+    ]
+  },
+  "no_report_test": {
+    "accuracy": 0.8868,
+    "balanced_accuracy": 0.7948193203943505,
+    "precision": 0.7828638497652582,
+    "recall": 0.6364503816793893,
+    "specificity": 0.9531882591093117,
+    "f1": 0.7021052631578948,
+    "roc_auc": 0.9250340923138732,
+    "pr_auc": 0.7989017138864783,
+    "brier_score": 0.08180218400312132,
+    "confusion_matrix": [
+      [
+        3767,
+        185
+      ],
+      [
+        381,
+        667
+      ]
+    ]
+  },
+  "risk_bands": {
+    "low": "0-40%",
+    "moderate": ">40-65%",
+    "high": ">65%"
+  },
+  "binary_prediction_threshold": "50%",
+  "note": "previous_prediabetes remains available in no-report mode because it is a risk/history feature, not proof of report availability."
+}

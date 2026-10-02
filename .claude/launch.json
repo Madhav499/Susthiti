@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "model-service",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd /d D:\\susthiti\\diabetes_api && .venv\\Scripts\\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8001"],
+      "port": 8001
+    },
+    {
+      "name": "backend",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd /d D:\\susthiti\\backend && .venv\\Scripts\\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000"],
+      "port": 8000
+    },
+    {
+      "name": "web-build",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd /d D:\\susthiti\\app\\build\\web && D:\\susthiti\\backend\\.venv\\Scripts\\python.exe -m http.server 8080 --bind 127.0.0.1"],
+      "port": 8080
+    }
+  ]
+}

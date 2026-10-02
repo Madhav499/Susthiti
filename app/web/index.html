@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+    It is replaced by the value of the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="SUSTHITI: diabetes-focused longitudinal health monitoring for patients, doctors and administrators.">
+  <meta name="theme-color" content="#2F80D8">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="SUSTHITI">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon: the SUSTHITI emblem -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>SUSTHITI — Your Health. Our Support. A Better Tomorrow.</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    /* Shown while the Flutter engine loads, then cross-fades into the in-app splash. */
+    html, body { margin: 0; height: 100%; background: #F6F9FC; }
+    #susthiti-splash {
+      position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: #F6F9FC; z-index: 10; transition: opacity 400ms ease-out;
+    }
+    #susthiti-splash img {
+      /* Same sizing as the in-app splash: ~68% on phones, ~46% on tablets, 280-420px on desktop. */
+      width: min(68vw, 55vh); height: auto;
+      opacity: 0; transform: scale(0.96);
+      animation: susthiti-in 900ms ease-out forwards;
+    }
+    @media (min-width: 600px) { #susthiti-splash img { width: min(46vw, 55vh); } }
+    @media (min-width: 1024px) { #susthiti-splash img { width: clamp(280px, 28vw, 420px); } }
+    @keyframes susthiti-in { to { opacity: 1; transform: scale(1); } }
+    @media (prefers-reduced-motion: reduce) { #susthiti-splash img { animation-duration: 1ms; } }
+  </style>
+</head>
+<body>
+  <div id="susthiti-splash" aria-label="SUSTHITI. Your Health. Our Support. A Better Tomorrow." role="img">
+    <img src="splash/susthiti_logo.png" alt="SUSTHITI. Your Health. Our Support. A Better Tomorrow.">
+  </div>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var splash = document.getElementById('susthiti-splash');
+      if (!splash) return;
+      splash.style.opacity = '0';
+      setTimeout(function () { splash.remove(); }, 450);
+    });
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

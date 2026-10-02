@@ -1,0 +1,12 @@
+{
+  "model_version": "v1",
+  "input_mode": "auto",
+  "yes_no": {"Yes": 1, "No": 0},
+  "gender": {"Male": 1, "Female": 0},
+  "classes": {"1": "Positive", "0": "Negative"},
+  "_notes": [
+    "input_mode: 'auto' uses 'raw' strings when the .joblib is a scikit-learn Pipeline with its own encoders, otherwise 'encoded' integers.",
+    "The encodings above match sklearn LabelEncoder on the UCI early-stage diabetes columns (No=0/Yes=1, Female=0/Male=1, Negative=0/Positive=1).",
+    "VERIFY against the training notebook, then run: python verify_model.py path/to/dataset.csv"
+  ]
+}

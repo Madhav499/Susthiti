@@ -1,0 +1,8 @@
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.7
+joblib>=1.3
+pandas>=2.0
+numpy>=1.26
+# Pin to the scikit-learn version used in the training notebook to load the .joblib safely.
+scikit-learn>=1.3
