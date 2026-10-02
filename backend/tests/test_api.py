@@ -314,13 +314,17 @@ def test_ai_invalid_response_then_retry(env):
     assert client.post(f"{API}/reports/{report['id']}/summary", headers=headers).status_code == 201
 
 
-def test_ai_api_failure(env):
+def test_ai_api_failure(env, monkeypatch):
     client, _, gemini = env
+    from app.services.ai import gemini as gemini_module
+
+    monkeypatch.setattr(gemini_module.time, "sleep", lambda seconds: None)
     headers, patient = register_patient(client)
     report = upload(client, headers, patient["patient_id"]).json()
-    gemini.queue_raw(httpx.Response(500))
+    gemini.queue_raw(httpx.Response(500))  # every further call also gets a 500 (FakeGemini default)
     r = client.post(f"{API}/reports/{report['id']}/summary", headers=headers)
     assert r.status_code == 503 and r.json()["detail"]["code"] == "ai_service_unavailable"
+    assert len(gemini.requests) == 3  # retried twice (bounded) before giving up
 
 
 def test_all_reports_summary_staleness(env):
