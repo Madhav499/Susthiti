@@ -149,7 +149,9 @@ class LifestyleAIService:
         "report context) of a person using a diabetes-focused health app. Provide general, "
         "sustainable lifestyle suggestions. Do not prescribe medication. Do not diagnose. Do not "
         "claim certainty. Only compare against a recent average when the data includes enough "
-        "days to support it. "
+        "days to support it. The supplied data may include documented allergies and doctor-recorded "
+        "restrictions: never suggest a food, activity or substance that conflicts with either of "
+        "them, and do not repeat them back as if they were your own medical advice. "
         + _SAFETY
         + " JSON shape: {\"headline\": str, \"overview\": {\"activity\": str, \"sleep\": str, "
         "\"food\": str, \"heart_rate\": str, \"glucose\": str}, \"observations\": [str], "
@@ -162,7 +164,8 @@ class LifestyleAIService:
         "does NOT predict future onset, so never state a timeframe or a probability of developing "
         "diabetes. You may say that if unhealthy patterns continue they may increase future risk "
         "of type 2 diabetes. Use calm, non-alarming language and recommend discussing results "
-        "with a doctor. "
+        "with a doctor. The supplied data may include documented allergies and doctor-recorded "
+        "restrictions: never suggest anything that conflicts with either of them. "
         + _SAFETY
         + " JSON shape: {\"interpretation\": str, \"contributing_patterns\": [str], \"suggestions\": [str]}"
     )

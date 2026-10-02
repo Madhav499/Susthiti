@@ -35,6 +35,7 @@ from ..services.ai.services import (
     ReportSummaryService,
     get_ai_client,
 )
+from ..services.health_data import latest_facts
 from ..services.lifestyle_data import food_overview, glucose_overview, lifestyle_snapshot, to_mg_dl
 from ..services.pdf import pdf_filename, render_summary_pdf
 from ..services.records import audit, notify
@@ -258,6 +259,9 @@ def _lifestyle_context(db: Session, patient: Patient) -> dict:
         s = _latest(db, patient.id, "individual_report", r.id)
         if s:
             report_context.append({"report_code": r.report_code, "category": r.category, "report_date": iso(r.report_date), "key_findings": s.content.get("key_findings")})
+    facts = latest_facts(db, patient.id)
+    allergies = (facts["allergies"].value if "allergies" in facts else None) or []
+    restrictions = (facts["doctor_restrictions"].value if "doctor_restrictions" in facts else None) or []
     return {
         "recent_lifestyle": lifestyle_snapshot(db, patient.id),
         "glucose": glucose_overview(db, patient.id),
@@ -265,6 +269,9 @@ def _lifestyle_context(db: Session, patient: Patient) -> dict:
         "latest_future_diabetes_risk_estimate": None if latest_risk is None else {
             "date": iso(latest_risk.created_at), "model_estimated_risk_percent": latest_risk.risk_percent, "risk_category": latest_risk.risk_category},
         "diabetes_report_findings": report_context,
+        # Documented and authoritative: suggestions must never conflict with these.
+        "allergies": allergies,
+        "doctor_restrictions": restrictions,
         "note": "Only real recorded data is included. Missing metrics were not recorded.",
     }
 

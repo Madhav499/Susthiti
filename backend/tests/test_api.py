@@ -361,6 +361,54 @@ def test_ai_not_configured(env):
     assert r.status_code == 503 and r.json()["detail"]["code"] == "ai_not_configured"
 
 
+# ---------- Allergies & doctor restrictions ----------
+
+def test_patient_can_record_their_own_allergies(env):
+    client, _, _ = env
+    headers, patient = register_patient(client)
+    pid = patient["patient_id"]
+    r = client.put(f"{API}/patients/{pid}/health-profile", headers=headers, json={"values": {"allergies": ["Penicillin", "  peanuts  ", "Penicillin"]}})
+    assert r.status_code == 200, r.text
+    field = next(f for f in r.json()["fields"] if f["key"] == "allergies")
+    assert field["value"] == ["Penicillin", "peanuts"] and field["recorded_by_role"] == "patient"
+
+
+def test_only_a_doctor_can_record_doctor_restrictions(env):
+    client, _, _ = env
+    admin = make_admin(client)
+    doctor_headers, _ = make_doctor(client, admin)
+    patient_headers, patient = register_patient(client)
+    pid = patient["patient_id"]
+    grant_access(client, doctor_headers, patient_headers, patient)
+    denied = client.put(f"{API}/patients/{pid}/health-profile", headers=patient_headers, json={"values": {"doctor_restrictions": ["No high-intensity exercise"]}})
+    assert denied.status_code == 403
+    allowed = client.put(f"{API}/patients/{pid}/health-profile", headers=doctor_headers, json={"values": {"doctor_restrictions": ["No high-intensity exercise"]}})
+    assert allowed.status_code == 200, allowed.text
+    field = next(f for f in allowed.json()["fields"] if f["key"] == "doctor_restrictions")
+    assert field["value"] == ["No high-intensity exercise"] and field["recorded_by_role"] == "doctor"
+    # the patient can still read a doctor-recorded restriction, just never write one
+    read_back = client.get(f"{API}/patients/{pid}/health-profile", headers=patient_headers).json()
+    assert next(f for f in read_back["fields"] if f["key"] == "doctor_restrictions")["value"] == ["No high-intensity exercise"]
+
+
+def test_lifestyle_ai_context_includes_allergies_and_restrictions(env):
+    client, _, gemini = env
+    admin = make_admin(client)
+    doctor_headers, _ = make_doctor(client, admin)
+    patient_headers, patient = register_patient(client)
+    pid = patient["patient_id"]
+    grant_access(client, doctor_headers, patient_headers, patient)
+    client.put(f"{API}/patients/{pid}/health-profile", headers=patient_headers, json={"values": {"allergies": ["peanuts"]}})
+    client.put(f"{API}/patients/{pid}/health-profile", headers=doctor_headers, json={"values": {"doctor_restrictions": ["avoid high-sodium food"]}})
+    client.post(f"{API}/patients/{pid}/glucose", headers=patient_headers, json={"value": 104, "unit": "mg/dL", "reading_type": "fasting", "measured_at": "2026-09-20T08:00:00Z"})
+    gemini.queue_json({"headline": "Looks steady.", "suggestions": ["Keep up regular meals."]})
+    r = client.post(f"{API}/patients/{pid}/lifestyle-insight", headers=patient_headers)
+    assert r.status_code == 201, r.text
+    sent = gemini.requests[-1]["contents"][0]["parts"][0]["text"]
+    assert "peanuts" in sent and "avoid high-sodium food" in sent
+    assert "allergies" in gemini.requests[-1]["systemInstruction"]["parts"][0]["text"]
+
+
 # ---------- Prescriptions ----------
 
 def _rx(client, headers, pid, medicine, day):

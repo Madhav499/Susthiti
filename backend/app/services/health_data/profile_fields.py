@@ -24,7 +24,7 @@ class ProfileField:
     key: str
     group: str
     label: str
-    kind: str  # number | yes_no | choice
+    kind: str  # number | yes_no | choice | list
     options: tuple[tuple[str, str], ...] = ()  # (value, label)
     unit: str | None = None
     min: float | None = None
@@ -47,6 +47,21 @@ class ProfileField:
             if value in allowed:
                 return value
             raise ValueError(f"{self.label}: choose one of the listed options.")
+        if self.kind == "list":
+            if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+                raise ValueError(f"{self.label}: enter a list of short text items.")
+            seen: list[str] = []
+            for item in value:
+                cleaned = " ".join(item.split()).strip()
+                if not cleaned:
+                    continue
+                if len(cleaned) > 200:
+                    raise ValueError(f"{self.label}: each item must be 200 characters or fewer.")
+                if cleaned.lower() not in (s.lower() for s in seen):
+                    seen.append(cleaned)
+            if len(seen) > 20:
+                raise ValueError(f"{self.label}: list up to 20 items.")
+            return seen
         if isinstance(value, bool) or not isinstance(value, (int, float)):
             raise ValueError(f"{self.label} must be a number.")
         number = float(value)
@@ -84,6 +99,14 @@ FIELDS: tuple[ProfileField, ...] = (
     ProfileField("polydipsia", SYMPTOMS, "Unusual or constant thirst", "yes_no", fresh_days=90),
     ProfileField("unexplained_weight_loss", SYMPTOMS, "Losing weight without trying", "yes_no", fresh_days=90),
     ProfileField("polyphagia", SYMPTOMS, "Unusually strong or constant hunger", "yes_no", fresh_days=90),
+    ProfileField("allergies", MEDICAL, "Known allergies (medication, food or other)", "list",
+                 help="Documented allergies are treated as authoritative and must never be contradicted by AI-generated suggestions."),
+    ProfileField("doctor_restrictions", MEDICAL, "Doctor-documented restrictions", "list",
+                 help="Recorded by a doctor only. Treated as authoritative and must never be contradicted by AI-generated suggestions."),
 )
 
 BY_KEY = {f.key: f for f in FIELDS}
+
+# Fields only a doctor may write, even though a patient can read them. Enforced in
+# routers/health_data.py's update_health_profile, not just by UI visibility.
+DOCTOR_ONLY = {"doctor_restrictions"}

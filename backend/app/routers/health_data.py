@@ -9,7 +9,6 @@ from typing import Any
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .. import errors
@@ -17,7 +16,7 @@ from ..db import get_db
 from ..deps import CurrentUser, authorize_patient, require_clinical, require_record_reader
 from ..models import HealthFact, Report, ReportValue
 from ..schemas import iso
-from ..services.health_data import profile_fields as pf
+from ..services.health_data import latest_facts, profile_fields as pf
 from ..services.health_data.body import body_measurements
 from ..services.health_data import report_values as rv
 from ..services.health_data.report_extraction import AUTOMATIC, extract_from_text, extract_with_ai, needs_ai
@@ -44,19 +43,12 @@ class ReportValuesIn(BaseModel):
     values: dict[str, ReportValueIn | None] = Field(default_factory=dict)
 
 
-def _latest_facts(db: Session, patient_id: str) -> dict[str, HealthFact]:
-    latest: dict[str, HealthFact] = {}
-    for fact in db.scalars(select(HealthFact).where(HealthFact.patient_id == patient_id).order_by(HealthFact.recorded_at)):
-        latest[fact.field] = fact
-    return latest
-
-
 def _aware(dt: datetime) -> datetime:
     return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
 
 
 def _profile_out(db: Session, patient) -> dict:
-    latest = _latest_facts(db, patient.id)
+    latest = latest_facts(db, patient.id)
     now = datetime.now(timezone.utc)
     fields = []
     for spec in pf.FIELDS:
@@ -88,7 +80,11 @@ def update_health_profile(patient_id: str, body: HealthProfileIn, current: Curre
     unknown = sorted(set(body.values) - set(pf.BY_KEY))
     if unknown:
         raise errors.unprocessable("Unknown health profile field.", {"fields": unknown})
-    latest = _latest_facts(db, patient.id)
+    if current.role == "patient":
+        restricted = sorted(set(body.values) & pf.DOCTOR_ONLY)
+        if restricted:
+            raise errors.forbidden("Only a doctor can record this information.")
+    latest = latest_facts(db, patient.id)
     now = datetime.now(timezone.utc)
     changed = []
     for key, raw in body.values.items():
