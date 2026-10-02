@@ -35,6 +35,7 @@ from ..services.ai.services import (
     ReportSummaryService,
     get_ai_client,
 )
+from ..services.ai import safety
 from ..services.health_data import latest_facts
 from ..services.lifestyle_data import food_overview, glucose_overview, lifestyle_snapshot, to_mg_dl
 from ..services.pdf import pdf_filename, render_summary_pdf
@@ -58,7 +59,14 @@ def _latest(db: Session, patient_id: str, kind: str, subject_id: str | None = No
     return db.scalar(query.order_by(AISummary.generated_at.desc()).limit(1))
 
 
-def _store(db: Session, current: CurrentUser, patient: Patient, kind: str, result: AIResult, source_ids: list[str], fingerprint: str, subject_id: str | None = None) -> AISummary:
+def _store(db: Session, current: CurrentUser, patient: Patient, kind: str, result: AIResult, source_ids: list[str], fingerprint: str, subject_id: str | None = None, context: dict | None = None) -> AISummary:
+    violations = safety.check_output(kind, result.content, context)
+    if violations:
+        # Never store unsafe output. Log the reason codes only (never the generated
+        # content) so this is auditable without leaking unsafe text into logs.
+        audit(db, current, "ai_safety_violation", "ai_summary", None, None, {"patient_code": patient.patient_code, "kind": kind, "reasons": violations})
+        db.commit()
+        raise errors.ApiError(502, "ai_invalid_response", "We couldn't read the AI response. Please try again.")
     content = {**result.content, "disclaimer": DISCLAIMER}
     summary = AISummary(
         patient_id=patient.id, kind=kind, subject_id=subject_id, source_ids=source_ids, source_fingerprint=fingerprint,
@@ -294,7 +302,7 @@ def generate_lifestyle_insight(patient_id: str, current: CurrentUser = Depends(r
     if not context["recent_lifestyle"] and not context["glucose"]["latest"] and not context["food_last_7_days"]["entries_count"]:
         raise errors.unprocessable("Add some lifestyle, food or glucose data first so there is something to analyze.")
     result = LifestyleAIService(get_ai_client()).suggest(context)
-    summary = _store(db, current, patient, "lifestyle", result, [], _fingerprint(context))
+    summary = _store(db, current, patient, "lifestyle", result, [], _fingerprint(context), context=context)
     db.commit()
     return {"summary": summary_out(summary, False, ["Lifestyle, food and glucose data (last 7-30 days)"])}
 
@@ -315,8 +323,9 @@ def interpret_assessment(assessment_id: str, current: CurrentUser = Depends(requ
         "assessed_at": iso(assessment.assessed_at),
         "reported_symptoms": [k for k, v in assessment.inputs.items() if v == "Yes"],
     }
-    result = LifestyleAIService(get_ai_client()).interpret_assessment(model_output, _lifestyle_context(db, patient))
-    summary = _store(db, current, patient, "assessment_interpretation", result, [assessment.id], _fingerprint(model_output), subject_id=assessment.id)
+    lifestyle_ctx = _lifestyle_context(db, patient)
+    result = LifestyleAIService(get_ai_client()).interpret_assessment(model_output, lifestyle_ctx)
+    summary = _store(db, current, patient, "assessment_interpretation", result, [assessment.id], _fingerprint(model_output), subject_id=assessment.id, context=lifestyle_ctx)
     db.commit()
     return {"summary": summary_out(summary)}
 
