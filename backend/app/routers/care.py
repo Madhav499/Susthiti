@@ -201,15 +201,26 @@ def get_visit(visit_id: str, current: CurrentUser = Depends(require_record_reade
 
 # ---------- Prescriptions ----------
 
+def _prescription_dedupe_key(patient_id: str, doctor_id: str, prescribed_on, medicines) -> str:
+    """Same patient, doctor, date and medicine list: almost certainly an accidental
+    duplicate submission (a doctor meaning to re-issue the same medicines again would
+    normally do so on a different day, or add/remove something)."""
+    names = sorted(med.medicine.strip().lower() for med in medicines)
+    return f"{patient_id}:{doctor_id}:{prescribed_on.isoformat()}:{'|'.join(names)}"
+
+
 @router.post("/patients/{patient_id}/prescriptions", status_code=201)
 def create_prescription(patient_id: str, body: PrescriptionIn, current: CurrentUser = Depends(require_doctor), db: Session = Depends(get_db)):
     """Always creates a NEW prescription. Earlier prescriptions are never modified."""
     patient = authorize_patient(db, current, patient_id)
     doctor = current_doctor(db, current)
+    dedupe_key = _prescription_dedupe_key(patient.id, doctor.id, body.prescribed_on, body.medicines)
+    if db.scalar(select(Prescription.id).where(Prescription.dedupe_key == dedupe_key)):
+        raise errors.conflict("A prescription with the same medicines was already recorded for this patient on this date.")
     rx = Prescription(
         prescription_code=next_code(db, "prescription", "RX"), patient_id=patient.id, doctor_id=doctor.id,
         doctor_name=current.name, prescribed_on=body.prescribed_on, instructions=body.instructions,
-        notes=body.notes, follow_up_date=body.follow_up_date,
+        notes=body.notes, follow_up_date=body.follow_up_date, dedupe_key=dedupe_key,
     )
     db.add(rx)
     db.flush()

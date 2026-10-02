@@ -458,6 +458,25 @@ def test_prescriptions_never_overwrite_and_keep_author(env):
     assert client.get(f"{API}/patients/{pid}/prescriptions?q=xr", headers=patient_headers).json()["items"][0]["id"] == second["id"]
 
 
+def test_duplicate_prescription_same_day_is_rejected(env):
+    client, _, _ = env
+    admin = make_admin(client)
+    doc, _ = make_doctor(client, admin)
+    patient_headers, patient = register_patient(client)
+    pid = patient["patient_id"]
+    grant_access(client, doc, patient_headers, patient)
+    first = _rx(client, doc, pid, "Metformin", "2026-01-10")
+    assert first.status_code == 201, first.text
+    duplicate = _rx(client, doc, pid, "Metformin", "2026-01-10")
+    assert duplicate.status_code == 409 and duplicate.json()["detail"]["code"] == "conflict"
+    # a different medicine, a different date, or a different doctor is not a duplicate
+    assert _rx(client, doc, pid, "Metformin XR", "2026-01-10").status_code == 201
+    assert _rx(client, doc, pid, "Metformin", "2026-01-11").status_code == 201
+    other_doc, _ = make_doctor(client, admin, "second@example.org", "Second Doctor")
+    grant_access(client, other_doc, patient_headers, patient)
+    assert _rx(client, other_doc, pid, "Metformin", "2026-01-10").status_code == 201
+
+
 def test_patient_cannot_create_prescription(env):
     client, _, _ = env
     headers, patient = register_patient(client)

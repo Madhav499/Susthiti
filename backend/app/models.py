@@ -430,6 +430,10 @@ class Prescription(Base, TimestampMixin):
     instructions: Mapped[str | None] = mapped_column(Text)
     notes: Mapped[str | None] = mapped_column(Text)
     follow_up_date: Mapped[date | None] = mapped_column(Date, index=True)
+    # patient_id + doctor_id + date + sorted medicine names: catches an accidental duplicate
+    # submission of the same prescription. Nullable (see AISummary.prompt_version) so the
+    # auto-migration can add it without a manual schema change.
+    dedupe_key: Mapped[str | None] = mapped_column(String(300), index=True)
 
     items: Mapped[list["PrescriptionItem"]] = relationship(
         back_populates="prescription", order_by="PrescriptionItem.position"
