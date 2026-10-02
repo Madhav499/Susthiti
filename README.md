@@ -23,12 +23,18 @@ the original records.
 
 Detailed guides:
 
+- [PROJECT_EXPLANATION.md](PROJECT_EXPLANATION.md): what SUSTHITI is and the one rule everything else follows
 - [ARCHITECTURE.md](ARCHITECTURE.md): how the pieces fit, security model, key decisions
 - [API_SETUP.md](API_SETUP.md): running and configuring the backend, endpoint list
 - [docs/diabetes-api-v4-integration.md](docs/diabetes-api-v4-integration.md): future diabetes risk (API v4): data sources, feature mapping, refresh policy
 - [ML_MODEL_SETUP.md](ML_MODEL_SETUP.md): installing and verifying the supplied model
 - [AI_SETUP.md](AI_SETUP.md): configuring Google AI Studio securely
+- [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md): the AI pipeline, output safety validation, prompt versioning, caching, retry
 - [DATABASE.md](DATABASE.md): data model and record-keeping rules
+- [SECURITY.md](SECURITY.md): the security model end to end, and known gaps
+- [TESTING.md](TESTING.md): running the test suites, what's covered
+- [ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md): index of env/setup docs, suggested CI
+- [CHANGELOG.md](CHANGELOG.md): what's changed, in order
 
 ## Run everything (Windows)
 
