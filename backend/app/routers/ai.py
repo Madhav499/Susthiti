@@ -5,7 +5,7 @@ import hashlib
 import json
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -79,6 +79,16 @@ def _store(db: Session, current: CurrentUser, patient: Patient, kind: str, resul
     return summary
 
 
+def _reusable(db: Session, patient: Patient, kind: str, fingerprint: str, prompt_version: str, subject_id: str | None = None) -> AISummary | None:
+    """The latest summary of this kind, if its source data and prompt version are both
+    still current -- regenerating would call the AI for a result that would come out the
+    same. Callers skip the AI call entirely and reuse it unless the caller passed force."""
+    existing = _latest(db, patient.id, kind, subject_id)
+    if existing is not None and existing.source_fingerprint == fingerprint and existing.prompt_version == prompt_version:
+        return existing
+    return None
+
+
 def _report_codes(db: Session, ids: list[str]) -> list[str]:
     if not ids:
         return []
@@ -109,17 +119,24 @@ def get_report_summary(report_id: str, current: CurrentUser = Depends(require_re
 
 
 @router.post("/reports/{report_id}/summary", status_code=201)
-def generate_report_summary(report_id: str, current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
+def generate_report_summary(report_id: str, response: Response, force: bool = Query(False), current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
     report = db.get(Report, report_id)
     if report is None:
         raise errors.not_found("Report")
     patient = authorize_patient(db, current, report.patient_id)
+    if not force:
+        reused = _reusable(db, patient, "individual_report", report.sha256, ReportSummaryService.PROMPT_VERSION, subject_id=report.id)
+        if reused is not None:
+            response.status_code = 200
+            audit(db, current, "ai_individual_report_regeneration_skipped", "ai_summary", reused.id, None, {"patient_code": patient.patient_code})
+            db.commit()
+            return {"created": False, "summary": summary_out(reused, False, based_on=_report_codes(db, [report.id]))}
     data = get_storage().read(report.storage_ref)
     result = ReportSummaryService(get_ai_client()).summarize(_report_metadata(report), data, report.file_type)
     summary = _store(db, current, patient, "individual_report", result, [report.id], report.sha256, subject_id=report.id)
     notify(db, patient.user_id, "report_summary_ready", "Report summary ready", f"The AI summary for report {report.report_code} is ready.", "report", report.id, patient.id)
     db.commit()
-    return {"summary": summary_out(summary, based_on=_report_codes(db, [report.id]))}
+    return {"created": True, "summary": summary_out(summary, based_on=_report_codes(db, [report.id]))}
 
 
 # ---------- All reports summary ----------
@@ -139,7 +156,7 @@ def get_all_reports_summary(patient_id: str, current: CurrentUser = Depends(requ
 
 
 @router.post("/patients/{patient_id}/reports-summary", status_code=201)
-def generate_all_reports_summary(patient_id: str, body: AllReportsSummaryIn | None = None, current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
+def generate_all_reports_summary(patient_id: str, response: Response, body: AllReportsSummaryIn | None = None, force: bool = Query(False), current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
     patient = authorize_patient(db, current, patient_id)
     ids = _all_report_ids(db, patient.id)
     if body and body.report_ids:
@@ -150,6 +167,13 @@ def generate_all_reports_summary(patient_id: str, body: AllReportsSummaryIn | No
     if len(ids) < 2:
         raise errors.unprocessable("At least two reports are needed to summarize reports over time.")
     ids = ids[-MAX_REPORTS_PER_SUMMARY:]
+    if not force:
+        reused = _reusable(db, patient, "all_reports", _fingerprint(sorted(ids)), AllReportsSummaryService.PROMPT_VERSION)
+        if reused is not None:
+            response.status_code = 200
+            audit(db, current, "ai_all_reports_regeneration_skipped", "ai_summary", reused.id, None, {"patient_code": patient.patient_code})
+            db.commit()
+            return {"created": False, "summary": summary_out(reused, False, _report_codes(db, ids))}
     reports = [db.get(Report, i) for i in ids]
     payload, inline_bytes = [], 0
     for r in reports:
@@ -167,7 +191,7 @@ def generate_all_reports_summary(patient_id: str, body: AllReportsSummaryIn | No
     notify(db, patient.user_id, "report_summary_ready", "Report summary ready", "Your all-reports AI summary is ready.", "ai_summary", summary.id, patient.id)
     db.commit()
     stale = set(_all_report_ids(db, patient.id)) != set(ids)
-    return {"summary": summary_out(summary, stale, _report_codes(db, ids))}
+    return {"created": True, "summary": summary_out(summary, stale, _report_codes(db, ids))}
 
 
 # ---------- Patient summary ----------
@@ -253,12 +277,20 @@ def get_patient_summary(patient_id: str, current: CurrentUser = Depends(require_
 
 
 @router.post("/patients/{patient_id}/patient-summary", status_code=201)
-def generate_patient_summary(patient_id: str, current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
+def generate_patient_summary(patient_id: str, response: Response, force: bool = Query(False), current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
     patient = authorize_patient(db, current, patient_id)
+    record_version = _record_version(db, patient.id)
+    if not force:
+        reused = _reusable(db, patient, "patient_summary", record_version, PatientSummaryService.PROMPT_VERSION)
+        if reused is not None:
+            response.status_code = 200
+            audit(db, current, "ai_patient_summary_regeneration_skipped", "ai_summary", reused.id, None, {"patient_code": patient.patient_code})
+            db.commit()
+            return {"created": False, "summary": summary_out(reused, False, ["Full authorized patient record"])}
     result = PatientSummaryService(get_ai_client()).summarize(_patient_record(db, patient))
-    summary = _store(db, current, patient, "patient_summary", result, [], _record_version(db, patient.id))
+    summary = _store(db, current, patient, "patient_summary", result, [], record_version)
     db.commit()
-    return {"summary": summary_out(summary, False, ["Full authorized patient record"])}
+    return {"created": True, "summary": summary_out(summary, False, ["Full authorized patient record"])}
 
 
 # ---------- Lifestyle insight ----------
@@ -300,21 +332,29 @@ def get_lifestyle_insight(patient_id: str, current: CurrentUser = Depends(requir
 
 
 @router.post("/patients/{patient_id}/lifestyle-insight", status_code=201)
-def generate_lifestyle_insight(patient_id: str, current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
+def generate_lifestyle_insight(patient_id: str, response: Response, force: bool = Query(False), current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
     patient = authorize_patient(db, current, patient_id)
     context = _lifestyle_context(db, patient)
     if not context["recent_lifestyle"] and not context["glucose"]["latest"] and not context["food_last_7_days"]["entries_count"]:
         raise errors.unprocessable("Add some lifestyle, food or glucose data first so there is something to analyze.")
+    fingerprint = _fingerprint(context)
+    if not force:
+        reused = _reusable(db, patient, "lifestyle", fingerprint, LifestyleAIService.PROMPT_VERSION)
+        if reused is not None:
+            response.status_code = 200
+            audit(db, current, "ai_lifestyle_regeneration_skipped", "ai_summary", reused.id, None, {"patient_code": patient.patient_code})
+            db.commit()
+            return {"created": False, "summary": summary_out(reused, False, ["Lifestyle, food and glucose data (last 7-30 days)"])}
     result = LifestyleAIService(get_ai_client()).suggest(context)
-    summary = _store(db, current, patient, "lifestyle", result, [], _fingerprint(context), context=context)
+    summary = _store(db, current, patient, "lifestyle", result, [], fingerprint, context=context)
     db.commit()
-    return {"summary": summary_out(summary, False, ["Lifestyle, food and glucose data (last 7-30 days)"])}
+    return {"created": True, "summary": summary_out(summary, False, ["Lifestyle, food and glucose data (last 7-30 days)"])}
 
 
 # ---------- Assessment interpretation ----------
 
 @router.post("/assessments/{assessment_id}/interpretation", status_code=201)
-def interpret_assessment(assessment_id: str, current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
+def interpret_assessment(assessment_id: str, response: Response, force: bool = Query(False), current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
     """AI interpretation that combines the stored model output with lifestyle context.
     It is NOT a new ML prediction, and the assessment record itself is never changed."""
     assessment = db.get(DiabetesAssessment, assessment_id)
@@ -327,11 +367,19 @@ def interpret_assessment(assessment_id: str, current: CurrentUser = Depends(requ
         "assessed_at": iso(assessment.assessed_at),
         "reported_symptoms": [k for k, v in assessment.inputs.items() if v == "Yes"],
     }
+    fingerprint = _fingerprint(model_output)
+    if not force:
+        reused = _reusable(db, patient, "assessment_interpretation", fingerprint, LifestyleAIService.INTERPRETATION_PROMPT_VERSION, subject_id=assessment.id)
+        if reused is not None:
+            response.status_code = 200
+            audit(db, current, "ai_assessment_interpretation_regeneration_skipped", "ai_summary", reused.id, None, {"patient_code": patient.patient_code})
+            db.commit()
+            return {"created": False, "summary": summary_out(reused)}
     lifestyle_ctx = _lifestyle_context(db, patient)
     result = LifestyleAIService(get_ai_client()).interpret_assessment(model_output, lifestyle_ctx)
-    summary = _store(db, current, patient, "assessment_interpretation", result, [assessment.id], _fingerprint(model_output), subject_id=assessment.id, context=lifestyle_ctx)
+    summary = _store(db, current, patient, "assessment_interpretation", result, [assessment.id], fingerprint, subject_id=assessment.id, context=lifestyle_ctx)
     db.commit()
-    return {"summary": summary_out(summary)}
+    return {"created": True, "summary": summary_out(summary)}
 
 
 # ---------- PDF ----------
