@@ -6,7 +6,7 @@ DiabetesModelService. These services only summarize and interpret supplied data.
 
 import json
 
-from .gemini import AIResult, GeminiClient, Part
+from .openrouter import AIResult, OpenRouterClient, Part
 from .schemas import (
     AllReportsSummaryOutput,
     AssessmentInterpretationOutput,
@@ -46,7 +46,7 @@ class ReportSummaryService:
         "\"interpretation\": str, \"questions_for_doctor\": [str], \"limitations\": [str]}"
     )
 
-    def __init__(self, client: GeminiClient):
+    def __init__(self, client: OpenRouterClient):
         self.client = client
 
     def summarize(self, metadata: dict, file_bytes: bytes, mime_type: str) -> AIResult:
@@ -75,7 +75,7 @@ class LabValuesExtractionService:
         "estimate, round or calculate. Respond with a single JSON object only. JSON shape: {\"values\": [...]}"
     )
 
-    def __init__(self, client: GeminiClient):
+    def __init__(self, client: OpenRouterClient):
         self.client = client
 
     def extract(self, file_bytes: bytes, mime_type: str) -> AIResult:
@@ -102,7 +102,7 @@ class AllReportsSummaryService:
         "[str], \"gaps\": [str], \"interpretation\": str, \"questions_for_doctor\": [str]}"
     )
 
-    def __init__(self, client: GeminiClient):
+    def __init__(self, client: OpenRouterClient):
         self.client = client
 
     def summarize(self, reports: list[dict]) -> AIResult:
@@ -140,7 +140,7 @@ class PatientSummaryService:
         "\"items_to_discuss\": [str], \"interpretation\": str}"
     )
 
-    def __init__(self, client: GeminiClient):
+    def __init__(self, client: OpenRouterClient):
         self.client = client
 
     def summarize(self, record: dict) -> AIResult:
@@ -181,7 +181,7 @@ class LifestyleAIService:
         + " JSON shape: {\"interpretation\": str, \"contributing_patterns\": [str], \"suggestions\": [str]}"
     )
 
-    def __init__(self, client: GeminiClient):
+    def __init__(self, client: OpenRouterClient):
         self.client = client
 
     def suggest(self, lifestyle: dict) -> AIResult:
@@ -198,16 +198,16 @@ class LifestyleAIService:
         )
 
 
-_client: GeminiClient | None = None
+_client: OpenRouterClient | None = None
 
 
-def get_ai_client() -> GeminiClient:
+def get_ai_client() -> OpenRouterClient:
     global _client
     if _client is None:
-        _client = GeminiClient()
+        _client = OpenRouterClient()
     return _client
 
 
-def set_ai_client(client: GeminiClient | None) -> None:
+def set_ai_client(client: OpenRouterClient | None) -> None:
     global _client
     _client = client

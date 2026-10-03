@@ -12,6 +12,7 @@ import '../../core/widgets/feedback.dart';
 import '../../data/models/diabetes_risk.dart';
 import '../../data/models/user.dart';
 import '../authentication/auth_controller.dart';
+import '../lifestyle/trend_card.dart';
 import '../notifications/notifications.dart';
 import 'diabetes_providers.dart';
 import '../patient/patient_sync.dart';
@@ -117,6 +118,9 @@ class _DiabetesViewState extends ConsumerState<DiabetesView> {
         StaleBanner(reasons: s.staleReasons, offline: s.offline, onRefresh: canRefresh && !_refreshing ? _refresh : null),
       ],
       if (latest?.warning != null) ...[const SizedBox(height: AppSpacing.md), RiskWarningNote(latest!.warning!)],
+      const SizedBox(height: AppSpacing.section),
+      const SectionHeader('HbA1c Trend', subtitle: 'From confirmed values on your uploaded reports.'),
+      TrendCard(patientId: widget.patientId, metric: 'hba1c', title: 'HbA1c', ranges: TrendCard.clinicalRanges, initialRange: '1y'),
       const SizedBox(height: AppSpacing.section),
       if (latest != null) ...[
         const SectionHeader('Data used for this assessment', subtitle: 'Only information SUSTHITI already had. Nothing was guessed or filled in.'),

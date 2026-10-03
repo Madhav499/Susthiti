@@ -22,6 +22,7 @@ from ..models import (
     DiabetesAssessment,
     DiabetesRiskAssessment,
     Doctor,
+    FollowUp,
     GlucoseReading,
     Notification,
     Patient,
@@ -29,6 +30,7 @@ from ..models import (
     Report,
     SideEffect,
     SideEffectEvent,
+    Surgery,
     Visit,
     WearableConnection,
 )
@@ -36,6 +38,7 @@ from ..schemas import (
     access_out,
     appointment_out,
     doctor_out,
+    follow_up_out,
     iso,
     notification_out,
     patient_out,
@@ -43,6 +46,7 @@ from ..schemas import (
     report_out,
     side_effect_out,
     summary_out,
+    surgery_out,
     visit_out,
     wearable_out,
 )
@@ -125,7 +129,9 @@ def doctor_profile(doctor_id: str, current: CurrentUser = Depends(require_admin)
             "visits_this_month": count(select(Visit.id).where(Visit.doctor_id == doctor.id, Visit.created_at >= since)),
             "upcoming_appointments": count(select(AppointmentRecommendation.id).where(AppointmentRecommendation.doctor_id == doctor.id, AppointmentRecommendation.recommended_for >= now)),
             "upcoming_follow_ups": count(select(Visit.id).where(Visit.doctor_id == doctor.id, Visit.follow_up_date >= today))
-            + count(select(Prescription.id).where(Prescription.doctor_id == doctor.id, Prescription.follow_up_date >= today)),
+            + count(select(Prescription.id).where(Prescription.doctor_id == doctor.id, Prescription.follow_up_date >= today))
+            + count(select(FollowUp.id).where(FollowUp.doctor_id == doctor.id, FollowUp.status == "scheduled", FollowUp.due_date >= today)),
+            "upcoming_surgeries": count(select(Surgery.id).where(Surgery.doctor_id == doctor.id, Surgery.status == "scheduled", Surgery.scheduled_at >= now)),
             "side_effects_pending": count(select(SideEffect.id).where(SideEffect.patient_id.in_(patient_ids), SideEffect.status.in_(OPEN_SIDE_EFFECT_STATUSES))) if patient_ids else 0,
             "side_effects_resolved": count(select(SideEffect.id).where(SideEffect.patient_id.in_(patient_ids), SideEffect.status == "resolved")) if patient_ids else 0,
             "side_effects_responded": count(select(SideEffectEvent.side_effect_id).where(SideEffectEvent.actor_user_id == doctor.user_id).distinct()),
@@ -198,28 +204,36 @@ def doctor_prescriptions(doctor_id: str, limit: int = Query(50, ge=1, le=200), o
 
 @router.get("/doctors/{doctor_id}/appointments")
 def doctor_appointments(doctor_id: str, current: CurrentUser = Depends(require_admin), db: Session = Depends(get_db)):
-    """Appointment recommendations the doctor made, upcoming follow-ups from their visits and
-    prescriptions, and their recent visits. Only stored dates; nothing is scheduled here."""
+    """Appointment recommendations the doctor made; upcoming follow-ups from their visits and
+    prescriptions (informational dates only) plus their actual follow-up tasks (tracked to
+    completion); their scheduled surgeries; and their recent visits."""
     doctor = _doctor(db, doctor_id)
-    today = datetime.now(timezone.utc).date()
+    now = datetime.now(timezone.utc)
+    today = now.date()
     recs = list(db.scalars(select(AppointmentRecommendation).where(AppointmentRecommendation.doctor_id == doctor.id).order_by(AppointmentRecommendation.created_at.desc()).limit(50)))
     visits = list(db.scalars(select(Visit).where(Visit.doctor_id == doctor.id).order_by(Visit.visit_date.desc()).limit(30)))
     due_visits = list(db.scalars(select(Visit).where(Visit.doctor_id == doctor.id, Visit.follow_up_date >= today)))
     due_rx = list(db.scalars(select(Prescription).where(Prescription.doctor_id == doctor.id, Prescription.follow_up_date >= today)))
-    patients = _patients_by_id(db, {r.patient_id for r in recs} | {v.patient_id for v in visits + due_visits} | {p.patient_id for p in due_rx})
+    due_fu = list(db.scalars(select(FollowUp).where(FollowUp.doctor_id == doctor.id, FollowUp.status == "scheduled", FollowUp.due_date >= today)))
+    surgeries = list(db.scalars(select(Surgery).where(Surgery.doctor_id == doctor.id).order_by(Surgery.scheduled_at.desc()).limit(30)))
+    patients = _patients_by_id(db, {r.patient_id for r in recs} | {v.patient_id for v in visits + due_visits} | {p.patient_id for p in due_rx}
+                               | {f.patient_id for f in due_fu} | {s.patient_id for s in surgeries})
 
     def brief(pid: str):
         return patient_brief(patients[pid]) if pid in patients else None
 
     follow_ups = [
-        {"date": iso(v.follow_up_date), "source": "visit", "record_id": v.id, "code": v.visit_code, "reason": v.reason, "patient": brief(v.patient_id)} for v in due_visits
+        {"date": iso(v.follow_up_date), "source": "visit", "record_id": v.id, "code": v.visit_code, "reason": v.reason, "status": None, "patient": brief(v.patient_id)} for v in due_visits
     ] + [
-        {"date": iso(p.follow_up_date), "source": "prescription", "record_id": p.id, "code": p.prescription_code, "reason": None, "patient": brief(p.patient_id)} for p in due_rx
+        {"date": iso(p.follow_up_date), "source": "prescription", "record_id": p.id, "code": p.prescription_code, "reason": None, "status": None, "patient": brief(p.patient_id)} for p in due_rx
+    ] + [
+        {"date": iso(f.due_date), "source": "follow_up_task", "record_id": f.id, "code": None, "reason": f.purpose, "status": f.status, "patient": brief(f.patient_id)} for f in due_fu
     ]
     follow_ups.sort(key=lambda f: f["date"])
     return {
         "recommendations": [{**appointment_out(r), "patient": brief(r.patient_id)} for r in recs],
         "follow_ups": follow_ups,
+        "surgeries": [{**surgery_out(s, include_internal=True), "patient": brief(s.patient_id)} for s in surgeries],
         "visits": [
             {"id": v.id, "visit_code": v.visit_code, "visit_date": iso(v.visit_date), "reason": v.reason, "follow_up_date": iso(v.follow_up_date), "patient": brief(v.patient_id)}
             for v in visits

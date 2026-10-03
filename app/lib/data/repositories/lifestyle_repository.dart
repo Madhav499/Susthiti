@@ -1,5 +1,6 @@
 
 import '../../core/services/api_client.dart';
+import '../../core/utils/formatters.dart';
 import '../models/tracking.dart';
 
 abstract interface class LifestyleRepository {
@@ -15,8 +16,14 @@ class ApiLifestyleRepository implements LifestyleRepository {
   Future<LifestyleOverview> overview(String patientId) async => LifestyleOverview.fromJson(await _api.get('/patients/$patientId/lifestyle/overview'));
 
   @override
-  Future<void> addManual(String patientId, {required LifestyleMetricType metric, required double value, double? value2, required DateTime recordedAt}) =>
-      _api.post('/patients/$patientId/lifestyle', body: {'metric_type': metric.apiValue, 'value': value, 'value2': value2, 'recorded_at': recordedAt.toUtc().toIso8601String()});
+  Future<void> addManual(String patientId, {required LifestyleMetricType metric, required double value, double? value2, required DateTime recordedAt}) => _api.post(
+        '/patients/$patientId/lifestyle',
+        body: {
+          'metric_type': metric.apiValue, 'value': value, 'value2': value2,
+          'recorded_at': recordedAt.toUtc().toIso8601String(),
+          'local_date': Fmt.isoDate(DateTime(recordedAt.year, recordedAt.month, recordedAt.day)),
+        },
+      );
 }
 
 abstract interface class WearableRepository {

@@ -2,10 +2,16 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
+import 'brand.dart';
 
 /// Standard page: calm app bar + content. Root tabs pass [large] for a bigger title.
+///
+/// [brand] shows the compact SUSTHITI mark as the app bar's leading widget — reserved for the
+/// three root dashboards (patient/doctor/admin) so the product identity survives past the splash
+/// screen on phones, where [RoleShell] has no header of its own. Not used on other screens: a
+/// mark on every detail/form screen would be the "overcrowded" branding this is meant to avoid.
 class AppPage extends StatelessWidget {
-  const AppPage({super.key, required this.title, required this.body, this.actions, this.floatingActionButton, this.large = false, this.bottom, this.subtitle});
+  const AppPage({super.key, required this.title, required this.body, this.actions, this.floatingActionButton, this.large = false, this.bottom, this.subtitle, this.brand = false});
 
   final String title;
 
@@ -16,12 +22,16 @@ class AppPage extends StatelessWidget {
   final Widget? floatingActionButton;
   final bool large;
   final PreferredSizeWidget? bottom;
+  final bool brand;
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     return Scaffold(
       appBar: AppBar(
+        leadingWidth: brand ? 48 : null,
+        leading: brand ? const Center(child: BrandIcon(size: 26)) : null,
+        automaticallyImplyLeading: !brand,
         title: subtitle == null
             ? Text(title, style: large ? t.headlineSmall : t.titleMedium)
             : Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [

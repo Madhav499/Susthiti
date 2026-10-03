@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- SUSTHITI brand primary (matches AppColors.primary in Dart): tints the white
+         notification-icon silhouette in the Android status bar and notification tray. -->
+    <color name="notification_color">#2F80D8</color>
+</resources>

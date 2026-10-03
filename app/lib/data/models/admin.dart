@@ -188,22 +188,28 @@ class PrescriptionWithPatient {
 }
 
 class FollowUp {
-  const FollowUp({required this.date, required this.source, required this.recordId, required this.code, this.reason, this.patient});
+  const FollowUp({required this.date, required this.source, required this.recordId, this.code, this.reason, this.status, this.patient});
   final DateTime date;
 
-  /// visit | prescription
+  /// visit | prescription | follow_up_task
   final String source;
   final String recordId;
-  final String code;
+
+  /// The visit/prescription's human-readable code. Null for a follow_up_task, which has none.
+  final String? code;
   final String? reason;
+
+  /// Only a follow_up_task carries a status (scheduled/completed/cancelled); null otherwise.
+  final String? status;
   final PatientRef? patient;
 
   factory FollowUp.fromJson(Map<String, dynamic> j) => FollowUp(
         date: parseDate(j['date'])!,
         source: j['source'] as String,
         recordId: j['record_id'] as String,
-        code: j['code'] as String,
+        code: j['code'] as String?,
         reason: j['reason'] as String?,
+        status: j['status'] as String?,
         patient: PatientRef.maybe(j['patient']),
       );
 }
@@ -233,11 +239,18 @@ class AppointmentWithPatient {
   final PatientRef? patient;
 }
 
+class SurgeryWithPatient {
+  const SurgeryWithPatient({required this.surgery, this.patient});
+  final Surgery surgery;
+  final PatientRef? patient;
+}
+
 class DoctorAppointments {
-  const DoctorAppointments({required this.recommendations, required this.followUps, required this.visits});
+  const DoctorAppointments({required this.recommendations, required this.followUps, required this.visits, this.surgeries = const []});
   final List<AppointmentWithPatient> recommendations;
   final List<FollowUp> followUps;
   final List<VisitBrief> visits;
+  final List<SurgeryWithPatient> surgeries;
 
   factory DoctorAppointments.fromJson(Map<String, dynamic> j) => DoctorAppointments(
         recommendations: [
@@ -245,6 +258,7 @@ class DoctorAppointments {
         ],
         followUps: [for (final f in j['follow_ups'] as List) FollowUp.fromJson(f as _Json)],
         visits: [for (final v in j['visits'] as List) VisitBrief.fromJson(v as _Json)],
+        surgeries: [for (final s in j['surgeries'] as List? ?? const []) SurgeryWithPatient(surgery: Surgery.fromJson(s as _Json), patient: PatientRef.maybe(s['patient']))],
       );
 }
 

@@ -117,6 +117,19 @@ class SideEffect {
       );
 }
 
+/// No status is recorded for an appointment recommendation yet — this is derived purely from
+/// [AppointmentRecommendation.recommendedFor] against the current time, never fabricated.
+enum AppointmentTiming {
+  /// A date and time has been set and it is still ahead.
+  upcoming,
+  /// No date has been set yet; the patient needs to contact the clinic to schedule one.
+  unscheduled,
+  /// The recommended date and time has passed.
+  past;
+
+  String get label => switch (this) { upcoming => 'Upcoming', unscheduled => 'Needs scheduling', past => 'Past' };
+}
+
 class AppointmentRecommendation {
   const AppointmentRecommendation({required this.id, required this.doctorName, required this.reason, required this.createdAt, this.recommendedFor, this.sideEffectId, this.doctorId, this.patientId});
   final String id;
@@ -128,6 +141,12 @@ class AppointmentRecommendation {
   final DateTime? recommendedFor;
   final String? sideEffectId;
 
+  AppointmentTiming get timing {
+    final at = recommendedFor;
+    if (at == null) return AppointmentTiming.unscheduled;
+    return at.isAfter(DateTime.now()) ? AppointmentTiming.upcoming : AppointmentTiming.past;
+  }
+
   factory AppointmentRecommendation.fromJson(Map<String, dynamic> j) => AppointmentRecommendation(
         id: j['id'] as String,
         doctorName: j['doctor_name'] as String,
@@ -137,6 +156,119 @@ class AppointmentRecommendation {
         sideEffectId: j['side_effect_id'] as String?,
         doctorId: j['doctor_id'] as String?,
         patientId: j['patient_id'] as String?,
+      );
+}
+
+/// Unlike [Visit.followUpDate] / [Prescription.followUpDate] (informational notes on an
+/// append-only clinical record), a FollowUpTask is a doctor's task that is tracked to completion.
+enum FollowUpStatus {
+  scheduled('scheduled', 'Scheduled'),
+  completed('completed', 'Completed'),
+  cancelled('cancelled', 'Cancelled');
+
+  const FollowUpStatus(this.apiValue, this.label);
+  final String apiValue;
+  final String label;
+  static FollowUpStatus parse(String v) => values.firstWhere((s) => s.apiValue == v);
+
+  StatusTone get tone => switch (this) {
+        scheduled => StatusTone.info,
+        completed => StatusTone.positive,
+        cancelled => StatusTone.inactive,
+      };
+}
+
+class FollowUpTask {
+  const FollowUpTask({
+    required this.id,
+    required this.patientId,
+    required this.doctorId,
+    required this.doctorName,
+    required this.purpose,
+    required this.dueDate,
+    required this.status,
+    required this.createdAt,
+    required this.updatedAt,
+    this.notes,
+  });
+
+  final String id;
+  final String patientId;
+  final String doctorId;
+  final String doctorName;
+  final String purpose;
+  final DateTime dueDate;
+  final FollowUpStatus status;
+  final String? notes;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  bool get isOverdue => status == FollowUpStatus.scheduled && dueDate.isBefore(DateTime.now());
+
+  factory FollowUpTask.fromJson(Map<String, dynamic> j) => FollowUpTask(
+        id: j['id'] as String,
+        patientId: j['patient_id'] as String,
+        doctorId: j['doctor_id'] as String,
+        doctorName: j['doctor_name'] as String,
+        purpose: j['purpose'] as String,
+        dueDate: parseDate(j['due_date'])!,
+        status: FollowUpStatus.parse(j['status'] as String),
+        notes: j['notes'] as String?,
+        createdAt: parseDate(j['created_at'])!,
+        updatedAt: parseDate(j['updated_at'])!,
+      );
+}
+
+/// [internalNotes] is only ever present when the backend decided to include it (doctor or
+/// admin); for a patient's own request it is always null, because the field is absent from
+/// the JSON entirely -- never hidden only in this UI layer.
+class Surgery {
+  const Surgery({
+    required this.id,
+    required this.patientId,
+    required this.doctorId,
+    required this.doctorName,
+    required this.name,
+    required this.purpose,
+    required this.status,
+    required this.createdAt,
+    required this.updatedAt,
+    this.scheduledAt,
+    this.hospital,
+    this.patientInstructions,
+    this.internalNotes,
+  });
+
+  final String id;
+  final String patientId;
+  final String doctorId;
+  final String doctorName;
+  final String name;
+  final String purpose;
+  final DateTime? scheduledAt;
+  final String? hospital;
+  final FollowUpStatus status;
+  final String? patientInstructions;
+  final String? internalNotes;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  bool get isOverdue => status == FollowUpStatus.scheduled && scheduledAt != null && scheduledAt!.isBefore(DateTime.now());
+
+  factory Surgery.fromJson(Map<String, dynamic> j) => Surgery(
+        id: j['id'] as String,
+        patientId: j['patient_id'] as String,
+        doctorId: j['doctor_id'] as String,
+        doctorName: j['doctor_name'] as String,
+        name: j['name'] as String,
+        purpose: j['purpose'] as String,
+        scheduledAt: parseDate(j['scheduled_at']),
+        hospital: j['hospital'] as String?,
+        status: FollowUpStatus.parse(j['status'] as String),
+        patientInstructions: j['patient_instructions'] as String?,
+        internalNotes: j['internal_notes'] as String?,
+        createdAt: parseDate(j['created_at'])!,
+        updatedAt: parseDate(j['updated_at'])!,
       );
 }
 

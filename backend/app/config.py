@@ -22,12 +22,18 @@ class Settings(BaseSettings):
     ml_service_url: str = "http://127.0.0.1:8001"
     ml_service_timeout_seconds: float = 15
 
-    gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.5-flash"
-    gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta"
+    # The AI gateway for all summary/interpretation features (report, patient, lifestyle):
+    # a trusted server-side call to OpenRouter. The key never leaves the backend.
+    openrouter_api_key: str = ""
+    openrouter_model: str = "google/gemma-4-31b-it:free"
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
     ai_timeout_seconds: float = 90
     # Read HbA1c / glucose from scanned reports and photos with the AI service after upload.
     ai_read_report_values: bool = True
+
+    # Path to a Firebase service-account JSON key. Push notifications are a no-op (logged once)
+    # until this is set -- the app never holds this key; only the backend sends pushes.
+    fcm_service_account_json: str = ""
 
     enable_demo_wearable: bool = True
     # Throttles sign-in, registration and password reset per client. Required in production.
@@ -48,7 +54,11 @@ class Settings(BaseSettings):
 
     @property
     def ai_configured(self) -> bool:
-        return bool(self.gemini_api_key)
+        return bool(self.openrouter_api_key)
+
+    @property
+    def fcm_configured(self) -> bool:
+        return bool(self.fcm_service_account_json)
 
 
 @lru_cache

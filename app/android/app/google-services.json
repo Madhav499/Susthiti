@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "998208452283",
+    "project_id": "suthiti-a6423",
+    "storage_bucket": "suthiti-a6423.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:998208452283:android:65f52febfd89bc0b451b9e",
+        "android_client_info": {
+          "package_name": "com.susthiti.susthiti"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUtOsO0KUzzZW-A3yVjKLXJMftZy537ns"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:998208452283:android:0ba6781205f93614451b9e",
+        "android_client_info": {
+          "package_name": "com.suthiti.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUtOsO0KUzzZW-A3yVjKLXJMftZy537ns"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

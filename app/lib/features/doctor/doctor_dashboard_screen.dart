@@ -24,6 +24,7 @@ class DoctorDashboardScreen extends ConsumerWidget {
     return AppPage(
       title: 'Dashboard',
       large: true,
+      brand: true,
       actions: const [NotificationBell()],
       body: PageBody(
         onRefresh: () async => ref.invalidate(doctorDashboardProvider),
@@ -49,11 +50,12 @@ class _Body extends StatelessWidget {
     final wide = MediaQuery.sizeOf(context).width >= Breakpoints.desktop;
     int m(String k) => d.metrics[k] ?? 0;
 
-    final metrics = ResponsiveGrid(minItemWidth: 170, maxColumns: 5, children: [
+    final metrics = ResponsiveGrid(minItemWidth: 170, maxColumns: 6, children: [
       MetricTile(icon: Icons.people_outline, label: 'Patients', value: '${m('patients')}', caption: 'with approved access', onTap: () => context.go('/d/patients')),
       MetricTile(icon: Icons.hourglass_empty, label: 'Pending requests', value: '${m('pending_requests')}', caption: 'awaiting patient approval', onTap: () => context.go('/d/requests')),
       MetricTile(icon: Icons.healing_outlined, label: 'Open side effects', value: '${m('open_side_effects')}', caption: 'not yet resolved', onTap: () => context.go('/d/patients?filter=side_effects')),
       MetricTile(icon: Icons.event_outlined, label: 'Follow-ups', value: '${m('follow_ups_7d')}', caption: 'in the next 7 days', onTap: () => context.go('/d/patients?filter=follow_up')),
+      MetricTile(icon: Icons.event_available_outlined, label: 'Appointments', value: '${m('upcoming_appointments_7d')}', caption: 'in the next 7 days'),
       MetricTile(icon: Icons.description_outlined, label: 'New reports', value: '${m('recent_reports_7d')}', caption: 'in the last 7 days'),
     ]);
 
@@ -112,7 +114,10 @@ class _Body extends StatelessWidget {
     const gap = SizedBox(height: AppSpacing.section);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Text('${Fmt.greeting()}, Dr. ${Fmt.firstName(d.doctorName)}', style: t.headlineSmall),
+      if (d.today.isNotEmpty) Text(_todaySummary(d.today), style: t.bodyMedium?.copyWith(color: AppColors.textSecondary)),
       const SizedBox(height: AppSpacing.lg),
+      _TodaySchedule(items: d.today),
+      gap,
       metrics,
       gap,
       if (wide)
@@ -123,6 +128,97 @@ class _Body extends StatelessWidget {
         ])
       else ...[attention, gap, actions, gap, activity],
       const Disclaimer(),
+    ]);
+  }
+
+  /// "Today you have 2 appointments, 1 follow-up and 1 surgery." Built only from real items —
+  /// never a fabricated count. Only called when [items] is non-empty; the empty case is its
+  /// own "Your schedule is clear today." card below, not repeated here.
+  String _todaySummary(List<ScheduleItem> items) {
+    int count(ScheduleItemType t) => items.where((i) => i.type == t).length;
+    final parts = [
+      for (final (type, singular, plural) in [
+        (ScheduleItemType.appointment, 'appointment', 'appointments'),
+        (ScheduleItemType.followUp, 'follow-up', 'follow-ups'),
+        (ScheduleItemType.surgery, 'surgery', 'surgeries'),
+      ])
+        if (count(type) > 0) '${count(type)} ${count(type) == 1 ? singular : plural}',
+    ];
+    final joined = parts.length == 1 ? parts.first : '${parts.sublist(0, parts.length - 1).join(', ')} and ${parts.last}';
+    return 'Today you have $joined.';
+  }
+}
+
+/// Today's appointments, follow-ups and surgeries, earliest first, with a type filter.
+/// "My Day" — PART 28: a doctor should be able to see and open today's schedule directly.
+class _TodaySchedule extends StatefulWidget {
+  const _TodaySchedule({required this.items});
+  final List<ScheduleItem> items;
+
+  @override
+  State<_TodaySchedule> createState() => _TodayScheduleState();
+}
+
+class _TodayScheduleState extends State<_TodaySchedule> {
+  ScheduleItemType? _filter;
+
+  static String _typeLabel(ScheduleItemType t) => switch (t) {
+        ScheduleItemType.appointment => 'Appointment',
+        ScheduleItemType.followUp => 'Follow-up',
+        ScheduleItemType.surgery => 'Surgery',
+      };
+
+  static IconData _typeIcon(ScheduleItemType t) => switch (t) {
+        ScheduleItemType.appointment => Icons.event_available_outlined,
+        ScheduleItemType.followUp => Icons.event_repeat_outlined,
+        ScheduleItemType.surgery => Icons.local_hospital_outlined,
+      };
+
+  /// appointment -> patient overview (no dedicated doctor appointment screen exists); follow-up
+  /// and surgery -> their tab on the patient's detail page.
+  static String _route(ScheduleItem i) => switch (i.type) {
+        ScheduleItemType.appointment => '/d/patients/${i.patientId}',
+        ScheduleItemType.followUp => '/d/patients/${i.patientId}?tab=7',
+        ScheduleItemType.surgery => '/d/patients/${i.patientId}?tab=8',
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    final items = widget.items;
+    final shown = _filter == null ? items : items.where((i) => i.type == _filter).toList();
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      const SectionHeader('Today'),
+      if (items.isNotEmpty) ...[
+        Wrap(spacing: AppSpacing.sm, children: [
+          ChoiceChip(label: const Text('All'), selected: _filter == null, onSelected: (_) => setState(() => _filter = null)),
+          for (final type in ScheduleItemType.values)
+            ChoiceChip(label: Text(_typeLabel(type)), selected: _filter == type, onSelected: (_) => setState(() => _filter = type)),
+        ]),
+        const SizedBox(height: AppSpacing.md),
+      ],
+      if (items.isEmpty)
+        const AppCard(child: EmptyState(icon: Icons.event_available_outlined, title: 'Your schedule is clear today.', compact: true))
+      else
+        for (final i in shown) ...[
+          AppCard(
+            onTap: () => context.push(_route(i)),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              IconBadge(_typeIcon(i.type)),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(i.title, style: t.titleSmall),
+                  const SizedBox(height: 2),
+                  Text([i.patientName, i.patientCode].whereType<String>().join(' · '), style: t.bodySmall),
+                ]),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(i.at == null ? 'Today' : Fmt.time(i.at), style: t.labelLarge?.copyWith(color: AppColors.primaryDeep, fontWeight: FontWeight.w600)),
+            ]),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
     ]);
   }
 }

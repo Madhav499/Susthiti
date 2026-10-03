@@ -1,4 +1,6 @@
-"""Minimal Google AI Studio (Gemini) client. The API key lives only in backend config."""
+"""OpenRouter client (OpenAI-compatible chat completions). The API key lives only in backend
+config and is never shipped to Flutter -- see config.py's openrouter_api_key.
+"""
 
 import base64
 import json
@@ -15,9 +17,10 @@ from ...config import get_settings
 log = logging.getLogger("susthiti.ai")
 
 # Transient upstream failures get a bounded retry with exponential backoff, honoring
-# Retry-After when Gemini sends one. Never unbounded: the whole attempt (all retries plus
-# sleeps) stays within AI_TIMEOUT_SECONDS, and a non-retryable status fails immediately.
-_RETRYABLE_STATUSES = {429, 500, 502, 503, 504}
+# Retry-After when OpenRouter sends one (429, and some 503/402 responses -- see OpenRouter's
+# error docs). Never unbounded: the whole attempt (all retries plus sleeps) stays within
+# AI_TIMEOUT_SECONDS, and a non-retryable status fails immediately.
+_RETRYABLE_STATUSES = {408, 429, 500, 502, 503, 504}
 _MAX_ATTEMPTS = 3
 _BASE_BACKOFF_SECONDS = 1.0
 
@@ -35,6 +38,7 @@ def _retry_after_seconds(response: httpx.Response) -> float | None:
     except ValueError:
         return None
 
+
 DISCLAIMER = (
     "AI-generated informational summary. This does not replace professional medical judgment."
 )
@@ -48,25 +52,28 @@ class Part:
 
     def to_json(self) -> dict:
         if self.data is not None:
-            return {"inlineData": {"mimeType": self.mime_type, "data": base64.b64encode(self.data).decode()}}
-        return {"text": self.text or ""}
+            uri = f"data:{self.mime_type};base64,{base64.b64encode(self.data).decode()}"
+            if self.mime_type == "application/pdf":
+                return {"type": "file", "file": {"filename": "report.pdf", "file_data": uri}}
+            return {"type": "image_url", "image_url": {"url": uri}}
+        return {"type": "text", "text": self.text or ""}
 
 
 @dataclass
 class AIResult:
     content: dict
-    provider: str = "google-ai-studio"
+    provider: str = "openrouter"
     model: str = ""
     prompt_version: str = ""
     extra: dict = field(default_factory=dict)
 
 
-class GeminiClient:
+class OpenRouterClient:
     def __init__(self, api_key: str | None = None, model: str | None = None, transport: httpx.BaseTransport | None = None):
         settings = get_settings()
-        self.api_key = settings.gemini_api_key if api_key is None else api_key
-        self.model = model or settings.gemini_model
-        self.base_url = settings.gemini_base_url.rstrip("/")
+        self.api_key = settings.openrouter_api_key if api_key is None else api_key
+        self.model = model or settings.openrouter_model
+        self.base_url = settings.openrouter_base_url.rstrip("/")
         self.timeout = settings.ai_timeout_seconds
         self.transport = transport
 
@@ -80,11 +87,15 @@ class GeminiClient:
                 "AI features are not configured on the server yet.", code="ai_not_configured"
             )
         body = {
-            "systemInstruction": {"parts": [{"text": system_instruction}]},
-            "contents": [{"role": "user", "parts": [p.to_json() for p in parts]}],
-            "generationConfig": {"responseMimeType": "application/json", "temperature": 0.2},
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": [p.to_json() for p in parts]},
+            ],
+            "response_format": {"type": "json_object"},
+            "temperature": 0.2,
         }
-        url = f"{self.base_url}/models/{self.model}:generateContent"
+        url = f"{self.base_url}/chat/completions"
         deadline = time.monotonic() + self.timeout
         last_error: errors.ApiError = errors.ai_unavailable()
         for attempt in range(1, _MAX_ATTEMPTS + 1):
@@ -93,7 +104,7 @@ class GeminiClient:
                 break
             try:
                 with httpx.Client(timeout=remaining, transport=self.transport) as client:
-                    response = client.post(url, json=body, headers={"x-goog-api-key": self.api_key})
+                    response = client.post(url, json=body, headers={"Authorization": f"Bearer {self.api_key}"})
             except httpx.TimeoutException:
                 log.warning("ai request timeout model=%s attempt=%s", self.model, attempt)
                 last_error = errors.ai_unavailable("The AI service took too long to respond.", code="ai_timeout")
@@ -109,6 +120,10 @@ class GeminiClient:
             log.info("ai request model=%s status=%s attempt=%s", self.model, response.status_code, attempt)
             if response.status_code == 200:
                 return AIResult(content=parse_json_output(response.json(), schema), model=self.model, prompt_version=prompt_version)
+            if response.status_code == 401:
+                log.warning("OpenRouter rejected the API key (401) -- check OPENROUTER_API_KEY")
+            elif response.status_code == 402:
+                log.warning("OpenRouter account/key has insufficient credits (402)")
             last_error = errors.ai_unavailable()
             if response.status_code not in _RETRYABLE_STATUSES:
                 break
@@ -123,9 +138,7 @@ class GeminiClient:
 def parse_json_output(payload: dict, schema: type[BaseModel]) -> dict:
     """Extracts and validates the model's JSON text. Raises a retryable error when it can't."""
     try:
-        candidate = payload["candidates"][0]
-        text = "".join(p.get("text", "") for p in candidate["content"]["parts"])
-        text = text.strip()
+        text = payload["choices"][0]["message"]["content"].strip()
         if text.startswith("```"):
             text = text.strip("`")
             text = text[text.find("{"):]

@@ -1,4 +1,5 @@
 import '../../core/utils/formatters.dart';
+import 'care.dart';
 import 'diabetes_risk.dart';
 import 'report.dart';
 import 'tracking.dart';
@@ -59,6 +60,9 @@ class PatientDashboard {
     this.riskStaleReasons = const [],
     this.insightHeadline,
     this.insightGeneratedAt,
+    this.nextAppointment,
+    this.nextFollowUp,
+    this.nextSurgery,
   });
 
   final String patientName;
@@ -75,6 +79,17 @@ class PatientDashboard {
   final List<MedicalReport> recentReports;
   final String? insightHeadline;
   final DateTime? insightGeneratedAt;
+
+  /// The soonest upcoming appointment recommendation, or the most recent one still waiting to
+  /// be scheduled. Null when there is nothing to show.
+  final AppointmentRecommendation? nextAppointment;
+
+  /// The soonest follow-up still scheduled (never a completed or cancelled one).
+  final FollowUpTask? nextFollowUp;
+
+  /// The soonest surgery still scheduled. Never carries internal_notes, even for a doctor
+  /// viewing this dashboard endpoint -- that field is only ever returned by the surgeries list.
+  final Surgery? nextSurgery;
 
   factory PatientDashboard.fromJson(Map<String, dynamic> j) {
     final risk = j['diabetes_risk'] as Map<String, dynamic>?;
@@ -94,6 +109,9 @@ class PatientDashboard {
       recentReports: [for (final r in j['recent_reports'] as List) MedicalReport.fromJson(r as Map<String, dynamic>)],
       insightHeadline: insight?['headline'] as String?,
       insightGeneratedAt: parseDate(insight?['generated_at']),
+      nextAppointment: j['next_appointment'] == null ? null : AppointmentRecommendation.fromJson(j['next_appointment'] as Map<String, dynamic>),
+      nextFollowUp: j['next_follow_up'] == null ? null : FollowUpTask.fromJson(j['next_follow_up'] as Map<String, dynamic>),
+      nextSurgery: j['next_surgery'] == null ? null : Surgery.fromJson(j['next_surgery'] as Map<String, dynamic>),
     );
   }
 }
@@ -146,18 +164,56 @@ class ActivityItem {
       );
 }
 
+enum ScheduleItemType {
+  appointment('appointment'),
+  followUp('follow_up'),
+  surgery('surgery');
+
+  const ScheduleItemType(this.apiValue);
+  final String apiValue;
+  static ScheduleItemType parse(String v) => values.firstWhere((t) => t.apiValue == v);
+}
+
+/// One entry on a doctor's "My Day": a real appointment, follow-up or surgery for today, never
+/// a fabricated task. [at] is null for a follow-up, which has no time of its own -- shown as
+/// "Today", not given a made-up time.
+class ScheduleItem {
+  const ScheduleItem({required this.type, required this.id, required this.title, required this.patientId, this.at, this.patientName, this.patientCode});
+  final ScheduleItemType type;
+  final String id;
+  final DateTime? at;
+  final String title;
+  final String patientId;
+  final String? patientName;
+  final String? patientCode;
+
+  factory ScheduleItem.fromJson(Map<String, dynamic> j) => ScheduleItem(
+        type: ScheduleItemType.parse(j['type'] as String),
+        id: j['id'] as String,
+        at: parseDate(j['at']),
+        title: j['title'] as String,
+        patientId: j['patient_id'] as String,
+        patientName: j['patient_name'] as String?,
+        patientCode: j['patient_code'] as String?,
+      );
+}
+
 class DoctorDashboard {
-  const DoctorDashboard({required this.doctorName, required this.metrics, required this.needsAttention, required this.recentActivity});
+  const DoctorDashboard({required this.doctorName, required this.metrics, required this.needsAttention, required this.recentActivity, this.today = const []});
   final String doctorName;
   final Map<String, int> metrics;
   final List<AttentionItem> needsAttention;
   final List<ActivityItem> recentActivity;
+
+  /// Today's appointments, follow-ups and surgeries, earliest first.
+  final List<ScheduleItem> today;
 
   factory DoctorDashboard.fromJson(Map<String, dynamic> j) => DoctorDashboard(
         doctorName: (j['doctor'] as Map<String, dynamic>)['name'] as String,
         metrics: {for (final e in (j['metrics'] as Map<String, dynamic>).entries) e.key: e.value as int},
         needsAttention: [for (final a in j['needs_attention'] as List) AttentionItem.fromJson(a as Map<String, dynamic>)],
         recentActivity: [for (final a in j['recent_activity'] as List) ActivityItem.fromJson(a as Map<String, dynamic>)],
+        today: [for (final i in j['today'] as List? ?? const []) ScheduleItem.fromJson(i as Map<String, dynamic>)],
       );
 }
 
@@ -247,6 +303,27 @@ class AuditEntry {
         entityType: j['entity_type'] as String?,
         entityLabel: j['entity_label'] as String?,
         details: Map<String, dynamic>.from(j['details'] as Map? ?? const {}),
+      );
+}
+
+/// Delivery status only, for admin monitoring -- the backend never sends a notification's
+/// title or body here, since that's free text that can name a patient or carry clinical detail.
+class NotificationDeliveryEntry {
+  const NotificationDeliveryEntry({required this.id, required this.type, required this.createdAt, this.recipientRole, this.pushStatus});
+  final String id;
+  final String type;
+  final String? recipientRole;
+
+  /// "sent", "failed", or null (nothing attempted: FCM unconfigured, or no registered device).
+  final String? pushStatus;
+  final DateTime createdAt;
+
+  factory NotificationDeliveryEntry.fromJson(Map<String, dynamic> j) => NotificationDeliveryEntry(
+        id: j['id'] as String,
+        type: j['type'] as String,
+        recipientRole: j['recipient_role'] as String?,
+        pushStatus: j['push_status'] as String?,
+        createdAt: parseDate(j['created_at'])!,
       );
 }
 

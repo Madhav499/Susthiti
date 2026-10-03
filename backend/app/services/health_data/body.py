@@ -42,10 +42,18 @@ def is_birthday(dob: date | None, today: date) -> bool:
     return (dob.month, dob.day) == (2, 29) and not leap and (today.month, today.day) == (2, 28)
 
 
-def local_today() -> date:
-    """Today's date where SUSTHITI's patients are (LOCAL_TIMEZONE, default India)."""
+def to_local_date(dt: datetime) -> date:
+    """The calendar date in LOCAL_TIMEZONE (default India) for an instant. Daily buckets --
+    lifestyle metrics, reminders, birthdays -- follow this date, never the UTC date, so the
+    patient's day lines up with where they actually are."""
     from zoneinfo import ZoneInfo
 
     from ...config import get_settings
 
-    return datetime.now(timezone.utc).astimezone(ZoneInfo(get_settings().local_timezone)).date()
+    aware = dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    return aware.astimezone(ZoneInfo(get_settings().local_timezone)).date()
+
+
+def local_today() -> date:
+    """Today's date where SUSTHITI's patients are (LOCAL_TIMEZONE, default India)."""
+    return to_local_date(datetime.now(timezone.utc))

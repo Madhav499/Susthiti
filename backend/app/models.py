@@ -400,6 +400,46 @@ class AppointmentRecommendation(Base, TimestampMixin):
     recommended_for: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class FollowUp(Base, TimestampMixin):
+    """A doctor-set task to see a patient again by a date, tracked to completion -- unlike
+    Visit.follow_up_date / Prescription.follow_up_date, which are informational notes on an
+    append-only clinical record and are never marked done. Scheduling state, not clinical
+    history: status and due_date are updated in place as the task progresses."""
+
+    __tablename__ = "follow_ups"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    patient_id: Mapped[str] = mapped_column(ForeignKey("patients.id"), index=True)
+    doctor_id: Mapped[str] = mapped_column(ForeignKey("doctors.id"))
+    doctor_name: Mapped[str] = mapped_column(String(200))
+    purpose: Mapped[str] = mapped_column(Text)
+    due_date: Mapped[date] = mapped_column(Date, index=True)
+    status: Mapped[str] = mapped_column(String(20), default="scheduled")  # scheduled | completed | cancelled
+    notes: Mapped[str | None] = mapped_column(Text)  # the doctor's note on completing/cancelling
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Surgery(Base, TimestampMixin):
+    """A patient's surgery record. `internal_notes` is doctor/admin only -- every other field is
+    patient-visible, since a patient needs to know what, when, where and what to do about their
+    own surgery. Scheduling state (like FollowUp), not append-only clinical history."""
+
+    __tablename__ = "surgeries"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    patient_id: Mapped[str] = mapped_column(ForeignKey("patients.id"), index=True)
+    doctor_id: Mapped[str] = mapped_column(ForeignKey("doctors.id"))
+    doctor_name: Mapped[str] = mapped_column(String(200))
+    name: Mapped[str] = mapped_column(String(200))
+    purpose: Mapped[str] = mapped_column(Text)
+    scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    hospital: Mapped[str | None] = mapped_column(String(200))
+    status: Mapped[str] = mapped_column(String(20), default="scheduled")  # scheduled | completed | cancelled
+    patient_instructions: Mapped[str | None] = mapped_column(Text)
+    internal_notes: Mapped[str | None] = mapped_column(Text)  # doctor/admin only -- never sent to the patient
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class Visit(Base, TimestampMixin):
     __tablename__ = "visits"
 
@@ -469,6 +509,10 @@ class Notification(Base, TimestampMixin):
     dedupe_key: Mapped[str | None] = mapped_column(String(120), index=True)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # System (FCM) push delivery outcome for this notification -- the in-app row above is
+    # always created regardless; this only ever describes the supplementary push attempt.
+    # null: not attempted (FCM unconfigured, or the user had no registered device).
+    push_status: Mapped[str | None] = mapped_column(String(10))  # sent | failed | null
 
 
 class NotificationPreference(Base):
@@ -479,6 +523,20 @@ class NotificationPreference(Base):
     lifestyle_reminders: Mapped[bool] = mapped_column(Boolean, default=True)
     follow_up_reminders: Mapped[bool] = mapped_column(Boolean, default=True)
     doctor_notifications: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class DeviceToken(Base, TimestampMixin):
+    """A device's current FCM registration token for push delivery. Re-registering the same
+    token (e.g. on every app launch) just refreshes `last_seen_at` in place -- this is device
+    state, not a history. Removed on logout, and automatically if FCM reports it as stale."""
+
+    __tablename__ = "device_tokens"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    token: Mapped[str] = mapped_column(String(300), unique=True, index=True)
+    platform: Mapped[str | None] = mapped_column(String(20))  # android | ios | web
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
 class AuditLog(Base):

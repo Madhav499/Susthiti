@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/services/api_client.dart';
+import '../core/services/push_notification_service.dart';
 import '../core/services/token_storage.dart';
 import 'datasources/health_platform.dart';
 import 'repositories/auth_repository.dart';
@@ -37,6 +38,8 @@ final prescriptionRepositoryProvider = Provider<PrescriptionRepository>((ref) =>
 final sideEffectRepositoryProvider = Provider<SideEffectRepository>((ref) => ApiSideEffectRepository(ref.watch(apiClientProvider)));
 final visitRepositoryProvider = Provider<VisitRepository>((ref) => ApiVisitRepository(ref.watch(apiClientProvider)));
 final notificationRepositoryProvider = Provider<NotificationRepository>((ref) => ApiNotificationRepository(ref.watch(apiClientProvider)));
+/// Lives for the whole app (wired up once in SusthitiApp); see push_notification_service.dart.
+final pushNotificationServiceProvider = Provider<PushNotificationService>((ref) => PushNotificationService(ref.watch(notificationRepositoryProvider)));
 
 final aiRepositoryProvider = Provider<AIRepository>((ref) => AIRepository(ref.watch(apiClientProvider)));
 /// The signed-in patient's own last diabetes risk status, for showing it offline.

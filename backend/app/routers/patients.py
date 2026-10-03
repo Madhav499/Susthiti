@@ -13,15 +13,19 @@ from ..models import (
     AppointmentRecommendation,
     DiabetesAssessment,
     DiabetesRiskAssessment,
+    FollowUp,
     Notification,
     Prescription,
     Report,
+    ReportValue,
     SideEffect,
+    Surgery,
     Visit,
 )
-from ..schemas import PatientProfileIn, iso, patient_out, report_out
+from ..schemas import PatientProfileIn, appointment_out, follow_up_out, iso, patient_out, report_out, surgery_out
 from ..services.diabetes_risk import coordinator as risk_coordinator
 from ..services.diabetes_risk import presentation as risk_presentation
+from ..services.health_data import report_values as rv
 from ..services.health_data.body import body_measurements, is_birthday, local_today
 from ..services.lifestyle_data import daily_series, glucose_overview, metric_overview
 from ..services.records import audit
@@ -92,6 +96,32 @@ def dashboard(patient_id: str, current: CurrentUser = Depends(require_record_rea
         select(AISummary).where(AISummary.patient_id == patient.id, AISummary.kind == "lifestyle").order_by(AISummary.generated_at.desc()).limit(1)
     )
     unread = db.scalar(select(Notification.id).where(Notification.user_id == current.id, Notification.is_read.is_(False)).limit(1))
+
+    # The one appointment recommendation most worth showing right now: the soonest future-dated
+    # one, or else the most recently made one still waiting to be scheduled.
+    now = datetime.now(timezone.utc)
+    appts = list(db.scalars(select(AppointmentRecommendation).where(AppointmentRecommendation.patient_id == patient.id)))
+
+    def _at(a: AppointmentRecommendation) -> datetime | None:
+        rf = a.recommended_for
+        return rf if rf is None or rf.tzinfo else rf.replace(tzinfo=timezone.utc)
+
+    future = sorted((a for a in appts if _at(a) is not None and _at(a) >= now), key=_at)
+    next_appt = future[0] if future else None
+    if next_appt is None:
+        undated = sorted((a for a in appts if a.recommended_for is None), key=lambda a: a.created_at, reverse=True)
+        next_appt = undated[0] if undated else None
+
+    # The soonest follow-up still scheduled (not completed or cancelled).
+    next_follow_up = db.scalar(
+        select(FollowUp).where(FollowUp.patient_id == patient.id, FollowUp.status == "scheduled").order_by(FollowUp.due_date).limit(1)
+    )
+
+    # The soonest surgery still scheduled.
+    next_surgery = db.scalar(
+        select(Surgery).where(Surgery.patient_id == patient.id, Surgery.status == "scheduled").order_by(Surgery.scheduled_at).limit(1)
+    )
+
     return {
         "patient": {"id": patient.id, "name": patient.user.full_name, "patient_code": patient.patient_code,
                     "date_of_birth": iso(patient.date_of_birth), "is_birthday": is_birthday(patient.date_of_birth, local_today())},
@@ -104,6 +134,9 @@ def dashboard(patient_id: str, current: CurrentUser = Depends(require_record_rea
         "recent_reports": [report_out(r) for r in reports],
         "lifestyle_insight": None if insight is None else {"id": insight.id, "headline": insight.content.get("headline"), "generated_at": iso(insight.generated_at)},
         "has_unread_notifications": unread is not None,
+        "next_appointment": None if next_appt is None else appointment_out(next_appt),
+        "next_follow_up": None if next_follow_up is None else follow_up_out(next_follow_up),
+        "next_surgery": None if next_surgery is None else surgery_out(next_surgery, include_internal=False),
     }
 
 
@@ -147,6 +180,17 @@ def trends(
         ).order_by(GlucoseReading.measured_at))
         points = [{"date": iso(r.measured_at), "value": to_mg_dl(r.value, r.unit), "reading_type": r.reading_type, "is_demo": r.is_demo} for r in rows]
         return {"metric": "glucose", "unit": "mg/dL", "start": iso(start_d), "end": iso(end_d), "points": points}
+    analyte = rv.ANALYTES.get(metric)
+    if analyte is not None and analyte.kind == "number":
+        # Confirmed report values only -- never a value still waiting for someone to confirm it,
+        # never a superseded or removed one.
+        rows = db.scalars(select(ReportValue).where(
+            ReportValue.patient_id == patient.id, ReportValue.analyte == metric,
+            ReportValue.superseded_at.is_(None), ReportValue.removed.is_(False),
+            ReportValue.measured_on >= start_d, ReportValue.measured_on <= end_d,
+        ).order_by(ReportValue.measured_on))
+        points = [{"date": iso(r.measured_on), "value": r.value} for r in rows]
+        return {"metric": metric, "unit": analyte.unit, "start": iso(start_d), "end": iso(end_d), "points": points}
     if metric not in ("steps", "heart_rate", "sleep", "activity", "blood_pressure", "spo2", "calories"):
         raise errors.unprocessable("Unknown metric.")
     from ..services.wearables import METRIC_UNITS

@@ -22,6 +22,7 @@ import '../../features/diabetes/diabetes_screen.dart';
 import '../../features/doctor/doctor_dashboard_screen.dart';
 import '../../features/doctor/doctor_patient_detail_screen.dart';
 import '../../features/doctor/doctor_patients_screens.dart';
+import '../../features/follow_ups/follow_ups_screens.dart';
 import '../../features/food/food_screen.dart';
 import '../../features/glucose/glucose_screen.dart';
 import '../../features/health_profile/health_profile_screen.dart';
@@ -37,6 +38,7 @@ import '../../features/reports/reports_screen.dart';
 import '../../features/reports/upload_report_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/side_effects/side_effects_screens.dart';
+import '../../features/surgery/surgery_screens.dart';
 import '../../features/visits/visits_screens.dart';
 import '../../features/wearables/devices_screen.dart';
 import '../../features/wearables/health_connect_screen.dart';
@@ -133,6 +135,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       page('/p/side-effects/new', (_) => ReportSideEffectScreen(patientId: pid())),
       page('/p/timeline', (_) => TimelineScreen(patientId: pid())),
       page('/p/appointments', (_) => AppointmentsScreen(patientId: pid())),
+      page('/p/follow-ups', (_) => FollowUpsScreen(patientId: pid())),
+      page('/p/surgeries', (_) => SurgeryScreen(patientId: pid())),
 
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => RoleShell(shell: shell, header: const BrandMark(size: 30), accountRoute: '/p/profile', links: [
@@ -140,6 +144,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           const ShellLink('Food log', Icons.restaurant_outlined, '/p/food'),
           ShellLink('Prescriptions', Icons.medication_outlined, '/r/${pid()}/prescriptions'),
           const ShellLink('Appointments', Icons.event_outlined, '/p/appointments'),
+          const ShellLink('Follow-ups', Icons.event_repeat_outlined, '/p/follow-ups'),
+          const ShellLink('Surgeries', Icons.local_hospital_outlined, '/p/surgeries'),
           ShellLink('Side effects', Icons.healing_outlined, '/r/${pid()}/side-effects'),
           const ShellLink('History', Icons.timeline_outlined, '/p/timeline'),
           const ShellLink('Notifications', Icons.notifications_none_outlined, '/p/notifications'),
@@ -197,6 +203,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       page('/a/patients/:pid/edit', (s) => AdminPatientEditScreen(patientId: s.pathParameters['pid']!)),
       page('/a/patients/:pid/upload', (s) => UploadReportScreen(patientId: s.pathParameters['pid']!, asAdmin: true)),
       page('/a/audit', (_) => const AuditLogsScreen()),
+      page('/a/notifications', (_) => const NotificationDeliveryScreen()),
       page('/a/system', (_) => const SystemSettingsScreen()),
       page('/a/account', (_) => const SettingsScreen()),
 
@@ -242,6 +249,7 @@ const _adminDestinations = [
 const _adminRoutes = ['/a/home', '/a/doctors', '/a/patients', '/a/access', '/a/more'];
 const _adminLinks = [
   ShellLink('Audit logs', Icons.receipt_long_outlined, '/a/audit'),
+  ShellLink('Notification delivery', Icons.notifications_none_outlined, '/a/notifications'),
   ShellLink('System settings', Icons.tune_outlined, '/a/system'),
   ShellLink('Add doctor', Icons.person_add_alt_outlined, '/a/doctors/new'),
 ];

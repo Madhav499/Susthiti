@@ -62,7 +62,7 @@ class ActionTile extends StatelessWidget {
       semanticLabel: label,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.lg),
       child: ExcludeSemantics(
-        child: Column(children: [
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
           Container(
             width: 44,
             height: 44,
@@ -70,7 +70,14 @@ class ActionTile extends StatelessWidget {
             child: Icon(icon, color: AppColors.primary, size: 22),
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text(label, textAlign: TextAlign.center, maxLines: 2, style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w500)),
+          // Fixed to a 2-line slot so every tile in a row is the same height, whether its
+          // own label wraps or not.
+          SizedBox(
+            height: 36,
+            child: Center(
+              child: Text(label, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w500)),
+            ),
+          ),
         ]),
       ),
     );

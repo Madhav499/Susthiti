@@ -187,6 +187,53 @@ def test_admin_doctor_profile_is_data_driven(env):
     assert client.get(f"{API}/admin/doctors/missing", headers=admin).status_code == 404
 
 
+def test_admin_sees_follow_up_tasks_and_surgeries_for_a_doctor(env):
+    client, _, _ = env
+    from datetime import datetime, timedelta, timezone
+
+    admin = make_admin(client)
+    doc, doctor = make_doctor(client, admin)
+    patient_headers, patient = register_patient(client)
+    pid = patient["patient_id"]
+    grant_access(client, doc, patient_headers, patient)
+    due = (datetime.now(timezone.utc).date() + timedelta(days=5)).isoformat()
+    when = (datetime.now(timezone.utc) + timedelta(days=10)).isoformat()
+    client.post(f"{API}/patients/{pid}/follow-ups", headers=doc, json={"purpose": "Check wound healing", "due_date": due})
+    client.post(f"{API}/patients/{pid}/surgeries", headers=doc, json={
+        "name": "Appendectomy", "purpose": "Acute appendicitis", "scheduled_at": when, "internal_notes": "Pre-op bloods normal.",
+    })
+
+    profile = client.get(f"{API}/admin/doctors/{doctor['id']}", headers=admin).json()
+    assert profile["stats"]["upcoming_follow_ups"] == 1 and profile["stats"]["upcoming_surgeries"] == 1
+
+    sched = client.get(f"{API}/admin/doctors/{doctor['id']}/appointments", headers=admin).json()
+    task = next(f for f in sched["follow_ups"] if f["source"] == "follow_up_task")
+    assert task["reason"] == "Check wound healing" and task["status"] == "scheduled" and task["patient"]["id"] == pid
+    assert len(sched["surgeries"]) == 1
+    surgery = sched["surgeries"][0]
+    assert surgery["name"] == "Appendectomy" and surgery["internal_notes"] == "Pre-op bloods normal." and surgery["patient"]["id"] == pid
+
+
+def test_admin_dashboard_operational_metrics(env):
+    client, _, _ = env
+    from datetime import datetime, timedelta, timezone
+
+    admin = make_admin(client)
+    doc, _ = make_doctor(client, admin)
+    patient_headers, patient = register_patient(client)
+    grant_access(client, doc, patient_headers, patient)
+    pid = patient["patient_id"]
+    when = (datetime.now(timezone.utc) + timedelta(days=3)).isoformat()
+    due = (datetime.now(timezone.utc).date() + timedelta(days=3)).isoformat()
+    client.post(f"{API}/patients/{pid}/appointment-recommendations", headers=doc, json={"reason": "Check-up", "recommended_for": when})
+    client.post(f"{API}/patients/{pid}/follow-ups", headers=doc, json={"purpose": "Recheck", "due_date": due})
+    client.post(f"{API}/patients/{pid}/surgeries", headers=doc, json={"name": "Minor surgery", "purpose": "Routine", "scheduled_at": when})
+    upload(client, patient_headers, pid)
+
+    metrics = client.get(f"{API}/admin/dashboard", headers=admin).json()["metrics"]
+    assert metrics["appointments_7d"] == 1 and metrics["follow_ups_scheduled"] == 1 and metrics["surgeries_scheduled"] == 1 and metrics["reports_7d"] == 1
+
+
 def test_admin_edits_patient_details_only(env):
     client, _, _ = env
     admin = make_admin(client)
@@ -281,6 +328,21 @@ def test_report_filters_and_doctor_upload(env):
     assert client.get(f"{API}/patients/{pid}/reports?q=lipids", headers=patient_headers).json()["total"] == 1
 
 
+def test_analyte_trend_from_confirmed_report_values(env):
+    """HbA1c across two confirmed reports is a real trend; an unconfirmed report contributes nothing."""
+    client, _, _ = env
+    headers, patient = register_patient(client)
+    pid = patient["patient_id"]
+    first = upload(client, headers, pid, "hba1c", "2026-01-05").json()
+    second = upload(client, headers, pid, "hba1c", "2026-04-10", filename="hba1c_apr.pdf").json()
+    upload(client, headers, pid, "hba1c", "2026-06-01", filename="hba1c_jun.pdf")  # left unconfirmed
+    client.put(f"{API}/reports/{first['id']}/values", headers=headers, json={"values": {"hba1c": {"value": 6.1, "unit": "%"}}})
+    client.put(f"{API}/reports/{second['id']}/values", headers=headers, json={"values": {"hba1c": {"value": 5.8, "unit": "%"}}})
+    series = client.get(f"{API}/patients/{pid}/trends", headers=headers, params={"metric": "hba1c", "range": "1y"}).json()
+    assert series["unit"] == "%"
+    assert [(p["date"][:10], p["value"]) for p in series["points"]] == [("2026-01-05", 6.1), ("2026-04-10", 5.8)]
+
+
 # ---------- AI ----------
 
 def test_report_summary_success_and_stored(env):
@@ -293,19 +355,47 @@ def test_report_summary_success_and_stored(env):
     assert r.status_code == 201, r.text
     content = r.json()["summary"]["content"]
     assert content["summary"] == "HbA1c recorded." and "does not replace" in content["disclaimer"]
-    assert gemini.requests[0]["contents"][0]["parts"][1]["inlineData"]["mimeType"] == "application/pdf"
-    assert "Do not invent values" in gemini.requests[0]["systemInstruction"]["parts"][0]["text"]
+    assert gemini.requests[0]["messages"][1]["content"][1]["file"]["file_data"].startswith("data:application/pdf")
+    assert "Do not invent values" in gemini.requests[0]["messages"][0]["content"]
     assert client.get(f"{API}/reports/{report['id']}/summary", headers=headers).json()["summary"]["id"] == r.json()["summary"]["id"]
     pdf = client.get(f"{API}/ai-summaries/{r.json()['summary']['id']}/pdf", headers=headers)
     assert pdf.status_code == 200 and pdf.content.startswith(b"%PDF")
     assert "SUSTHITI_Individual_Report_Summary_" in pdf.headers["content-disposition"]
 
 
+def test_doctor_reads_the_same_report_summary_the_patient_generated(env):
+    """The exact behavior Part 12/23 of the AI-summary spec demands: a doctor with access reads
+    the patient's already-generated summary through the same GET a patient uses, and opening it
+    never places a second call to the AI provider."""
+    client, _, gemini = env
+    admin = make_admin(client)
+    doctor_headers, _ = make_doctor(client, admin)
+    patient_headers, patient = register_patient(client)
+    grant_access(client, doctor_headers, patient_headers, patient)
+    report = upload(client, patient_headers, patient["patient_id"]).json()
+
+    gemini.queue_json({"summary": "HbA1c recorded.", "key_findings": ["HbA1c 6.1%"]})
+    generated = client.post(f"{API}/reports/{report['id']}/summary", headers=patient_headers)
+    assert generated.status_code == 201
+    summary_id = generated.json()["summary"]["id"]
+    assert len(gemini.requests) == 1  # exactly one AI call so far
+
+    doctor_view = client.get(f"{API}/reports/{report['id']}/summary", headers=doctor_headers)
+    assert doctor_view.status_code == 200
+    assert doctor_view.json()["summary"]["id"] == summary_id
+    assert doctor_view.json()["summary"]["content"]["summary"] == "HbA1c recorded."
+    assert len(gemini.requests) == 1  # reading it as the doctor placed no new AI request
+
+    # An unauthorized doctor must not reach it at all.
+    other_doctor_headers, _ = make_doctor(client, admin, email="other-doctor@example.org")
+    assert client.get(f"{API}/reports/{report['id']}/summary", headers=other_doctor_headers).status_code == 403
+
+
 def test_ai_invalid_response_then_retry(env):
     client, _, gemini = env
     headers, patient = register_patient(client)
     report = upload(client, headers, patient["patient_id"]).json()
-    gemini.queue_raw(httpx.Response(200, json={"candidates": [{"content": {"parts": [{"text": "not json at all"}]}}]}))
+    gemini.queue_raw(httpx.Response(200, json={"choices": [{"message": {"content": "not json at all"}}]}))
     r = client.post(f"{API}/reports/{report['id']}/summary", headers=headers)
     assert r.status_code == 502 and r.json()["detail"]["code"] == "ai_invalid_response"
     # original report still available
@@ -316,9 +406,9 @@ def test_ai_invalid_response_then_retry(env):
 
 def test_ai_api_failure(env, monkeypatch):
     client, _, gemini = env
-    from app.services.ai import gemini as gemini_module
+    from app.services.ai import openrouter as openrouter_module
 
-    monkeypatch.setattr(gemini_module.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(openrouter_module.time, "sleep", lambda seconds: None)
     headers, patient = register_patient(client)
     report = upload(client, headers, patient["patient_id"]).json()
     gemini.queue_raw(httpx.Response(500))  # every further call also gets a 500 (FakeGemini default)
@@ -356,9 +446,9 @@ def test_patient_summary_for_doctor(env):
 def test_ai_not_configured(env):
     client, _, _ = env
     from app.services.ai import services as ai_services
-    from app.services.ai.gemini import GeminiClient
+    from app.services.ai.openrouter import OpenRouterClient
 
-    ai_services.set_ai_client(GeminiClient(api_key=""))
+    ai_services.set_ai_client(OpenRouterClient(api_key=""))
     headers, patient = register_patient(client)
     report = upload(client, headers, patient["patient_id"]).json()
     r = client.post(f"{API}/reports/{report['id']}/summary", headers=headers)
@@ -426,9 +516,9 @@ def test_lifestyle_ai_context_includes_allergies_and_restrictions(env):
     gemini.queue_json({"headline": "Looks steady.", "suggestions": ["Keep up regular meals."]})
     r = client.post(f"{API}/patients/{pid}/lifestyle-insight", headers=patient_headers)
     assert r.status_code == 201, r.text
-    sent = gemini.requests[-1]["contents"][0]["parts"][0]["text"]
+    sent = gemini.requests[-1]["messages"][1]["content"][0]["text"]
     assert "peanuts" in sent and "avoid high-sodium food" in sent
-    assert "allergies" in gemini.requests[-1]["systemInstruction"]["parts"][0]["text"]
+    assert "allergies" in gemini.requests[-1]["messages"][0]["content"]
 
 
 # ---------- Prescriptions ----------
@@ -609,16 +699,515 @@ def test_visit_timeline_and_audit(env):
 
 def test_doctor_dashboard(env):
     client, _, _ = env
+    from datetime import datetime, timedelta, timezone
+
     admin = make_admin(client)
     doc, _ = make_doctor(client, admin)
     patient_headers, patient = register_patient(client)
     grant_access(client, doc, patient_headers, patient)
-    client.post(f"{API}/patients/{patient['patient_id']}/side-effects", headers=patient_headers, json={"description": "Dizziness", "severity": "moderate", "occurred_at": "2026-09-20T08:00:00Z"})
+    pid = patient["patient_id"]
+    client.post(f"{API}/patients/{pid}/side-effects", headers=patient_headers, json={"description": "Dizziness", "severity": "moderate", "occurred_at": "2026-09-20T08:00:00Z"})
+    client.post(f"{API}/patients/{pid}/appointment-recommendations", headers=doc,
+                json={"reason": "Review symptoms", "recommended_for": (datetime.now(timezone.utc) + timedelta(days=2)).isoformat()})
     dash = client.get(f"{API}/doctor/dashboard", headers=doc).json()
     assert dash["metrics"]["patients"] == 1 and dash["metrics"]["open_side_effects"] == 1
+    assert dash["metrics"]["upcoming_appointments_7d"] == 1
     assert dash["needs_attention"][0]["patient_code"] == patient["patient_code"]
     admin_dash = client.get(f"{API}/admin/dashboard", headers=admin).json()
     assert admin_dash["metrics"]["total_doctors"] == 1
+
+
+def test_patient_dashboard_shows_the_soonest_upcoming_appointment(env):
+    client, _, _ = env
+    from datetime import datetime, timedelta, timezone
+
+    admin = make_admin(client)
+    doc, _ = make_doctor(client, admin)
+    patient_headers, patient = register_patient(client)
+    grant_access(client, doc, patient_headers, patient)
+    pid = patient["patient_id"]
+    soon = (datetime.now(timezone.utc) + timedelta(days=5)).isoformat()
+    later = (datetime.now(timezone.utc) + timedelta(days=20)).isoformat()
+    client.post(f"{API}/patients/{pid}/appointment-recommendations", headers=doc, json={"reason": "Later review", "recommended_for": later})
+    client.post(f"{API}/patients/{pid}/appointment-recommendations", headers=doc, json={"reason": "Soon review", "recommended_for": soon})
+    dash = client.get(f"{API}/patients/{pid}/dashboard", headers=patient_headers).json()
+    assert dash["next_appointment"]["reason"] == "Soon review"
+
+
+def test_patient_dashboard_falls_back_to_an_unscheduled_appointment(env):
+    client, _, _ = env
+    admin = make_admin(client)
+    doc, _ = make_doctor(client, admin)
+    patient_headers, patient = register_patient(client)
+    grant_access(client, doc, patient_headers, patient)
+    pid = patient["patient_id"]
+    client.post(f"{API}/patients/{pid}/appointment-recommendations", headers=doc, json={"reason": "Needs scheduling"})
+    dash = client.get(f"{API}/patients/{pid}/dashboard", headers=patient_headers).json()
+    assert dash["next_appointment"]["reason"] == "Needs scheduling" and dash["next_appointment"]["recommended_for"] is None
+
+
+def test_patient_dashboard_shows_the_soonest_scheduled_follow_up(env):
+    client, _, _ = env
+    from datetime import datetime, timedelta, timezone
+
+    admin = make_admin(client)
+    doc, _ = make_doctor(client, admin)
+    patient_headers, patient = register_patient(client)
+    grant_access(client, doc, patient_headers, patient)
+    pid = patient["patient_id"]
+    soon = (datetime.now(timezone.utc).date() + timedelta(days=5)).isoformat()
+    later = (datetime.now(timezone.utc).date() + timedelta(days=20)).isoformat()
+    later_followup = client.post(f"{API}/patients/{pid}/follow-ups", headers=doc, json={"purpose": "Later check", "due_date": later}).json()
+    soon_followup = client.post(f"{API}/patients/{pid}/follow-ups", headers=doc, json={"purpose": "Soon check", "due_date": soon}).json()
+    dash = client.get(f"{API}/patients/{pid}/dashboard", headers=patient_headers).json()
+    assert dash["next_follow_up"]["purpose"] == "Soon check"
+
+    # A completed follow-up is never shown as the upcoming one, even if its date was soonest.
+    client.post(f"{API}/follow-ups/{later_followup['id']}/complete", headers=doc, json={})
+    client.post(f"{API}/follow-ups/{soon_followup['id']}/complete", headers=doc, json={})
+    dash_after = client.get(f"{API}/patients/{pid}/dashboard", headers=patient_headers).json()
+    assert dash_after["next_follow_up"] is None
+
+
+# ---------- Follow-ups ----------
+
+def test_follow_up_lifecycle(env):
+    client, _, _ = env
+    from datetime import datetime, timedelta, timezone
+
+    admin = make_admin(client)
+    doc, _ = make_doctor(client, admin)
+    patient_headers, patient = register_patient(client)
+    grant_access(client, doc, patient_headers, patient)
+    pid = patient["patient_id"]
+    due = (datetime.now(timezone.utc).date() + timedelta(days=10)).isoformat()
+
+    denied = client.post(f"{API}/patients/{pid}/follow-ups", headers=patient_headers, json={"purpose": "Review labs", "due_date": due})
+    assert denied.status_code == 403  # a patient cannot schedule their own follow-up
+
+    created = client.post(f"{API}/patients/{pid}/follow-ups", headers=doc, json={"purpose": "Review labs", "due_date": due})
+    assert created.status_code == 201
+    f = created.json()
+    assert f["status"] == "scheduled" and f["due_date"] == due
+    assert any(n["type"] == "follow_up_scheduled" for n in client.get(f"{API}/notifications", headers=patient_headers).json()["items"])
+
+    listed = client.get(f"{API}/patients/{pid}/follow-ups", headers=patient_headers).json()["items"]
+    assert len(listed) == 1 and listed[0]["id"] == f["id"]
+
+    new_due = (datetime.now(timezone.utc).date() + timedelta(days=17)).isoformat()
+    rescheduled = client.post(f"{API}/follow-ups/{f['id']}/reschedule", headers=doc, json={"due_date": new_due})
+    assert rescheduled.status_code == 200 and rescheduled.json()["due_date"] == new_due
+
+    completed = client.post(f"{API}/follow-ups/{f['id']}/complete", headers=doc, json={"notes": "Labs reviewed, stable"})
+    assert completed.status_code == 200 and completed.json()["status"] == "completed"
+    assert client.post(f"{API}/follow-ups/{f['id']}/complete", headers=doc, json={}).status_code == 409  # already closed
+
+
+def test_follow_up_cancel_and_authorization(env):
+    client, _, _ = env
+    from datetime import datetime, timedelta, timezone
+
+    admin = make_admin(client)
+    doc, _ = make_doctor(client, admin)
+    other_doc, _ = make_doctor(client, admin, email="other@example.org", name="Other Doctor")
+    patient_headers, patient = register_patient(client)
+    grant_access(client, doc, patient_headers, patient)
+    pid = patient["patient_id"]
+    due = (datetime.now(timezone.utc).date() + timedelta(days=5)).isoformat()
+    f = client.post(f"{API}/patients/{pid}/follow-ups", headers=doc, json={"purpose": "Check wound healing", "due_date": due}).json()
+
+    # A doctor without approved access to this patient cannot act on it.
+    assert client.post(f"{API}/follow-ups/{f['id']}/cancel", headers=other_doc, json={}).status_code == 403
+    assert client.get(f"{API}/patients/{pid}/follow-ups", headers=admin).status_code == 200
+    assert client.post(f"{API}/patients/{pid}/follow-ups", headers=admin, json={"purpose": "x", "due_date": due}).status_code == 403
+
+    cancelled = client.post(f"{API}/follow-ups/{f['id']}/cancel", headers=doc, json={"notes": "No longer needed"})
+    assert cancelled.status_code == 200 and cancelled.json()["status"] == "cancelled"
+    assert any(n["type"] == "follow_up_cancelled" for n in client.get(f"{API}/notifications", headers=patient_headers).json()["items"])
+
+
+def test_follow_up_cannot_be_scheduled_in_the_past(env):
+    client, _, _ = env
+    admin = make_admin(client)
+    doc, _ = make_doctor(client, admin)
+    patient_headers, patient = register_patient(client)
+    grant_access(client, doc, patient_headers, patient)
+    pid = patient["patient_id"]
+    assert client.post(f"{API}/patients/{pid}/follow-ups", headers=doc, json={"purpose": "Too late", "due_date": "2020-01-01"}).status_code == 422
+
+
+def test_follow_up_counts_toward_doctor_dashboard_and_attention(env):
+    client, _, _ = env
+    from datetime import datetime, timedelta, timezone
+
+    admin = make_admin(client)
+    doc, _ = make_doctor(client, admin)
+    patient_headers, patient = register_patient(client)
+    grant_access(client, doc, patient_headers, patient)
+    pid = patient["patient_id"]
+    due = (datetime.now(timezone.utc).date() + timedelta(days=3)).isoformat()
+    client.post(f"{API}/patients/{pid}/follow-ups", headers=doc, json={"purpose": "Recheck blood pressure", "due_date": due})
+    dash = client.get(f"{API}/doctor/dashboard", headers=doc).json()
+    assert dash["metrics"]["follow_ups_7d"] == 1
+    assert any("Follow-up due" in a["reasons"][0]["reason"] for a in dash["needs_attention"] if a["patient_code"] == patient["patient_code"])
+
+
+def test_follow_up_reminder_sent_the_day_before_and_on_the_day(env):
+    client, _, _ = env
+    from datetime import date, datetime, timezone
+
+    from app import db as db_module
+    from app.services.reminders import run_reminders
+
+    admin = make_admin(client)
+    doc, _ = make_doctor(client, admin)
+    patient_headers, patient = register_patient(client)
+    grant_access(client, doc, patient_headers, patient)
+    pid = patient["patient_id"]
+    # Created with a far-future date (passes the "not in the past" check), then its due_date is
+    # set directly to simulate "tomorrow" relative to the fixed "now" used below.
+    f = client.post(f"{API}/patients/{pid}/follow-ups", headers=doc, json={"purpose": "Wound check", "due_date": "2099-01-01"}).json()
+    with db_module.SessionLocal() as db:
+        from app.models import FollowUp
+        row = db.get(FollowUp, f["id"])
+        row.due_date = date(2026, 9, 21)  # "tomorrow" relative to the fixed "now" used below
+        db.commit()
+        assert run_reminders(db, datetime(2026, 9, 20, 10, 0, tzinfo=timezone.utc)) >= 1
+    types = {n["type"] for n in client.get(f"{API}/notifications", headers=patient_headers).json()["items"]}
+    assert "follow_up_reminder" in types
+
+
+# ---------- Surgeries ----------
+
+def test_surgery_lifecycle_and_field_visibility(env):
+    client, _, _ = env
+    from datetime import datetime, timedelta, timezone
+
+    admin = make_admin(client)
+    doc, _ = make_doctor(client, admin)
+    patient_headers, patient = register_patient(client)
+    grant_access(client, doc, patient_headers, patient)
+    pid = patient["patient_id"]
+    when = (datetime.now(timezone.utc) + timedelta(days=14)).isoformat()
+
+    denied = client.post(f"{API}/patients/{pid}/surgeries", headers=patient_headers, json={"name": "Appendectomy", "purpose": "Appendicitis", "scheduled_at": when})
+    assert denied.status_code == 403  # a patient cannot schedule their own surgery
+
+    created = client.post(f"{API}/patients/{pid}/surgeries", headers=doc, json={
+        "name": "Appendectomy", "purpose": "Acute appendicitis", "scheduled_at": when, "hospital": "City General",
+        "patient_instructions": "Fast for 8 hours beforehand.", "internal_notes": "Pre-op bloods normal; proceed as planned.",
+    })
+    assert created.status_code == 201
+    s = created.json()
+    assert s["status"] == "scheduled" and s["internal_notes"] == "Pre-op bloods normal; proceed as planned."
+    assert any(n["type"] == "surgery_scheduled" for n in client.get(f"{API}/notifications", headers=patient_headers).json()["items"])
+
+    # The patient sees everything except internal_notes; the doctor and admin see it too.
+    patient_view = client.get(f"{API}/patients/{pid}/surgeries", headers=patient_headers).json()["items"][0]
+    assert "internal_notes" not in patient_view
+    assert patient_view["name"] == "Appendectomy" and patient_view["hospital"] == "City General" and patient_view["patient_instructions"] == "Fast for 8 hours beforehand."
+    doctor_view = client.get(f"{API}/patients/{pid}/surgeries", headers=doc).json()["items"][0]
+    assert doctor_view["internal_notes"] == "Pre-op bloods normal; proceed as planned."
+    admin_view = client.get(f"{API}/patients/{pid}/surgeries", headers=admin).json()["items"][0]
+    assert admin_view["internal_notes"] == "Pre-op bloods normal; proceed as planned."
+
+    updated = client.post(f"{API}/surgeries/{s['id']}/update", headers=doc, json={"patient_instructions": "Fast for 12 hours beforehand."})
+    assert updated.status_code == 200 and updated.json()["patient_instructions"] == "Fast for 12 hours beforehand."
+
+    new_when = (datetime.now(timezone.utc) + timedelta(days=21)).isoformat()
+    rescheduled = client.post(f"{API}/surgeries/{s['id']}/reschedule", headers=doc, json={"scheduled_at": new_when})
+    assert rescheduled.status_code == 200
+
+    completed = client.post(f"{API}/surgeries/{s['id']}/complete", headers=doc)
+    assert completed.status_code == 200 and completed.json()["status"] == "completed"
+    assert client.post(f"{API}/surgeries/{s['id']}/complete", headers=doc).status_code == 409  # already closed
+
+
+def test_surgery_cancel_and_authorization(env):
+    client, _, _ = env
+    from datetime import datetime, timedelta, timezone
+
+    admin = make_admin(client)
+    doc, _ = make_doctor(client, admin)
+    other_doc, _ = make_doctor(client, admin, email="other2@example.org", name="Other Doctor Two")
+    patient_headers, patient = register_patient(client)
+    grant_access(client, doc, patient_headers, patient)
+    pid = patient["patient_id"]
+    when = (datetime.now(timezone.utc) + timedelta(days=10)).isoformat()
+    s = client.post(f"{API}/patients/{pid}/surgeries", headers=doc, json={"name": "Knee surgery", "purpose": "Torn ligament", "scheduled_at": when}).json()
+
+    assert client.post(f"{API}/surgeries/{s['id']}/cancel", headers=other_doc).status_code == 403
+    assert client.get(f"{API}/patients/{pid}/surgeries", headers=admin).status_code == 200
+    assert client.post(f"{API}/patients/{pid}/surgeries", headers=admin, json={"name": "x", "purpose": "y"}).status_code == 403
+
+    cancelled = client.post(f"{API}/surgeries/{s['id']}/cancel", headers=doc)
+    assert cancelled.status_code == 200 and cancelled.json()["status"] == "cancelled"
+    assert any(n["type"] == "surgery_cancelled" for n in client.get(f"{API}/notifications", headers=patient_headers).json()["items"])
+
+
+def test_surgery_without_a_date_is_allowed_and_shown_as_tbd(env):
+    client, _, _ = env
+    admin = make_admin(client)
+    doc, _ = make_doctor(client, admin)
+    patient_headers, patient = register_patient(client)
+    grant_access(client, doc, patient_headers, patient)
+    pid = patient["patient_id"]
+    created = client.post(f"{API}/patients/{pid}/surgeries", headers=doc, json={"name": "Cataract surgery", "purpose": "Vision correction"})
+    assert created.status_code == 201 and created.json()["scheduled_at"] is None
+
+
+def test_patient_dashboard_shows_the_soonest_scheduled_surgery(env):
+    client, _, _ = env
+    from datetime import datetime, timedelta, timezone
+
+    admin = make_admin(client)
+    doc, _ = make_doctor(client, admin)
+    patient_headers, patient = register_patient(client)
+    grant_access(client, doc, patient_headers, patient)
+    pid = patient["patient_id"]
+    soon = (datetime.now(timezone.utc) + timedelta(days=5)).isoformat()
+    later = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+    later_surgery = client.post(f"{API}/patients/{pid}/surgeries", headers=doc, json={"name": "Later surgery", "purpose": "Later reason", "scheduled_at": later})
+    assert later_surgery.status_code == 201, later_surgery.text
+    soon_surgery = client.post(f"{API}/patients/{pid}/surgeries", headers=doc, json={"name": "Soon surgery", "purpose": "Soon reason", "scheduled_at": soon, "internal_notes": "private"})
+    assert soon_surgery.status_code == 201, soon_surgery.text
+    dash = client.get(f"{API}/patients/{pid}/dashboard", headers=patient_headers).json()
+    assert dash["next_surgery"]["name"] == "Soon surgery"
+    assert "internal_notes" not in dash["next_surgery"]  # the dashboard summary never leaks doctor-only fields
+
+
+def test_doctor_dashboard_counts_upcoming_surgeries(env):
+    client, _, _ = env
+    from datetime import datetime, timedelta, timezone
+
+    admin = make_admin(client)
+    doc, _ = make_doctor(client, admin)
+    patient_headers, patient = register_patient(client)
+    grant_access(client, doc, patient_headers, patient)
+    pid = patient["patient_id"]
+    when = (datetime.now(timezone.utc) + timedelta(days=3)).isoformat()
+    client.post(f"{API}/patients/{pid}/surgeries", headers=doc, json={"name": "Hip replacement", "purpose": "Arthritis", "scheduled_at": when})
+    dash = client.get(f"{API}/doctor/dashboard", headers=doc).json()
+    assert dash["metrics"]["upcoming_surgeries_7d"] == 1
+
+
+# ---------- Doctor "My Day" ----------
+
+def test_doctor_my_day_combines_todays_appointments_follow_ups_and_surgeries(env):
+    client, _, _ = env
+    from datetime import datetime, timedelta, timezone
+
+    admin = make_admin(client)
+    doc, _ = make_doctor(client, admin)
+    patient_headers, patient = register_patient(client)
+    grant_access(client, doc, patient_headers, patient)
+    pid = patient["patient_id"]
+    now = datetime.now(timezone.utc)
+    today = now.date()
+
+    appt_time = now.replace(hour=9, minute=0, second=0, microsecond=0)
+    r = client.post(f"{API}/patients/{pid}/appointment-recommendations", headers=doc, json={"reason": "Morning check-up", "recommended_for": appt_time.isoformat()})
+    assert r.status_code == 201, r.text
+
+    surgery_time = now.replace(hour=23, minute=55, second=0, microsecond=0)
+    r = client.post(f"{API}/patients/{pid}/surgeries", headers=doc, json={"name": "Evening procedure", "purpose": "Scheduled late today", "scheduled_at": surgery_time.isoformat()})
+    assert r.status_code == 201, r.text
+
+    r = client.post(f"{API}/patients/{pid}/follow-ups", headers=doc, json={"purpose": "Check healing", "due_date": today.isoformat()})
+    assert r.status_code == 201, r.text
+
+    # Not today -- must not appear.
+    tomorrow = (now + timedelta(days=1)).isoformat()
+    client.post(f"{API}/patients/{pid}/appointment-recommendations", headers=doc, json={"reason": "Tomorrow's visit", "recommended_for": tomorrow})
+
+    dash = client.get(f"{API}/doctor/dashboard", headers=doc).json()
+    today_items = dash["today"]
+    assert [i["type"] for i in today_items] == ["appointment", "surgery", "follow_up"]
+    assert today_items[0]["title"] == "Morning check-up" and today_items[0]["patient_code"] == patient["patient_code"]
+    assert today_items[2]["at"] is None  # a follow-up has no time of its own
+
+
+def test_revoked_access_immediately_hides_scheduled_items_from_the_doctor(env):
+    """Revoking takes effect immediately everywhere on this dashboard, including items made
+    while access was still active -- same principle as the rest of this codebase's security
+    model (ARCHITECTURE.md): a revoked doctor loses access right away, not just going forward."""
+    client, _, _ = env
+    from datetime import datetime, timedelta, timezone
+
+    admin = make_admin(client)
+    doc, _ = make_doctor(client, admin)
+    patient_headers, patient = register_patient(client)
+    grant_access(client, doc, patient_headers, patient)
+    pid = patient["patient_id"]
+    now = datetime.now(timezone.utc)
+    today = now.date()
+
+    appt_time = now + timedelta(hours=1)
+    r1 = client.post(f"{API}/patients/{pid}/appointment-recommendations", headers=doc, json={"reason": "Scheduled before revoke", "recommended_for": appt_time.isoformat()})
+    r2 = client.post(f"{API}/patients/{pid}/surgeries", headers=doc, json={"name": "Scheduled before revoke", "purpose": "Routine procedure", "scheduled_at": appt_time.isoformat()})
+    r3 = client.post(f"{API}/patients/{pid}/follow-ups", headers=doc, json={"purpose": "Scheduled before revoke", "due_date": today.isoformat()})
+    assert r1.status_code == 201 and r2.status_code == 201 and r3.status_code == 201
+
+    before = client.get(f"{API}/doctor/dashboard", headers=doc).json()
+    assert len(before["today"]) == 3 and before["metrics"]["upcoming_appointments_7d"] == 1 and before["metrics"]["upcoming_surgeries_7d"] == 1
+
+    request_id = next(r["id"] for r in client.get(f"{API}/access-requests", headers=patient_headers).json()["items"] if r["status"] == "approved")
+    assert client.post(f"{API}/access-requests/{request_id}/revoke", headers=patient_headers).status_code == 200
+
+    after = client.get(f"{API}/doctor/dashboard", headers=doc).json()
+    assert after["today"] == [] and after["metrics"]["upcoming_appointments_7d"] == 0 and after["metrics"]["upcoming_surgeries_7d"] == 0 and after["metrics"]["follow_ups_7d"] == 0
+
+
+def test_doctor_my_day_is_empty_when_nothing_is_scheduled_today(env):
+    client, _, _ = env
+    admin = make_admin(client)
+    doc, _ = make_doctor(client, admin)
+    dash = client.get(f"{API}/doctor/dashboard", headers=doc).json()
+    assert dash["today"] == []
+
+
+def test_surgery_reminder_sent_the_day_before_and_on_the_day(env):
+    client, _, _ = env
+    from datetime import datetime, timezone
+
+    from app import db as db_module
+    from app.services.reminders import run_reminders
+
+    admin = make_admin(client)
+    doc, _ = make_doctor(client, admin)
+    patient_headers, patient = register_patient(client)
+    grant_access(client, doc, patient_headers, patient)
+    pid = patient["patient_id"]
+    s = client.post(f"{API}/patients/{pid}/surgeries", headers=doc, json={"name": "Wisdom tooth extraction", "purpose": "Impaction", "scheduled_at": "2099-01-01T09:00:00Z"}).json()
+    with db_module.SessionLocal() as db:
+        from app.models import Surgery
+
+        row = db.get(Surgery, s["id"])
+        row.scheduled_at = datetime(2026, 9, 21, 9, 0, tzinfo=timezone.utc)  # "tomorrow" relative to the fixed "now" below
+        db.commit()
+        assert run_reminders(db, datetime(2026, 9, 20, 10, 0, tzinfo=timezone.utc)) >= 1
+    types = {n["type"] for n in client.get(f"{API}/notifications", headers=patient_headers).json()["items"]}
+    assert "surgery_reminder" in types
+
+
+# ---------- Push device tokens ----------
+
+def test_device_token_register_is_idempotent_and_reassigns_on_shared_device(env):
+    client, _, _ = env
+    headers_a, _ = register_patient(client, email="device-a@example.org")
+    headers_b, _ = register_patient(client, email="device-b@example.org")
+    token = "fake-fcm-token-abcdefghijklmnop"
+
+    r = client.post(f"{API}/notifications/device-tokens", headers=headers_a, json={"token": token, "platform": "android"})
+    assert r.status_code == 201
+    r = client.post(f"{API}/notifications/device-tokens", headers=headers_a, json={"token": token, "platform": "android"})
+    assert r.status_code == 201  # re-registering the same token is a no-op, not a duplicate
+
+    # The same device, now signed in as a different account: the token moves with it.
+    r = client.post(f"{API}/notifications/device-tokens", headers=headers_b, json={"token": token, "platform": "android"})
+    assert r.status_code == 201
+
+    # headers_a can no longer unregister a token it doesn't own; it's simply a no-op, not an error.
+    assert client.post(f"{API}/notifications/device-tokens/unregister", headers=headers_a, json={"token": token}).status_code == 200
+    assert client.post(f"{API}/notifications/device-tokens/unregister", headers=headers_b, json={"token": token}).status_code == 200
+
+
+def test_notification_creation_is_unaffected_when_fcm_is_not_configured(env):
+    """push.send_to_user() is called from inside notify() on every notification -- this must
+    never break notification creation just because no Firebase project exists yet."""
+    client, _, _ = env
+    admin = make_admin(client)
+    doc, _ = make_doctor(client, admin)
+    patient_headers, patient = register_patient(client)
+    pid = patient["patient_id"]
+    client.post(f"{API}/notifications/device-tokens", headers=patient_headers, json={"token": "fake-token-for-unconfigured-fcm-test", "platform": "android"})
+    r = client.post(f"{API}/access-requests", headers=doc, json={"patient_name": patient["full_name"], "patient_code": patient["patient_code"]})
+    assert r.status_code == 201
+    assert any(n["type"] == "access_request" for n in client.get(f"{API}/notifications", headers=patient_headers).json()["items"])
+
+
+def test_push_handles_an_invalid_service_account_file_without_raising(env, monkeypatch):
+    """A typo'd or missing FCM_SERVICE_ACCOUNT_JSON path must disable push, not crash the
+    backend -- the same "quiet no-op" behavior as having it unset at all."""
+    from app.config import get_settings
+    from app.services import push
+
+    monkeypatch.setattr(get_settings(), "fcm_service_account_json", "C:/definitely/does/not/exist.json")
+    push._app.cache_clear()
+    try:
+        assert push._app() is None
+    finally:
+        push._app.cache_clear()
+
+
+def test_push_channel_assignment_matches_every_notification_type_in_use(env):
+    """Every `notify(..., type=...)` this codebase actually calls with must resolve to a real
+    channel, not silently fall through -- and nothing is "important"/high priority by accident,
+    since that's exactly the over-alerting the push design explicitly avoids."""
+    import re
+    from pathlib import Path
+
+    from app.services import push
+
+    app_dir = Path(push.__file__).resolve().parents[1]  # backend/app
+    used_types = set()
+    for py in (app_dir / "routers").rglob("*.py"):
+        for m in re.finditer(r'notify\(\s*db,\s*[^,]+,\s*"([a-z_]+)"', py.read_text()):
+            used_types.add(m.group(1))
+    for py in (app_dir / "services").rglob("*.py"):
+        for m in re.finditer(r'notify\(\s*db,\s*[^,]+,\s*"([a-z_]+)"', py.read_text()):
+            used_types.add(m.group(1))
+    assert {"access_request", "surgery_scheduled", "new_report", "food_reminder"} <= used_types
+
+    for t in used_types:
+        channel_id, priority = push._channel_for(t)
+        assert channel_id in {"susthiti_important", "susthiti_appointments", "susthiti_health", "susthiti_general"}
+        assert priority in {"high", "normal"}
+    # Routine, non-actionable types must never be high priority -- the user can't mute an
+    # individual push the way they can an in-app preference, so this is the only brake.
+    assert push._channel_for("food_reminder") == ("susthiti_general", "normal")
+    assert push._channel_for("birthday") == ("susthiti_general", "normal")
+    assert push._channel_for("surgery_reminder") == ("susthiti_important", "high")
+    assert push._channel_for(None) == ("susthiti_general", "normal")
+    assert push._channel_for("some_future_type_nobody_mapped_yet") == ("susthiti_general", "normal")
+
+
+def test_admin_sees_notification_delivery_status(env):
+    """Admin gets delivery status only -- type, recipient role, outcome -- never a
+    notification's title or body."""
+    client, _, _ = env
+    from app import db as db_module
+    from app.models import Notification
+    from sqlalchemy import select as sa_select
+
+    admin = make_admin(client)
+    doc, _ = make_doctor(client, admin)
+    patient_headers, patient = register_patient(client)
+    r = client.post(f"{API}/access-requests", headers=doc, json={"patient_name": patient["full_name"], "patient_code": patient["patient_code"]})
+    assert r.status_code == 201
+
+    # FCM is unconfigured in tests, so every real notification lands with push_status=None
+    # (nothing attempted) -- confirm that, and confirm no title/body leaks into this view.
+    unconfigured = client.get(f"{API}/admin/notifications/delivery", headers=admin).json()
+    assert unconfigured["total"] >= 1
+    item = unconfigured["items"][0]
+    assert item["push_status"] is None and item["recipient_role"] == "patient"
+    assert "title" not in item and "body" not in item
+    assert client.get(f"{API}/admin/notifications/delivery", headers=doc).status_code == 403
+
+    # Simulate the outcomes FCM would report in production, to verify filtering and the
+    # dashboard metric without needing a real Firebase project.
+    with db_module.SessionLocal() as db:
+        row = db.scalars(sa_select(Notification).where(Notification.type == "access_request")).first()
+        row.push_status = "failed"
+        db.commit()
+
+    failed = client.get(f"{API}/admin/notifications/delivery", headers=admin, params={"status": "failed"}).json()
+    assert failed["total"] == 1 and failed["items"][0]["push_status"] == "failed"
+    none_only = client.get(f"{API}/admin/notifications/delivery", headers=admin, params={"status": "none"}).json()
+    assert all(i["push_status"] is None for i in none_only["items"])
+    dash = client.get(f"{API}/admin/dashboard", headers=admin).json()
+    assert dash["metrics"]["failed_push_notifications_7d"] == 1
 
 
 def test_reminders_respect_preferences(env):

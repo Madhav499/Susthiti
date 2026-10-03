@@ -13,11 +13,14 @@ class Option {
 enum ProfileFieldKind {
   number,
   yesNo,
-  choice;
+  choice,
+  /// Free text: one or more short entries (e.g. allergies), stored as a list of strings.
+  list;
 
   static ProfileFieldKind parse(String? v) => switch (v) {
         'yes_no' => yesNo,
         'choice' => choice,
+        'list' => list,
         _ => number,
       };
 }
@@ -41,6 +44,7 @@ class HealthProfileField {
     this.recordedAt,
     this.recordedByRole,
     this.needsUpdate = false,
+    this.doctorOnly = false,
   });
 
   final String key;
@@ -61,6 +65,10 @@ class HealthProfileField {
   /// Answered long enough ago that it is no longer used until confirmed again.
   final bool needsUpdate;
 
+  /// Only a doctor may write this field (e.g. doctor-documented restrictions). The backend
+  /// rejects a patient's write outright; the app disables editing to avoid a confusing save error.
+  final bool doctorOnly;
+
   bool appliesToSex(String? sex) => appliesTo == null || sex == null || sex == appliesTo;
 
   String get answerLabel {
@@ -71,6 +79,7 @@ class HealthProfileField {
       ProfileFieldKind.yesNo => v == true ? 'Yes' : 'No',
       ProfileFieldKind.choice => options.where((o) => o.value == v).map((o) => o.label).firstOrNull ?? '$v',
       ProfileFieldKind.number => '${(v as num).toDouble() % 1 == 0 ? (v).toInt() : v} ${unit ?? ''}'.trim(),
+      ProfileFieldKind.list => (v as List).isEmpty ? 'None recorded' : v.cast<String>().join(', '),
     };
   }
 
@@ -90,6 +99,7 @@ class HealthProfileField {
         recordedAt: parseDate(j['recorded_at']),
         recordedByRole: j['recorded_by_role'] as String?,
         needsUpdate: j['needs_update'] as bool? ?? false,
+        doctorOnly: j['doctor_only'] as bool? ?? false,
       );
 }
 

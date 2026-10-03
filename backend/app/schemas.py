@@ -302,6 +302,9 @@ class LifestyleIn(BaseModel):
     value: float
     value2: float | None = None
     recorded_at: datetime
+    # The patient's own calendar day for this value. Falls back to recorded_at's UTC date
+    # (wrong near midnight outside UTC) when an older client omits it.
+    local_date: date | None = None
 
     @field_validator("recorded_at")
     @classmethod
@@ -396,6 +399,94 @@ def appointment_out(a: m.AppointmentRecommendation) -> dict:
     }
 
 
+# ---------- Follow-ups ----------
+
+class FollowUpIn(BaseModel):
+    purpose: str = Field(min_length=3, max_length=1000)
+    due_date: date
+
+    @field_validator("due_date")
+    @classmethod
+    def _future(cls, v: date) -> date:
+        if v < datetime.now(timezone.utc).date():
+            raise ValueError("Choose a date that hasn't passed yet.")
+        return v
+
+
+class FollowUpRescheduleIn(BaseModel):
+    due_date: date
+
+    @field_validator("due_date")
+    @classmethod
+    def _future(cls, v: date) -> date:
+        if v < datetime.now(timezone.utc).date():
+            raise ValueError("Choose a date that hasn't passed yet.")
+        return v
+
+
+class FollowUpActionIn(BaseModel):
+    notes: str | None = Field(default=None, max_length=1000)
+
+
+def follow_up_out(f: m.FollowUp) -> dict:
+    return {
+        "id": f.id, "patient_id": f.patient_id, "doctor_id": f.doctor_id, "doctor_name": f.doctor_name,
+        "purpose": f.purpose, "due_date": iso(f.due_date), "status": f.status, "notes": f.notes,
+        "created_at": iso(f.created_at), "updated_at": iso(f.updated_at or f.created_at),
+    }
+
+
+# ---------- Surgeries ----------
+
+def _not_past_datetime(v: datetime | None) -> datetime | None:
+    if v is not None and to_utc(v) < datetime.now(timezone.utc):
+        raise ValueError("Choose a date and time that hasn't passed yet.")
+    return v
+
+
+class SurgeryIn(BaseModel):
+    name: str = Field(min_length=2, max_length=200)
+    purpose: str = Field(min_length=3, max_length=1000)
+    scheduled_at: datetime | None = None
+    hospital: str | None = Field(default=None, max_length=200)
+    patient_instructions: str | None = Field(default=None, max_length=2000)
+    internal_notes: str | None = Field(default=None, max_length=2000)
+
+    @field_validator("scheduled_at")
+    @classmethod
+    def _future(cls, v: datetime | None) -> datetime | None:
+        return _not_past_datetime(v)
+
+
+class SurgeryUpdateIn(BaseModel):
+    name: str | None = Field(default=None, min_length=2, max_length=200)
+    purpose: str | None = Field(default=None, min_length=3, max_length=1000)
+    hospital: str | None = Field(default=None, max_length=200)
+    patient_instructions: str | None = Field(default=None, max_length=2000)
+    internal_notes: str | None = Field(default=None, max_length=2000)
+
+
+class SurgeryRescheduleIn(BaseModel):
+    scheduled_at: datetime
+
+    @field_validator("scheduled_at")
+    @classmethod
+    def _future(cls, v: datetime) -> datetime:
+        return _not_past_datetime(v)
+
+
+def surgery_out(s: m.Surgery, *, include_internal: bool) -> dict:
+    out = {
+        "id": s.id, "patient_id": s.patient_id, "doctor_id": s.doctor_id, "doctor_name": s.doctor_name,
+        "name": s.name, "purpose": s.purpose, "scheduled_at": iso(s.scheduled_at), "hospital": s.hospital,
+        "status": s.status, "patient_instructions": s.patient_instructions,
+        "created_at": iso(s.created_at), "updated_at": iso(s.updated_at or s.created_at),
+    }
+    if include_internal:
+        out["internal_notes"] = s.internal_notes
+    return out
+
+
 # ---------- Visits / prescriptions ----------
 
 class VisitIn(BaseModel):
@@ -485,6 +576,11 @@ class PreferencesIn(BaseModel):
     lifestyle_reminders: bool | None = None
     follow_up_reminders: bool | None = None
     doctor_notifications: bool | None = None
+
+
+class DeviceTokenIn(BaseModel):
+    token: str = Field(min_length=10, max_length=300)
+    platform: str | None = Field(default=None, pattern="^(android|ios|web)$")
 
 
 # ---------- Admin ----------

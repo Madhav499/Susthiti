@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from ..deps import CurrentUser
 from ..models import AuditLog, Counter, Notification, NotificationPreference, User
+from . import push
 
 
 def next_code(db: Session, name: str, prefix: str, width: int = 6) -> str:
@@ -91,4 +92,8 @@ def notify(
         dedupe_key=dedupe_key,
     )
     db.add(notification)
+    db.flush()  # assigns notification.id, needed in the push payload below
+    notification.push_status = push.send_to_user(db, user_id, title, body, {
+        "type": type, "entity_type": entity_type, "entity_id": entity_id, "patient_id": patient_id, "notification_id": notification.id,
+    })
     return notification

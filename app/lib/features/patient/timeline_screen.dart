@@ -141,6 +141,27 @@ class AppointmentsScreen extends ConsumerWidget {
   const AppointmentsScreen({super.key, required this.patientId});
   final String patientId;
 
+  static int _rank(AppointmentRecommendation a) => switch (a.timing) {
+        AppointmentTiming.upcoming => 0,
+        AppointmentTiming.unscheduled => 1,
+        AppointmentTiming.past => 2,
+      };
+
+  static StatusTone _tone(AppointmentTiming t) => switch (t) {
+        AppointmentTiming.upcoming => StatusTone.positive,
+        AppointmentTiming.unscheduled => StatusTone.attention,
+        AppointmentTiming.past => StatusTone.inactive,
+      };
+
+  /// Upcoming first (soonest first), then unscheduled (most recently recommended first), then
+  /// past (most recent first).
+  List<AppointmentRecommendation> _sorted(List<AppointmentRecommendation> items) => [...items]..sort((a, b) {
+      final r = _rank(a).compareTo(_rank(b));
+      if (r != 0) return r;
+      if (a.timing == AppointmentTiming.upcoming) return a.recommendedFor!.compareTo(b.recommendedFor!);
+      return b.createdAt.compareTo(a.createdAt);
+    });
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Theme.of(context).textTheme;
@@ -155,7 +176,7 @@ class AppointmentsScreen extends ConsumerWidget {
           data: (items) => items.isEmpty
               ? const EmptyState(icon: Icons.event_available_outlined, title: 'No appointment recommendations.')
               : Column(children: [
-                  for (final a in items) ...[
+                  for (final a in _sorted(items)) ...[
                     AppCard(
                       onTap: a.sideEffectId == null ? null : () => context.push('/r/$patientId/side-effects/${a.sideEffectId}'),
                       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -163,10 +184,10 @@ class AppointmentsScreen extends ConsumerWidget {
                         const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text(a.reason, style: t.titleSmall),
+                            Row(children: [Expanded(child: Text(a.reason, style: t.titleSmall)), StatusPill(a.timing.label, tone: _tone(a.timing))]),
                             const SizedBox(height: 2),
                             Text('Dr. ${a.doctorName} · ${Fmt.date(a.createdAt)}', style: t.bodySmall),
-                            if (a.recommendedFor != null) Text('Suggested for ${Fmt.date(a.recommendedFor)}', style: t.bodySmall?.copyWith(color: AppColors.primary)),
+                            if (a.recommendedFor != null) Text('Suggested for ${Fmt.dateTime(a.recommendedFor)}', style: t.bodySmall?.copyWith(color: AppColors.primary)),
                             if (a.sideEffectId != null) Text('Related to a side-effect report', style: t.bodySmall),
                           ]),
                         ),

@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..models import FoodEntry, GlucoseReading, LifestyleMetric
+from .health_data.body import local_today, to_local_date
 
 SUM_METRICS = {"steps", "activity", "calories", "sleep"}
 MIN_DAYS_FOR_COMPARISON = 5
@@ -18,7 +19,7 @@ def _start_of(day: date) -> datetime:
 
 
 def _day(dt: datetime) -> date:
-    return dt.date()
+    return to_local_date(dt)
 
 
 def _aware(dt: datetime | None) -> datetime | None:
@@ -41,7 +42,8 @@ def daily_series(db: Session, patient_id: str, metric: str, start: date, end: da
         query = query.where(LifestyleMetric.is_demo.is_(False))
     buckets: dict[date, list[LifestyleMetric]] = defaultdict(list)
     for row in db.scalars(query):
-        # Health-platform values carry the patient's own date; others fall back to the UTC date.
+        # Health-platform values and dated manual entries carry their own local_date; anything
+        # older falls back to recorded_at's local calendar date.
         day = row.local_date or _day(row.recorded_at)
         if start <= day <= end:
             buckets[day].append(row)
@@ -66,7 +68,7 @@ def daily_series(db: Session, patient_id: str, metric: str, start: date, end: da
 
 
 def metric_overview(db: Session, patient_id: str, metric: str, today: date | None = None, include_demo: bool = True) -> dict:
-    today = today or datetime.now(timezone.utc).date()
+    today = today or local_today()
     series = daily_series(db, patient_id, metric, today - timedelta(days=29), today, include_demo)
     latest = series[-1] if series else None
     previous = [p["value"] for p in series if p["date"] != today.isoformat()][-14:]
@@ -83,7 +85,7 @@ def to_mg_dl(value: float, unit: str) -> float:
 
 
 def glucose_overview(db: Session, patient_id: str, today: date | None = None) -> dict:
-    today = today or datetime.now(timezone.utc).date()
+    today = today or local_today()
     rows = list(db.scalars(
         select(GlucoseReading).where(GlucoseReading.patient_id == patient_id, GlucoseReading.measured_at >= _start_of(today - timedelta(days=29))).order_by(GlucoseReading.measured_at)
     ))
@@ -107,7 +109,7 @@ def glucose_overview(db: Session, patient_id: str, today: date | None = None) ->
 
 
 def food_overview(db: Session, patient_id: str, days: int = 7) -> dict:
-    since = _start_of(datetime.now(timezone.utc).date() - timedelta(days=days - 1))
+    since = _start_of(local_today() - timedelta(days=days - 1))
     rows = list(db.scalars(select(FoodEntry).where(FoodEntry.patient_id == patient_id, FoodEntry.superseded_at.is_(None), FoodEntry.eaten_at >= since).order_by(FoodEntry.eaten_at)))
     return {
         "entries_count": len(rows),

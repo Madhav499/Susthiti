@@ -106,13 +106,13 @@ cd app && flutter analyze && flutter test && flutter build web
 
 - The supplied model runs in `diabetes_api/`. If that service is not running, the assessment screen says the
   service is temporarily unavailable and keeps the entered answers. No prediction is ever fabricated.
-- AI features show "AI features are not set up on this server yet" until `GEMINI_API_KEY` is set on the backend.
+- AI features show "AI features are not set up on this server yet" until `OPENROUTER_API_KEY` is set on the backend.
 - Android Health Connect and Apple Health are defined as integration points but need the platform
   plugins in the mobile build (see ARCHITECTURE.md). A clearly labelled DEMO device exists for development.
 
 ## Security notes
 
-- No API keys in the Flutter app or in Git. The Gemini key lives only in the backend environment.
+- No API keys in the Flutter app or in Git. The OpenRouter key lives only in the backend environment.
 - `.env`, databases and uploaded files are git-ignored.
 - Files are stored privately and served only through authorized endpoints, never as public URLs.
 - Logs record the route template and status only: no bodies, tokens, IDs or medical content.

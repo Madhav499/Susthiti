@@ -1,6 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
 
+    <!-- Android 13+ requires this to show any notification, system push included. Requested at
+         runtime by PushNotificationService; without it, pushes are simply not shown, but the
+         app still works. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
     <!-- Health Connect: READ only, and only for the data SUSTHITI shows on the lifestyle dashboard. -->
     <uses-permission android:name="android.permission.health.READ_STEPS"/>
     <uses-permission android:name="android.permission.health.READ_HEART_RATE"/>
@@ -56,6 +61,21 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- Fallback only: every push this backend sends sets its own channel (see
+             PushChannel in push.py), which PushNotificationService creates on launch with
+             matching ids. This is just what's used if a message ever arrives without one.
+             Harmless if FCM is never configured, since these meta-data entries are only read
+             when a push actually arrives. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="susthiti_general" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_stat_notify" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_color" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

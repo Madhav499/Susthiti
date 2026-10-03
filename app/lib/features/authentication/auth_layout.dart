@@ -6,24 +6,9 @@ import '../../core/config/app_config.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_tokens.dart';
+import '../../core/widgets/brand.dart';
 
-class BrandMark extends StatelessWidget {
-  const BrandMark({super.key, this.size = 36});
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      label: 'SUSTHITI',
-      excludeSemantics: true,
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Image.asset(AppAssets.mark, width: size * 1.15, height: size * 1.15, filterQuality: FilterQuality.medium),
-        const SizedBox(width: 10),
-        Text('SUSTHITI', style: Theme.of(context).textTheme.titleMedium?.copyWith(letterSpacing: 2, color: AppColors.primaryDeep, fontWeight: FontWeight.w700)),
-      ]),
-    );
-  }
-}
+export '../../core/widgets/brand.dart' show BrandMark;
 
 /// Calm two-panel layout on wide screens, single column on phones.
 class AuthLayout extends StatelessWidget {

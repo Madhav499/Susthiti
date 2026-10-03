@@ -6,6 +6,7 @@ import '../../features/authentication/auth_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
 import '../widgets/avatar.dart';
+import '../widgets/brand.dart';
 
 class ShellDestination {
   const ShellDestination(this.label, this.icon, this.selectedIcon);
@@ -273,12 +274,7 @@ class _CompactRail extends StatelessWidget {
       child: SafeArea(
         child: Column(children: [
           const SizedBox(height: AppSpacing.xl),
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(11)),
-            child: const Icon(Icons.favorite_outline, color: Colors.white, size: 20),
-          ),
+          const BrandIcon(size: 36),
           const SizedBox(height: AppSpacing.xxl),
           for (var i = 0; i < destinations.length; i++)
             Padding(

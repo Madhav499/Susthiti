@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_card.dart';
@@ -57,12 +58,23 @@ class _TrendCardState extends ConsumerState<TrendCard> {
     }
   }
 
+  /// Null for metrics that aren't a lifestyle metric at all (glucose, or a report-derived
+  /// analyte like HbA1c) — those fall back to the plain `value unit` formatting below.
+  static LifestyleMetricType? _lifestyleMetric(String apiValue) {
+    for (final m in LifestyleMetricType.values) {
+      if (m.apiValue == apiValue) return m;
+    }
+    return null;
+  }
+
+  static String _plainValue(double v, String unit) => '${v % 1 == 0 ? v.toStringAsFixed(0) : v.toStringAsFixed(1)} $unit'.trim();
+
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     final key = (patientId: widget.patientId, metric: widget.metric, range: _range, start: _range == 'custom' ? _custom?.start : null, end: _range == 'custom' ? _custom?.end : null);
     final value = ref.watch(trendProvider(key));
-    final metricType = widget.metric == 'glucose' ? null : LifestyleMetricType.parse(widget.metric);
+    final metricType = _lifestyleMetric(widget.metric);
     return AppCard(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
@@ -82,10 +94,28 @@ class _TrendCardState extends ConsumerState<TrendCard> {
             if (series.points.isEmpty) {
               return SizedBox(height: 120, child: Center(child: Text('No ${widget.title.toLowerCase()} recorded in this period.', style: t.bodySmall)));
             }
+            if (series.points.length == 1) {
+              // One point is a fact, not a trend — showing a line chart here would imply a
+              // historical direction that doesn't exist yet.
+              final p = series.points.first;
+              final valueText = metricType == null ? _plainValue(p.value, series.unit) : metricType.format(p.value, p.value2);
+              return SizedBox(
+                height: 120,
+                child: Center(
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    Text('Single recorded result', style: t.titleSmall),
+                    const SizedBox(height: 4),
+                    Text('$valueText on ${Fmt.date(p.date)}', style: t.bodyMedium),
+                    const SizedBox(height: 4),
+                    Text('More results are needed to show a trend.', style: t.bodySmall?.copyWith(color: AppColors.textSecondary)),
+                  ]),
+                ),
+              );
+            }
             final points = [for (final p in series.points) ChartPoint(p.date, p.value, value2: p.value2, isDemo: p.isDemo)];
             final values = series.points.map((p) => p.value).toList();
             final avg = values.reduce((a, b) => a + b) / values.length;
-            final avgText = metricType == null ? '${avg.toStringAsFixed(0)} ${series.unit}' : metricType.format(avg);
+            final avgText = metricType == null ? _plainValue(avg, series.unit) : metricType.format(avg);
             return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               TrendLineChart(points: points, unit: series.unit, bars: widget.bars),
               const SizedBox(height: AppSpacing.sm),

@@ -92,7 +92,7 @@ def test_photos_are_read_by_the_ai_reader_with_the_same_checks(env, monkeypatch)
     report = upload(client, headers, pid, PNG, "report.png", "hba1c", "image/png")
     values = client.get(f"{API}/reports/{report['id']}/values", headers=headers).json()
     assert [(v["analyte"], v["value"], v["origin"]) for v in values["values"]] == [("hba1c", 6.4, "ai_extracted")]
-    assert gemini.requests[0]["contents"][0]["parts"][0]["inlineData"]["mimeType"] == "image/png"
+    assert gemini.requests[0]["messages"][1]["content"][0]["image_url"]["url"].startswith("data:image/png")
 
 
 def test_photos_without_the_ai_reader_say_so(env):

@@ -78,6 +78,10 @@ class _HealthProfileFormState extends ConsumerState<_HealthProfileForm> {
     final profile = widget.profile;
     final role = ref.watch(currentUserProvider)?.role;
     final canEdit = role == UserRole.patient || role == UserRole.doctor;
+    // A patient can edit their own answers but never a doctor-only field (e.g. doctor-documented
+    // restrictions): the backend rejects that write outright, so the field is disabled here
+    // instead of letting a patient type into it and hit a confusing whole-form save error.
+    bool canEditField(HealthProfileField f) => canEdit && !(f.doctorOnly && role == UserRole.patient);
     return PageBody(maxWidth: 760, children: [
       Text(
         'SUSTHITI keeps these answers once and uses them wherever they are needed, including your future diabetes risk estimate. '
@@ -92,7 +96,7 @@ class _HealthProfileFormState extends ConsumerState<_HealthProfileForm> {
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               for (final (i, field) in profile.fieldsIn(group.value).indexed) ...[
                 if (i > 0) const Divider(height: AppSpacing.xl),
-                ProfileFieldEditor(field: field, answers: _answers, canEdit: canEdit, onChanged: (v) => setState(() => _answers.edits[field.key] = v)),
+                ProfileFieldEditor(field: field, answers: _answers, canEdit: canEditField(field), onChanged: (v) => setState(() => _answers.edits[field.key] = v)),
               ],
             ]),
           ),

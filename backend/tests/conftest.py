@@ -8,7 +8,7 @@ os.environ.setdefault("AUTH_RATE_LIMIT_ENABLED", "false")
 # AI reading of report values has its own tests; elsewhere uploads must not queue AI calls.
 os.environ.setdefault("AI_READ_REPORT_VALUES", "false")
 os.environ.setdefault("DEV_EXPOSE_RESET_TOKEN", "true")
-os.environ.setdefault("GEMINI_API_KEY", "test-key-not-real")
+os.environ.setdefault("OPENROUTER_API_KEY", "test-key-not-real")
 
 import httpx  # noqa: E402
 import pytest  # noqa: E402
@@ -19,7 +19,7 @@ from app.db import Base  # noqa: E402
 from app.services import storage  # noqa: E402
 from app.services.diabetes_risk import client as risk_client  # noqa: E402
 from app.services.ai import services as ai_services  # noqa: E402
-from app.services.ai.gemini import GeminiClient  # noqa: E402
+from app.services.ai.openrouter import OpenRouterClient  # noqa: E402
 
 PDF_BYTES = b"%PDF-1.4\n% TEST FIXTURE ONLY\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF"
 
@@ -77,15 +77,15 @@ class FakeRiskAPI:
         })
 
 
-class FakeGemini:
-    """TEST double for Google AI Studio."""
+class FakeOpenRouter:
+    """TEST double for OpenRouter's chat-completions endpoint."""
 
     def __init__(self):
         self.responses: list = []
         self.requests = []
 
     def queue_json(self, obj):
-        self.responses.append(httpx.Response(200, json={"candidates": [{"content": {"parts": [{"text": json.dumps(obj)}]}}]}))
+        self.responses.append(httpx.Response(200, json={"choices": [{"message": {"content": json.dumps(obj)}}]}))
 
     def queue_raw(self, response: httpx.Response):
         self.responses.append(response)
@@ -104,8 +104,8 @@ def env(tmp_path):
     storage.set_storage(storage.LocalFileStorage(str(tmp_path / "files")))
     ml = FakeRiskAPI()
     risk_client.set_risk_client(risk_client.DiabetesRiskApiV4Client("http://ml.test", transport=httpx.MockTransport(ml.handler)))
-    gemini = FakeGemini()
-    ai_services.set_ai_client(GeminiClient(api_key="test", model="test-model", transport=httpx.MockTransport(gemini.handler)))
+    gemini = FakeOpenRouter()
+    ai_services.set_ai_client(OpenRouterClient(api_key="test", model="test-model", transport=httpx.MockTransport(gemini.handler)))
     from app.main import app
 
     with TestClient(app) as client:

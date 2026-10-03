@@ -1,3 +1,4 @@
+
 # AI setup (Google AI Studio)
 
 All AI runs on the **backend**. The Flutter app never holds an API key and never calls Google directly.

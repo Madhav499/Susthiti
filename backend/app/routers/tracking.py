@@ -136,7 +136,8 @@ def add_metric(patient_id: str, body: LifestyleIn, current: CurrentUser = Depend
         raise errors.unprocessable(problem, {"field": "value"})
     metric = LifestyleMetric(
         patient_id=patient.id, metric_type=body.metric_type, value=body.value, value2=body.value2,
-        unit=METRIC_UNITS[body.metric_type], recorded_at=body.recorded_at, source="manual",
+        unit=METRIC_UNITS[body.metric_type], recorded_at=body.recorded_at,
+        local_date=body.local_date or body.recorded_at.date(), source="manual",
     )
     db.add(metric)
     db.commit()

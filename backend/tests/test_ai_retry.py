@@ -1,4 +1,4 @@
-"""Bounded retry/backoff for transient Gemini failures (services/ai/gemini.py). Backoff
+"""Bounded retry/backoff for transient OpenRouter failures (services/ai/openrouter.py). Backoff
 sleeps are monkeypatched away so these tests run fast and deterministically.
 """
 
@@ -10,9 +10,9 @@ API = "/api/v1"
 
 
 def _no_sleep(monkeypatch):
-    from app.services.ai import gemini as gemini_module
+    from app.services.ai import openrouter as openrouter_module
 
-    monkeypatch.setattr(gemini_module.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(openrouter_module.time, "sleep", lambda seconds: None)
 
 
 def test_a_transient_503_is_retried_and_then_succeeds(env, monkeypatch):
@@ -30,10 +30,10 @@ def test_a_transient_503_is_retried_and_then_succeeds(env, monkeypatch):
 
 def test_a_429_honors_retry_after(env, monkeypatch):
     client, _, gemini = env
-    from app.services.ai import gemini as gemini_module
+    from app.services.ai import openrouter as openrouter_module
 
     sleeps: list[float] = []
-    monkeypatch.setattr(gemini_module.time, "sleep", lambda seconds: sleeps.append(seconds))
+    monkeypatch.setattr(openrouter_module.time, "sleep", lambda seconds: sleeps.append(seconds))
     headers, patient = register_patient(client)
     report = upload(client, headers, patient["patient_id"]).json()
     gemini.queue_raw(httpx.Response(429, headers={"Retry-After": "7"}))
@@ -45,10 +45,10 @@ def test_a_429_honors_retry_after(env, monkeypatch):
 
 def test_a_non_retryable_status_fails_immediately(env, monkeypatch):
     client, _, gemini = env
-    from app.services.ai import gemini as gemini_module
+    from app.services.ai import openrouter as openrouter_module
 
     sleeps: list[float] = []
-    monkeypatch.setattr(gemini_module.time, "sleep", lambda seconds: sleeps.append(seconds))
+    monkeypatch.setattr(openrouter_module.time, "sleep", lambda seconds: sleeps.append(seconds))
     headers, patient = register_patient(client)
     report = upload(client, headers, patient["patient_id"]).json()
     gemini.queue_raw(httpx.Response(400))

@@ -16,6 +16,7 @@ import '../../core/widgets/labels.dart';
 import '../../data/providers.dart';
 import '../ai/ai_screens.dart';
 import '../diabetes/diabetes_screen.dart';
+import '../follow_ups/follow_ups_screens.dart';
 import '../glucose/glucose_screen.dart';
 import '../lifestyle/lifestyle_screen.dart';
 import '../lifestyle/trend_card.dart';
@@ -24,9 +25,10 @@ import '../patient/timeline_screen.dart';
 import '../prescriptions/prescriptions_screens.dart';
 import '../reports/reports_screen.dart';
 import '../side_effects/side_effects_screens.dart';
+import '../surgery/surgery_screens.dart';
 import '../visits/visits_screens.dart';
 
-const _tabs = ['Overview', 'Diabetes', 'Reports', 'Glucose', 'Lifestyle', 'Prescriptions', 'Visits', 'Side Effects', 'AI Summary'];
+const _tabs = ['Overview', 'Diabetes', 'Reports', 'Glucose', 'Lifestyle', 'Prescriptions', 'Visits', 'Follow-ups', 'Surgeries', 'Side Effects', 'AI Summary'];
 
 /// Everything here is read through endpoints that re-check the doctor's approved access.
 class DoctorPatientDetailScreen extends ConsumerWidget {
@@ -59,6 +61,8 @@ class DoctorPatientDetailScreen extends ConsumerWidget {
           tab(LifestyleView(patientId: patientId, embedded: true, ranges: TrendCard.clinicalRanges)),
           tab(PrescriptionsView(patientId: patientId, embedded: true)),
           tab(VisitsView(patientId: patientId, embedded: true)),
+          tab(FollowUpsView(patientId: patientId, embedded: true)),
+          tab(SurgeriesView(patientId: patientId, embedded: true)),
           tab(SideEffectsView(patientId: patientId, embedded: true)),
           tab(PatientSummaryView(patientId: patientId, embedded: true)),
         ]),

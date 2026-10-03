@@ -10,3 +10,4 @@ httpx>=0.27
 reportlab>=4.2
 tzdata>=2024.1  # time zones on Windows (birthdays, appointment reminders)
 pypdf>=5.0  # reading HbA1c / glucose results from text PDFs
+firebase-admin>=7.7  # sends push notifications; a no-op until FCM_SERVICE_ACCOUNT_JSON is set

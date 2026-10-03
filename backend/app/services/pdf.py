@@ -11,7 +11,7 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.platypus import HRFlowable, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-from .ai.gemini import DISCLAIMER
+from .ai.openrouter import DISCLAIMER
 
 TEAL = colors.HexColor("#176B67")
 TEXT = colors.HexColor("#18302F")

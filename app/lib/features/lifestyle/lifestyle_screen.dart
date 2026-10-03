@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/errors/failures.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_tokens.dart';
+import '../../core/utils/day_change_watcher.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/validators/validators.dart';
 import '../../core/widgets/app_card.dart';
@@ -50,12 +51,20 @@ class LifestyleView extends ConsumerStatefulWidget {
 
 class _LifestyleViewState extends ConsumerState<LifestyleView> {
   LifestyleMetricType _chartMetric = LifestyleMetricType.steps;
+  DayChangeWatcher? _dayWatcher;
 
   @override
   void initState() {
     super.initState();
+    _dayWatcher = DayChangeWatcher(_refresh);
     // Health data syncs when the dashboard opens (background sync is not relied on).
     if (widget.isPatient) WidgetsBinding.instance.addPostFrameCallback((_) => syncHealthIfDue(ref, onSynced: _refresh));
+  }
+
+  @override
+  void dispose() {
+    _dayWatcher?.dispose();
+    super.dispose();
   }
 
   void _refresh() {

@@ -8,6 +8,13 @@ abstract interface class NotificationRepository {
   Future<void> markAllRead();
   Future<NotificationPreferences> preferences();
   Future<NotificationPreferences> updatePreferences(Map<String, bool> changes);
+
+  /// Registers this device for system push notifications. Safe to call on every launch —
+  /// re-sending the same token is a no-op on the backend.
+  Future<void> registerDeviceToken(String token, {String platform = 'android'});
+
+  /// Called on logout so a shared or reused device stops receiving this account's pushes.
+  Future<void> unregisterDeviceToken(String token);
 }
 
 class ApiNotificationRepository implements NotificationRepository {
@@ -34,4 +41,10 @@ class ApiNotificationRepository implements NotificationRepository {
 
   @override
   Future<NotificationPreferences> updatePreferences(Map<String, bool> changes) async => NotificationPreferences.fromJson(await _api.put('/notifications/preferences', body: changes));
+
+  @override
+  Future<void> registerDeviceToken(String token, {String platform = 'android'}) => _api.post('/notifications/device-tokens', body: {'token': token, 'platform': platform});
+
+  @override
+  Future<void> unregisterDeviceToken(String token) => _api.post('/notifications/device-tokens/unregister', body: {'token': token});
 }

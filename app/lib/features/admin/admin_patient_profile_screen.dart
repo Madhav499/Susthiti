@@ -26,6 +26,7 @@ import '../../data/providers.dart';
 import '../ai/ai_summary_section.dart';
 import '../diabetes/risk_widgets.dart';
 import '../diabetes/diabetes_screen.dart';
+import '../follow_ups/follow_ups_screens.dart';
 import '../food/food_screen.dart';
 import '../glucose/glucose_screen.dart';
 import '../lifestyle/lifestyle_screen.dart';
@@ -36,6 +37,7 @@ import '../prescriptions/prescriptions_screens.dart';
 import '../reports/reports_providers.dart';
 import '../reports/reports_screen.dart';
 import '../side_effects/side_effects_screens.dart';
+import '../surgery/surgery_screens.dart';
 import '../visits/visits_screens.dart';
 import 'admin_common.dart';
 import 'admin_doctor_profile_screen.dart' show AuditTable;
@@ -92,6 +94,8 @@ class AdminPatientProfileScreen extends ConsumerWidget {
             ProfileTab('prescriptions', 'Prescriptions', PrescriptionsView(patientId: patientId, embedded: true)),
             ProfileTab('visits', 'Visits', VisitsView(patientId: patientId, embedded: true)),
             ProfileTab('appointments', 'Appointments', _AppointmentsTab(detail: d)),
+            ProfileTab('follow-ups', 'Follow-ups', FollowUpsView(patientId: patientId, embedded: true)),
+            ProfileTab('surgeries', 'Surgeries', SurgeriesView(patientId: patientId, embedded: true)),
             ProfileTab('side-effects', 'Side Effects', SideEffectsView(patientId: patientId, embedded: true)),
             ProfileTab('ai', 'AI Summaries', _AiTab(patientId: patientId)),
             ProfileTab('doctors', 'Doctors', _DoctorsTab(detail: d)),

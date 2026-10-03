@@ -20,8 +20,11 @@ class ProfileAnswers {
   final HealthProfile profile;
   final Map<String, Object?> edits = {};
   final Map<String, TextEditingController> _numbers = {};
+  final Map<String, TextEditingController> _lists = {};
 
   TextEditingController numberController(HealthProfileField f) => _numbers.putIfAbsent(f.key, () => TextEditingController(text: _numberText(f)));
+
+  TextEditingController listController(HealthProfileField f) => _lists.putIfAbsent(f.key, () => TextEditingController(text: _listText(f)));
 
   /// Every answer shown, re-confirmed ([all]) or only the ones that changed. Returns an error
   /// message instead when a number is out of range.
@@ -45,6 +48,20 @@ class ProfileAnswers {
         if (all || number != saved || f.needsUpdate) out[f.key] = number;
         continue;
       }
+      if (f.kind == ProfileFieldKind.list) {
+        final text = (_lists[f.key]?.text ?? _listText(f)).trim();
+        if (text.isEmpty) {
+          if (f.answered && f.value != null) out[f.key] = null;
+          continue;
+        }
+        String? error;
+        final parsed = _parseList(text, f.label, onError: (m) => error = m);
+        if (error != null) return (values: const {}, error: error);
+        final original = f.value is List ? List<String>.from(f.value as List) : const <String>[];
+        final unchanged = parsed.length == original.length && !List.generate(parsed.length, (i) => parsed[i] != original[i]).contains(true);
+        if (all || !unchanged || f.needsUpdate) out[f.key] = parsed;
+        continue;
+      }
       if (edits.containsKey(f.key)) {
         out[f.key] = edits[f.key];
       } else if (all && f.answered) {
@@ -58,12 +75,41 @@ class ProfileAnswers {
     for (final c in _numbers.values) {
       c.dispose();
     }
+    for (final c in _lists.values) {
+      c.dispose();
+    }
   }
 
   static String _numberText(HealthProfileField f) {
     final v = f.value;
     if (v is! num) return '';
     return v % 1 == 0 ? v.toInt().toString() : v.toString();
+  }
+
+  static String _listText(HealthProfileField f) {
+    final v = f.value;
+    if (v is! List) return '';
+    return v.cast<String>().join(', ');
+  }
+
+  /// Splits on commas and newlines, trims each entry, drops empties and case-insensitive
+  /// duplicates — mirrors the backend's own cleanup in `profile_fields.py`'s `ProfileField.validate`.
+  static List<String> _parseList(String text, String label, {required void Function(String) onError}) {
+    final seen = <String>[];
+    for (final raw in text.split(RegExp(r'[,\n]'))) {
+      final cleaned = raw.trim().replaceAll(RegExp(r'\s+'), ' ');
+      if (cleaned.isEmpty) continue;
+      if (cleaned.length > 200) {
+        onError('$label: each item must be 200 characters or fewer.');
+        return const [];
+      }
+      if (!seen.any((s) => s.toLowerCase() == cleaned.toLowerCase())) seen.add(cleaned);
+    }
+    if (seen.length > 20) {
+      onError('$label: list up to 20 items.');
+      return const [];
+    }
+    return seen;
   }
 }
 
@@ -118,6 +164,20 @@ class ProfileFieldEditor extends StatelessWidget {
             decoration: InputDecoration(suffixText: field.unit, hintText: 'Not recorded', isDense: true),
           ),
         );
+      case ProfileFieldKind.list:
+        editor = TextField(
+          key: ValueKey('list-${field.key}'),
+          controller: answers.listController(field),
+          enabled: canEdit,
+          minLines: 2,
+          maxLines: 6,
+          textCapitalization: TextCapitalization.sentences,
+          keyboardType: TextInputType.multiline,
+          decoration: const InputDecoration(
+            hintText: 'Not recorded — separate multiple entries with a comma or a new line',
+            isDense: true,
+          ),
+        );
     }
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(field.label, style: t.titleSmall),
@@ -133,7 +193,7 @@ class ProfileFieldEditor extends StatelessWidget {
               style: t.bodySmall?.copyWith(color: field.needsUpdate ? AppColors.warningText : null),
             ),
           ),
-          if (field.needsUpdate && canEdit && !edited && field.kind != ProfileFieldKind.number)
+          if (field.needsUpdate && canEdit && !edited && field.kind != ProfileFieldKind.number && field.kind != ProfileFieldKind.list)
             TextButton(onPressed: () => onChanged(field.value), child: const Text('Still correct')),
         ]),
       ],

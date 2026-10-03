@@ -557,9 +557,9 @@ class _AppointmentsTab extends ConsumerWidget {
                         contentPadding: EdgeInsets.zero,
                         leading: _DateBadge(f.date),
                         title: Text(f.patient?.name ?? 'Patient'),
-                        subtitle: Text('${f.source == 'visit' ? 'Visit follow-up' : 'Prescription follow-up'} · ${f.code}${f.reason == null ? '' : ' · ${f.reason}'}'),
+                        subtitle: Text('${_followUpSourceLabel(f)}${f.code == null ? '' : ' · ${f.code}'}${f.reason == null ? '' : ' · ${f.reason}'}'),
                         trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
-                        onTap: f.patient == null ? null : () => context.push('/r/${f.patient!.id}/${f.source == 'visit' ? 'visits' : 'prescriptions'}/${f.recordId}'),
+                        onTap: f.patient == null ? null : () => context.push(_followUpRoute(f)),
                       ),
                   ]),
           ),
@@ -601,9 +601,44 @@ class _AppointmentsTab extends ConsumerWidget {
                     ),
                 ]),
         ),
+        const SizedBox(height: AppSpacing.lg),
+        AsyncSection<DoctorAppointments>(
+          title: 'Scheduled Surgeries',
+          value: value,
+          onRetry: retry,
+          builder: (d) => d.surgeries.isEmpty
+              ? const EmptyLine('No surgeries scheduled.', icon: Icons.local_hospital_outlined)
+              : Column(children: [
+                  for (final s in d.surgeries)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const IconBadge(Icons.local_hospital_outlined, size: 36),
+                      title: Text('${s.patient?.name ?? 'Patient'} · ${s.surgery.name}', maxLines: 1, overflow: TextOverflow.ellipsis),
+                      subtitle: Text('${s.surgery.status.label}${s.surgery.scheduledAt == null ? '' : ' · ${Fmt.dateTime(s.surgery.scheduledAt)}'}'),
+                      trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
+                      onTap: s.patient == null ? null : () => context.push(adminPatientRoute(s.patient!.id, tab: 'surgeries')),
+                    ),
+                ]),
+        ),
       ],
     );
   }
+}
+
+String _followUpSourceLabel(FollowUp f) => switch (f.source) {
+      'visit' => 'Visit follow-up',
+      'prescription' => 'Prescription follow-up',
+      'follow_up_task' => 'Follow-up${f.status == null ? '' : ' · ${f.status}'}',
+      _ => f.source,
+    };
+
+String _followUpRoute(FollowUp f) {
+  final pid = f.patient!.id;
+  return switch (f.source) {
+    'visit' => '/r/$pid/visits/${f.recordId}',
+    'prescription' => '/r/$pid/prescriptions/${f.recordId}',
+    _ => adminPatientRoute(pid, tab: 'follow-ups'),
+  };
 }
 
 class _DateBadge extends StatelessWidget {

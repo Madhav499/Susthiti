@@ -30,6 +30,8 @@ typedef AdminPatientsKey = ({String query, String status});
 final adminPatientsProvider =
     FutureProvider.autoDispose.family<({List<AdminPatient> items, int total}), AdminPatientsKey>((ref, k) => ref.watch(adminRepositoryProvider).patients(query: k.query, status: k.status));
 final auditLogsProvider = FutureProvider.autoDispose.family<({List<AuditEntry> items, int total}), String>((ref, q) => ref.watch(adminRepositoryProvider).auditLogs(query: q));
+final notificationDeliveryProvider =
+    FutureProvider.autoDispose.family<({List<NotificationDeliveryEntry> items, int total}), String?>((ref, status) => ref.watch(adminRepositoryProvider).notificationDelivery(status: status));
 final systemSettingsProvider = FutureProvider.autoDispose<SystemSettings>((ref) => ref.watch(adminRepositoryProvider).settings());
 
 /// Admins manage accounts and access, and can open any doctor's or patient's complete record
@@ -43,6 +45,7 @@ class AdminDashboardScreen extends ConsumerWidget {
     return AppPage(
       title: 'Admin',
       large: true,
+      brand: true,
       body: PageBody(onRefresh: () async => ref.invalidate(adminDashboardProvider), children: [
         AsyncBody(
           value: ref.watch(adminDashboardProvider),
@@ -55,6 +58,21 @@ class AdminDashboardScreen extends ConsumerWidget {
                 MetricTile(icon: Icons.people_outline, label: 'Patients', value: '${m('total_patients')}', caption: 'registered', onTap: () => context.go('/a/patients')),
                 MetricTile(icon: Icons.person_pin_outlined, label: 'Active patients', value: '${m('active_patients')}', caption: 'in the last 30 days'),
                 MetricTile(icon: Icons.hourglass_empty, label: 'Pending requests', value: '${m('pending_requests')}', caption: 'doctor access', onTap: () => context.go('/a/access')),
+              ]),
+              const SizedBox(height: AppSpacing.section),
+              const SectionHeader('Operational overview', subtitle: 'Aggregate counts only — never clinical content.'),
+              ResponsiveGrid(minItemWidth: 170, maxColumns: 5, children: [
+                MetricTile(icon: Icons.event_available_outlined, label: 'Appointments', value: '${m('appointments_7d')}', caption: 'in the next 7 days'),
+                MetricTile(icon: Icons.event_repeat_outlined, label: 'Follow-ups', value: '${m('follow_ups_scheduled')}', caption: 'scheduled'),
+                MetricTile(icon: Icons.local_hospital_outlined, label: 'Surgeries', value: '${m('surgeries_scheduled')}', caption: 'scheduled'),
+                MetricTile(icon: Icons.description_outlined, label: 'Reports', value: '${m('reports_7d')}', caption: 'uploaded in the last 7 days'),
+                MetricTile(
+                  icon: Icons.notifications_off_outlined,
+                  label: 'Failed pushes',
+                  value: '${m('failed_push_notifications_7d')}',
+                  caption: 'in the last 7 days',
+                  onTap: () => context.push('/a/notifications'),
+                ),
               ]),
               const SizedBox(height: AppSpacing.section),
               const SectionHeader('Quick actions'),
@@ -558,6 +576,74 @@ class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> {
                               ),
                             ]),
                           ),
+                          Text(Fmt.dateTime(r.items[i].createdAt), style: t.labelSmall),
+                        ]),
+                      ),
+                    ],
+                  ]),
+                ),
+        ),
+      ]),
+    );
+  }
+}
+
+/// Delivery status only — type, recipient role, outcome. Never a notification's title or
+/// body; those are free text that can name a patient and have no operational reason to be here.
+class NotificationDeliveryScreen extends ConsumerStatefulWidget {
+  const NotificationDeliveryScreen({super.key});
+
+  @override
+  ConsumerState<NotificationDeliveryScreen> createState() => _NotificationDeliveryScreenState();
+}
+
+class _NotificationDeliveryScreenState extends ConsumerState<NotificationDeliveryScreen> {
+  String? _status;
+
+  static StatusTone _tone(String? status) => switch (status) {
+        'sent' => StatusTone.positive,
+        'failed' => StatusTone.critical,
+        _ => StatusTone.inactive,
+      };
+
+  static String _label(String? status) => switch (status) { 'sent' => 'Sent', 'failed' => 'Failed', _ => 'Not attempted' };
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    return AppPage(
+      title: 'Notification Delivery',
+      body: PageBody(maxWidth: 900, onRefresh: () async => ref.invalidate(notificationDeliveryProvider(_status)), children: [
+        Text('Push delivery status only. A notification\'s content is never shown here.', style: t.bodySmall?.copyWith(color: AppColors.textSecondary)),
+        const SizedBox(height: AppSpacing.lg),
+        Wrap(spacing: AppSpacing.sm, children: [
+          ChoiceChip(label: const Text('All'), selected: _status == null, onSelected: (_) => setState(() => _status = null)),
+          ChoiceChip(label: const Text('Sent'), selected: _status == 'sent', onSelected: (_) => setState(() => _status = 'sent')),
+          ChoiceChip(label: const Text('Failed'), selected: _status == 'failed', onSelected: (_) => setState(() => _status = 'failed')),
+          ChoiceChip(label: const Text('Not attempted'), selected: _status == 'none', onSelected: (_) => setState(() => _status = 'none')),
+        ]),
+        const SizedBox(height: AppSpacing.lg),
+        AsyncBody(
+          value: ref.watch(notificationDeliveryProvider(_status)),
+          onRetry: () => ref.invalidate(notificationDeliveryProvider(_status)),
+          data: (r) => r.items.isEmpty
+              ? const EmptyState(icon: Icons.notifications_none_outlined, title: 'No notifications match this filter.')
+              : AppCard(
+                  padding: EdgeInsets.zero,
+                  child: Column(children: [
+                    for (var i = 0; i < r.items.length; i++) ...[
+                      if (i > 0) const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+                        child: Row(children: [
+                          Expanded(
+                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Text(Fmt.titleCase(r.items[i].type), style: t.titleSmall),
+                              Text(r.items[i].recipientRole ?? 'Unknown recipient', style: t.bodySmall),
+                            ]),
+                          ),
+                          StatusPill(_label(r.items[i].pushStatus), tone: _tone(r.items[i].pushStatus)),
+                          const SizedBox(width: AppSpacing.md),
                           Text(Fmt.dateTime(r.items[i].createdAt), style: t.labelSmall),
                         ]),
                       ),

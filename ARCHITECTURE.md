@@ -9,10 +9,10 @@
    │  private file storage
    │  notifications, audit
    │  PDF generation
-   └──────────────►  Google AI Studio (Gemini REST, key from backend env only)
+   └──────────────►  OpenRouter (OpenAI-compatible chat completions, key from backend env only)
 ```
 
-The app never talks to the ML service or to Google directly. Every request goes through the backend, which
+The app never talks to the ML service or to OpenRouter directly. Every request goes through the backend, which
 checks the caller's role and relationship to the patient first.
 
 ## Flutter app (`app/lib`)
@@ -53,10 +53,14 @@ Key points:
 | `routers/diabetes.py`, `services/diabetes_model.py` | Validates the 16 inputs, calls the ML service, stores the assessment with a lifestyle snapshot |
 | `routers/tracking.py`, `services/lifestyle_data.py`, `services/wearables.py` | Glucose, food (edits create revisions), lifestyle metrics, wearable connections and sync |
 | `routers/care.py` | Side effects (with status history), doctor responses, appointment recommendations, visits, prescriptions |
-| `routers/access.py` | Access requests (name + Patient ID must both match), approve, reject, revoke, doctor workspace |
+| `routers/access.py` | Access requests (name + Patient ID must both match), approve, reject, revoke, doctor workspace, "My Day" |
+| `routers/follow_ups.py` | Follow-up tasks: create, list, complete, cancel, reschedule -- scheduling state, not append-only history |
+| `routers/surgeries.py` | Surgery records; `internal_notes` is doctor/admin only, enforced by the serializer, never the client |
 | `routers/ai.py`, `services/ai/` | Four separate AI services, staleness detection, stored summaries, PDFs |
 | `routers/admin.py` | Doctors, patient accounts, write-only report upload, audit log, settings |
-| `services/reminders.py` | Background loop for food, lifestyle and follow-up reminders, deduplicated and respecting preferences |
+| `routers/notifications.py`, `services/records.py` | In-app notifications, preferences, device-token registration |
+| `services/push.py` | Sends the system (FCM) half of every notification; a no-op until `FCM_SERVICE_ACCOUNT_JSON` is set |
+| `services/reminders.py` | Background loop for food, lifestyle, follow-up and surgery reminders, deduplicated and respecting preferences |
 | `services/pdf.py` | reportlab PDF of a stored AI summary, named `SUSTHITI_<Label>_<date>.pdf` |
 
 ### Security model

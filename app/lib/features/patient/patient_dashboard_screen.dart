@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_tokens.dart';
+import '../../core/utils/day_change_watcher.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/widgets/app_page.dart';
 import '../../core/widgets/charts.dart';
 import '../../core/widgets/feedback.dart';
 import '../../core/widgets/labels.dart';
+import '../../data/models/care.dart';
 import '../../data/models/diabetes_risk.dart';
 import '../../data/models/system.dart';
 import '../../data/models/tracking.dart';
@@ -32,13 +34,21 @@ class PatientDashboardScreen extends ConsumerStatefulWidget {
 
 class _PatientDashboardScreenState extends ConsumerState<PatientDashboardScreen> {
   String get patientId => widget.patientId;
+  DayChangeWatcher? _dayWatcher;
 
   @override
   void initState() {
     super.initState();
+    _dayWatcher = DayChangeWatcher(() => ref.invalidate(patientDashboardProvider(patientId)));
     // On launch: bring health data up to date in the foreground (lazy: only now is the health
     // platform touched), then refresh the dashboard if anything new arrived.
     WidgetsBinding.instance.addPostFrameCallback((_) => syncHealthIfDue(ref, onSynced: () => ref.invalidate(patientDashboardProvider(patientId))));
+  }
+
+  @override
+  void dispose() {
+    _dayWatcher?.dispose();
+    super.dispose();
   }
 
   @override
@@ -51,6 +61,7 @@ class _PatientDashboardScreenState extends ConsumerState<PatientDashboardScreen>
       title: name == null ? 'Home' : '${birthday ? 'Happy birthday' : Fmt.greeting()}, ${Fmt.firstName(name)}',
       subtitle: Fmt.date(DateTime.now()),
       large: true,
+      brand: true,
       actions: const [NotificationBell()],
       body: PageBody(
         onRefresh: () async => refresh(),
@@ -137,6 +148,10 @@ class _DashboardBody extends ConsumerWidget {
       ]),
     ]);
 
+    final appointment = _nextAppointmentCard(context, d.nextAppointment);
+    final followUp = _nextFollowUpCard(context, d.nextFollowUp);
+    final surgery = _nextSurgeryCard(context, d.nextSurgery);
+
     final actions = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       const SectionHeader('Quick Actions'),
       ResponsiveGrid(minItemWidth: 100, maxColumns: 5, children: [
@@ -149,6 +164,7 @@ class _DashboardBody extends ConsumerWidget {
         ActionTile(icon: Icons.restaurant_outlined, label: 'Log Food', onTap: () => context.push('/p/food')),
         ActionTile(icon: Icons.insights_outlined, label: 'Diabetes Risk', onTap: () => context.go('/p/diabetes')),
         ActionTile(icon: Icons.healing_outlined, label: 'Report Side Effect', onTap: () => context.push('/p/side-effects/new')),
+        ActionTile(icon: Icons.event_repeat_outlined, label: 'Follow-ups', onTap: () => context.push('/p/follow-ups')),
       ]),
     ]);
 
@@ -209,6 +225,8 @@ class _DashboardBody extends ConsumerWidget {
           _RecordLink(icon: Icons.event_note_outlined, label: 'Doctor visits', onTap: () => context.push('/r/$patientId/visits')),
           _RecordLink(icon: Icons.healing_outlined, label: 'Side effects', onTap: () => context.push('/r/$patientId/side-effects')),
           _RecordLink(icon: Icons.event_available_outlined, label: 'Appointment recommendations', onTap: () => context.push('/p/appointments')),
+          _RecordLink(icon: Icons.event_repeat_outlined, label: 'Follow-ups', onTap: () => context.push('/p/follow-ups')),
+          _RecordLink(icon: Icons.local_hospital_outlined, label: 'Surgeries', onTap: () => context.push('/p/surgeries')),
           _RecordLink(icon: Icons.timeline_outlined, label: 'Health timeline', onTap: () => context.push('/p/timeline')),
           _RecordLink(icon: Icons.summarize_outlined, label: 'AI Patient Summary', onTap: () => context.push('/r/$patientId/patient-summary')),
           _RecordLink(icon: Icons.verified_user_outlined, label: 'Doctor access', onTap: () => context.push('/p/access'), last: true),
@@ -231,7 +249,11 @@ class _DashboardBody extends ConsumerWidget {
     if (size != ScreenSize.desktop) {
       return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         if (birthday != null) ...[birthday, gap],
-        hero, gap, today, gap, insight, gap, actions, gap, reports, gap, records, const Disclaimer(),
+        hero, gap, today, gap,
+        if (appointment != null) ...[appointment, gap],
+        if (followUp != null) ...[followUp, gap],
+        if (surgery != null) ...[surgery, gap],
+        insight, gap, actions, gap, reports, gap, records, const Disclaimer(),
       ]);
     }
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -243,6 +265,9 @@ class _DashboardBody extends ConsumerWidget {
         Expanded(flex: 5, child: today),
       ]),
       gap,
+      if (appointment != null) ...[appointment, gap],
+      if (followUp != null) ...[followUp, gap],
+      if (surgery != null) ...[surgery, gap],
       insight,
       gap,
       actions,
@@ -271,6 +296,98 @@ class _DashboardBody extends ConsumerWidget {
       isDemo: latest?.isDemo ?? false,
       onTap: () => context.go('/p/lifestyle'),
     );
+  }
+
+  /// Null when there is nothing to show — an empty "Upcoming Appointment" section would just be
+  /// clutter, and the full list is always reachable from Quick Actions.
+  Widget? _nextAppointmentCard(BuildContext context, AppointmentRecommendation? a) {
+    if (a == null) return null;
+    final t = Theme.of(context).textTheme;
+    final timing = a.timing;
+    final tone = switch (timing) {
+      AppointmentTiming.upcoming => StatusTone.positive,
+      AppointmentTiming.unscheduled => StatusTone.attention,
+      AppointmentTiming.past => StatusTone.inactive,
+    };
+    final subtitle = switch (timing) {
+      AppointmentTiming.unscheduled => 'Contact the clinic to schedule a time',
+      _ => Fmt.dateTime(a.recommendedFor),
+    };
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      const SectionHeader('Upcoming Appointment'),
+      AppCard(
+        onTap: () => context.push('/p/appointments'),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const IconBadge(Icons.event_available_outlined),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [Expanded(child: Text(a.reason, style: t.titleSmall)), StatusPill(timing.label, tone: tone)]),
+              const SizedBox(height: 2),
+              Text('Dr. ${a.doctorName} · $subtitle', style: t.bodySmall),
+            ]),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+        ]),
+      ),
+    ]);
+  }
+
+  /// Null when there is nothing to show — only a follow-up still scheduled (never a completed
+  /// or cancelled one) is worth surfacing on the home screen.
+  Widget? _nextFollowUpCard(BuildContext context, FollowUpTask? f) {
+    if (f == null) return null;
+    final t = Theme.of(context).textTheme;
+    final tone = f.isOverdue ? StatusTone.attention : StatusTone.info;
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      const SectionHeader('Upcoming Follow-up'),
+      AppCard(
+        onTap: () => context.push('/p/follow-ups'),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const IconBadge(Icons.event_repeat_outlined),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [Expanded(child: Text(f.purpose, style: t.titleSmall)), StatusPill(f.isOverdue ? 'Overdue' : 'Scheduled', tone: tone)]),
+              const SizedBox(height: 2),
+              Text('Dr. ${f.doctorName} · Due ${Fmt.date(f.dueDate)}', style: t.bodySmall),
+            ]),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+        ]),
+      ),
+    ]);
+  }
+
+  /// Null when there is nothing to show — only a surgery still scheduled is worth surfacing
+  /// on the home screen, and never with internal (doctor-only) information.
+  Widget? _nextSurgeryCard(BuildContext context, Surgery? s) {
+    if (s == null) return null;
+    final t = Theme.of(context).textTheme;
+    final tone = s.isOverdue ? StatusTone.attention : StatusTone.info;
+    final when = s.scheduledAt == null ? 'Date to be confirmed' : Fmt.dateTime(s.scheduledAt);
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      const SectionHeader('Upcoming Surgery'),
+      AppCard(
+        onTap: () => context.push('/p/surgeries'),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const IconBadge(Icons.local_hospital_outlined),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [Expanded(child: Text(s.name, style: t.titleSmall)), StatusPill(s.isOverdue ? 'Overdue' : 'Scheduled', tone: tone)]),
+              const SizedBox(height: 2),
+              Text('Dr. ${s.doctorName} · $when', style: t.bodySmall),
+              if (s.hospital != null && s.hospital!.isNotEmpty) Text(s.hospital!, style: t.bodySmall),
+            ]),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+        ]),
+      ),
+    ]);
   }
 }
 

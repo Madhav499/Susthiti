@@ -60,7 +60,7 @@ def _profile_out(db: Session, patient) -> dict:
             "applies_to": spec.applies_to, "help": spec.help, "fresh_days": spec.fresh_days,
             "answered": fact is not None, "value": None if fact is None else fact.value,
             "recorded_at": None if fact is None else iso(fact.recorded_at), "recorded_by_role": None if fact is None else fact.recorded_by_role,
-            "needs_update": expired,
+            "needs_update": expired, "doctor_only": spec.key in pf.DOCTOR_ONLY,
         })
     return {
         "patient_id": patient.id, "sex": patient.gender, "body": body_measurements(db, patient.id),

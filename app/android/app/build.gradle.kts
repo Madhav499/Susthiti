@@ -4,6 +4,13 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Push notifications: applied only once google-services.json exists (see settings.gradle.kts),
+// so the build keeps working today and starts using Firebase automatically the moment that file
+// is dropped in -- no other build-file change needed to turn FCM on.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 android {
     namespace = "com.susthiti.susthiti"
     compileSdk = flutter.compileSdkVersion
@@ -12,6 +19,8 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // Required by flutter_local_notifications (used for foreground push display).
+        isCoreLibraryDesugaringEnabled = true
     }
 
     defaultConfig {
@@ -47,4 +56,9 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Pulled in by the isCoreLibraryDesugaringEnabled flag above.
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 }

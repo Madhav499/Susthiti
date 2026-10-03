@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 
 from .config import get_settings
 from .db import SessionLocal, init_db
-from .routers import access, admin, admin_profiles, ai, auth, care, diabetes, diabetes_risk, health_data, notifications, patients, reports, tracking
+from .routers import access, admin, admin_profiles, ai, auth, care, diabetes, diabetes_risk, follow_ups, health_data, notifications, patients, reports, surgeries, tracking
 from .services.reminders import reminder_loop
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -95,5 +95,5 @@ def health():
     return {"status": "ok", "ai_configured": settings.ai_configured, "model_service": model_service, "model_version": model_version}
 
 
-for module in (auth, patients, reports, diabetes, diabetes_risk, health_data, tracking, care, access, notifications, admin, admin_profiles, ai):
+for module in (auth, patients, reports, diabetes, diabetes_risk, health_data, tracking, care, access, follow_ups, surgeries, notifications, admin, admin_profiles, ai):
     app.include_router(module.router, prefix="/api/v1")

@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:susthiti/core/errors/failures.dart';
 import 'package:susthiti/data/models/diabetes_risk.dart';
 import 'package:susthiti/data/models/health_data.dart';
+import 'package:susthiti/data/models/tracking.dart';
 import 'package:susthiti/data/providers.dart';
 import 'package:susthiti/data/repositories/diabetes_repository.dart';
 import 'package:susthiti/data/repositories/patient_repository.dart';
@@ -25,13 +26,19 @@ class MockReportRepository extends Mock implements ReportRepository {}
 void main() {
   late MockDiabetesRepository repo;
   late MemoryRiskCache cache;
+  late MockPatientRepository patients;
 
   setUpAll(() => registerFallbackValue(<String, Object?>{}));
 
   setUp(() {
     repo = MockDiabetesRepository();
     cache = MemoryRiskCache();
+    patients = MockPatientRepository();
     when(() => repo.riskHistory(any())).thenAnswer((_) async => (items: [RiskAssessment.fromJson(assessmentJson())], total: 1));
+    // DiabetesView's HbA1c trend card reads this; tests below only exercise the risk estimate
+    // itself, so an empty series (its own honest "nothing recorded" state) keeps them focused.
+    when(() => patients.trend(any(), any(), any(), start: any(named: 'start'), end: any(named: 'end')))
+        .thenAnswer((_) async => const TrendSeries(metric: 'hba1c', unit: '%', points: []));
   });
 
   Future<void> pumpView(WidgetTester tester, Map<String, dynamic> status, {user = testPatient, bool canAssess = true}) async {
@@ -39,6 +46,7 @@ void main() {
     await pumpScreen(tester, Scaffold(body: DiabetesView(patientId: 'pat1', canAssess: canAssess)), user: user, overrides: [
       diabetesRepositoryProvider.overrideWithValue(repo),
       riskCacheProvider.overrideWithValue(cache),
+      patientRepositoryProvider.overrideWithValue(patients),
     ]);
   }
 
@@ -103,6 +111,7 @@ void main() {
     await pumpScreen(tester, const Scaffold(body: DiabetesView(patientId: 'pat1', canAssess: true)), user: testPatient, overrides: [
       diabetesRepositoryProvider.overrideWithValue(repo),
       riskCacheProvider.overrideWithValue(cache),
+      patientRepositoryProvider.overrideWithValue(patients),
     ]);
     expect(find.textContaining('You\'re offline. Showing your last assessment'), findsOneWidget);
     expect(find.textContaining('Connect to the internet to update your assessment'), findsOneWidget);

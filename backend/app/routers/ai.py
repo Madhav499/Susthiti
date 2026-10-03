@@ -27,7 +27,7 @@ from ..models import (
     Visit,
 )
 from ..schemas import AllReportsSummaryIn, age_from, iso, summary_out
-from ..services.ai.gemini import DISCLAIMER, AIResult
+from ..services.ai.openrouter import DISCLAIMER, AIResult
 from ..services.ai.services import (
     AllReportsSummaryService,
     LifestyleAIService,

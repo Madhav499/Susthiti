@@ -11,10 +11,12 @@ from sqlalchemy.orm import Session
 from ..models import (
     AccessRequest,
     Doctor,
+    FollowUp,
     FoodEntry,
     LifestyleMetric,
     Patient,
     Prescription,
+    Surgery,
     User,
     Visit,
 )
@@ -28,6 +30,7 @@ def run_reminders(db: Session, now: datetime | None = None) -> int:
     today = now.date()
     sent = 0
     sent += _follow_ups(db, today)
+    sent += _surgeries(db, today)
     sent += _birthdays(db)
     if now.hour >= 19:
         sent += _food_reminders(db, today)
@@ -43,6 +46,8 @@ def _follow_ups(db: Session, today: date) -> int:
     rows = [
         *[("visit", v.id, v.patient_id, v.doctor_id, v.follow_up_date) for v in db.scalars(select(Visit).where(Visit.follow_up_date.in_([today, tomorrow])))],
         *[("prescription", p.id, p.patient_id, p.doctor_id, p.follow_up_date) for p in db.scalars(select(Prescription).where(Prescription.follow_up_date.in_([today, tomorrow])))],
+        *[("follow_up", f.id, f.patient_id, f.doctor_id, f.due_date)
+          for f in db.scalars(select(FollowUp).where(FollowUp.status == "scheduled", FollowUp.due_date.in_([today, tomorrow])))],
     ]
     for entity, entity_id, patient_id, doctor_id, due in rows:
         when = "today" if due == today else "tomorrow"
@@ -56,6 +61,32 @@ def _follow_ups(db: Session, today: date) -> int:
             db, doctor.user_id, "follow_up_reminder", "Follow-up due",
             f"{patient.user.full_name} ({patient.patient_code}) has a follow-up due {when}.",
             entity, entity_id, patient_id, dedupe_key=f"fu:{entity_id}:{due}:d",
+        ):
+            sent += 1
+    return sent
+
+
+def _surgeries(db: Session, today: date) -> int:
+    sent = 0
+    tomorrow = today + timedelta(days=1)
+
+    def _local_date(dt: datetime) -> date:
+        return (dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)).date()
+
+    rows = [s for s in db.scalars(select(Surgery).where(Surgery.status == "scheduled", Surgery.scheduled_at.is_not(None)))
+            if _local_date(s.scheduled_at) in (today, tomorrow)]
+    for s in rows:
+        when = "today" if _local_date(s.scheduled_at) == today else "tomorrow"
+        patient = db.get(Patient, s.patient_id)
+        if notify(db, patient.user_id, "surgery_reminder", f"Surgery {when}", f"Your surgery ({s.name}) is {when}.",
+                  "surgery", s.id, s.patient_id, dedupe_key=f"surg:{s.id}:{when}:p"):
+            sent += 1
+        doctor = db.get(Doctor, s.doctor_id)
+        still_authorized = db.scalar(select(AccessRequest.id).where(AccessRequest.doctor_id == s.doctor_id, AccessRequest.patient_id == s.patient_id, AccessRequest.status == "approved"))
+        if doctor and still_authorized and notify(
+            db, doctor.user_id, "surgery_reminder", f"Surgery {when}",
+            f"{patient.user.full_name} ({patient.patient_code})'s surgery ({s.name}) is {when}.",
+            "surgery", s.id, s.patient_id, dedupe_key=f"surg:{s.id}:{when}:d",
         ):
             sent += 1
     return sent

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from .. import errors
 from ..db import get_db
 from ..deps import CurrentUser, require_admin
-from ..models import AccessRequest, AuditLog, AuthSession, Doctor, Patient, SystemSetting, User, utcnow
+from ..models import AccessRequest, AppointmentRecommendation, AuditLog, AuthSession, Doctor, FollowUp, Notification, Patient, Report, Surgery, SystemSetting, User, utcnow
 from ..schemas import AccountStatusIn, DoctorCreateIn, DoctorUpdateIn, PatientAdminUpdateIn, SettingsIn, age_from, audit_out, doctor_out, iso, patient_out, report_out
 from ..services.health_data.report_extraction import extract_in_background, needs_ai
 from ..services.admin_views import latest_assessment, patient_last_activity
@@ -29,7 +29,9 @@ EDITABLE_SETTINGS = {
 
 @router.get("/dashboard")
 def dashboard(current: CurrentUser = Depends(require_admin), db: Session = Depends(get_db)):
-    thirty_days = datetime.now(timezone.utc) - timedelta(days=30)
+    now = datetime.now(timezone.utc)
+    thirty_days = now - timedelta(days=30)
+    week_ago = now - timedelta(days=7)
     count = lambda q: db.scalar(select(func.count()).select_from(q.subquery()))  # noqa: E731
     return {
         "metrics": {
@@ -38,9 +40,51 @@ def dashboard(current: CurrentUser = Depends(require_admin), db: Session = Depen
             "total_patients": count(select(Patient.id)),
             "active_patients": count(select(Patient.id).join(User).where(User.is_active.is_(True), or_(User.last_login_at >= thirty_days, User.created_at >= thirty_days))),
             "pending_requests": count(select(AccessRequest.id).where(AccessRequest.status == "pending")),
+            # Operational load, not clinical content: counts only, never what any of these are about.
+            "appointments_7d": count(select(AppointmentRecommendation.id).where(AppointmentRecommendation.recommended_for >= now, AppointmentRecommendation.recommended_for < now + timedelta(days=7))),
+            "follow_ups_scheduled": count(select(FollowUp.id).where(FollowUp.status == "scheduled")),
+            "surgeries_scheduled": count(select(Surgery.id).where(Surgery.status == "scheduled")),
+            "reports_7d": count(select(Report.id).where(Report.uploaded_at >= week_ago)),
+            "failed_push_notifications_7d": count(select(Notification.id).where(Notification.push_status == "failed", Notification.created_at >= week_ago)),
         },
         # Sign-ins stay in the full audit log; the dashboard shows account and access changes.
         "recent_activity": [audit_out(a) for a in db.scalars(select(AuditLog).where(AuditLog.action.not_in(["login", "patient_record_viewed"])).order_by(AuditLog.created_at.desc()).limit(10))],
+    }
+
+
+# ---------- Notification delivery ----------
+
+@router.get("/notifications/delivery")
+def notification_delivery(
+    status: str | None = Query(None, pattern="^(sent|failed|none)$"),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    current: CurrentUser = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Push delivery status for monitoring, never a notification's title or body -- those are
+    free text that can name a patient, a doctor's instructions, or similar, and have no
+    operational reason to be in an admin's view."""
+    query = select(Notification)
+    if status == "none":
+        query = query.where(Notification.push_status.is_(None))
+    elif status:
+        query = query.where(Notification.push_status == status)
+    total = db.scalar(select(func.count()).select_from(query.subquery()))
+    rows = list(db.scalars(query.order_by(Notification.created_at.desc()).limit(limit).offset(offset)))
+    users = {u.id: u for u in db.scalars(select(User).where(User.id.in_({n.user_id for n in rows})))} if rows else {}
+    return {
+        "total": total,
+        "items": [
+            {
+                "id": n.id,
+                "type": n.type,
+                "recipient_role": users[n.user_id].role if n.user_id in users else None,
+                "push_status": n.push_status,
+                "created_at": iso(n.created_at),
+            }
+            for n in rows
+        ],
     }
 
 
@@ -239,7 +283,7 @@ def get_system_settings(current: CurrentUser = Depends(require_admin), db: Sessi
         "status": {
             "environment": settings.susthiti_env,
             "ai_configured": settings.ai_configured,
-            "ai_model": settings.gemini_model,
+            "ai_model": settings.openrouter_model,
             "ml_service_url_configured": bool(settings.ml_service_url),
             "demo_wearable_enabled": settings.enable_demo_wearable,
         },
