@@ -10,6 +10,7 @@ from pathlib import Path
 BASE = Path(__file__).resolve().parent
 BUNDLE = joblib.load(BASE / "model.joblib")
 MODEL = BUNDLE["model"]
+MODEL.named_steps["model"].set_params(n_jobs=1)
 CALIBRATOR = BUNDLE["calibrator"]
 THRESHOLD = float(BUNDLE["threshold"])
 FEATURES = BUNDLE["features"]
