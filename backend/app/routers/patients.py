@@ -30,7 +30,7 @@ from ..services.heart_risk import coordinator as heart_coordinator
 from ..services.heart_risk import presentation as heart_presentation
 from ..services.health_data import report_values as rv
 from ..services.health_data.body import body_measurements, is_birthday, local_today
-from ..services.lifestyle_data import daily_series, glucose_overview, metric_overview
+from ..services.lifestyle_data import SUM_METRICS, daily_series, glucose_overview, metric_overview
 from ..services.records import audit
 from ..services.storage import ALLOWED_PHOTO_TYPES, get_storage, sniff_content_type
 
@@ -153,15 +153,24 @@ RANGES = {"7d": 7, "30d": 30, "1m": 30, "3m": 90, "6m": 182, "1y": 365}
 
 
 def resolve_range(range_: str, start: date | None, end: date | None) -> tuple[date, date]:
-    today = datetime.now(timezone.utc).date()
     if range_ == "custom":
         if not start or not end or start > end:
             raise errors.unprocessable("Choose a valid start and end date.")
         if (end - start).days > 3 * 366:
             raise errors.unprocessable("Custom range can be at most 3 years.")
         return start, end
+    if range_ in ("today", "week", "month"):
+        # Calendar-based, in the patient's own local day -- distinct from the legacy
+        # trailing-N-day codes below, which are intentionally left exactly as they were.
+        today = local_today()
+        if range_ == "today":
+            return today, today
+        if range_ == "week":
+            return today - timedelta(days=today.weekday()), today  # Monday-start ISO week, through today
+        return today.replace(day=1), today  # "month": 1st of this calendar month, through today
     if range_ not in RANGES:
         raise errors.unprocessable("Unknown range.")
+    today = datetime.now(timezone.utc).date()
     return today - timedelta(days=RANGES[range_] - 1), today
 
 
@@ -203,6 +212,28 @@ def trends(
     if metric not in ("steps", "heart_rate", "sleep", "activity", "blood_pressure", "spo2", "calories"):
         raise errors.unprocessable("Unknown metric.")
     from ..services.wearables import METRIC_UNITS
+
+    if start_d == end_d and metric not in SUM_METRICS:
+        # A single calendar day, for a metric that's individually meaningful per reading (not a
+        # running daily total like steps): show every recorded value through the day, not one
+        # aggregated point -- a day can have several heart-rate/BP/SpO2 readings. Mirrors the
+        # glucose branch above (local import, one day of slack either side, raw per-reading
+        # points) but for the lifestyle-metric family. Sum metrics keep the daily_series() total
+        # below even for a single day -- their same-day rows are running-total updates to one
+        # value (see wearables.sync_connection's dedupe-by-day), not independent measurements.
+        from ..models import LifestyleMetric
+        from ..services.health_data.body import to_local_date
+
+        rows = db.scalars(select(LifestyleMetric).where(
+            LifestyleMetric.patient_id == patient.id, LifestyleMetric.metric_type == metric,
+            LifestyleMetric.recorded_at >= datetime(start_d.year, start_d.month, start_d.day, tzinfo=timezone.utc) - timedelta(days=1),
+            LifestyleMetric.recorded_at < datetime(start_d.year, start_d.month, start_d.day, tzinfo=timezone.utc) + timedelta(days=2),
+        ).order_by(LifestyleMetric.recorded_at))
+        points = [
+            {"date": iso(r.recorded_at), "value": r.value, "value2": r.value2, "is_demo": r.is_demo, "source": r.source}
+            for r in rows if (r.local_date or to_local_date(r.recorded_at)) == start_d
+        ]
+        return {"metric": metric, "unit": METRIC_UNITS[metric], "start": iso(start_d), "end": iso(end_d), "points": points}
 
     return {"metric": metric, "unit": METRIC_UNITS[metric], "start": iso(start_d), "end": iso(end_d), "points": daily_series(db, patient.id, metric, start_d, end_d)}
 

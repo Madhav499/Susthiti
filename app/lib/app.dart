@@ -40,6 +40,7 @@ class _SusthitiAppState extends ConsumerState<SusthitiApp> {
       final service = ref.read(pushNotificationServiceProvider);
       if (user != null) {
         service.registerForCurrentUser();
+        service.retryBufferedTap();
       } else if (previous?.value != null) {
         service.unregister();
       }

@@ -1227,6 +1227,72 @@ def test_reminders_respect_preferences(env):
         assert run_reminders(db, datetime(2026, 9, 26, 20, 0, tzinfo=timezone.utc)) == 0
 
 
+def test_resolve_range_today_week_month_use_calendar_boundaries(env):
+    from app.routers.patients import resolve_range
+    from app.services.health_data.body import local_today
+
+    today = local_today()
+    assert resolve_range("today", None, None) == (today, today)
+    week_start, week_end = resolve_range("week", None, None)
+    assert week_start.weekday() == 0 and week_start <= today <= week_end and week_end == today
+    month_start, month_end = resolve_range("month", None, None)
+    assert month_start.day == 1 and month_start.month == today.month and month_end == today
+
+
+def test_trends_single_day_shows_each_reading_but_sum_metrics_stay_totaled(env):
+    """A single-day range shows every recorded value for a per-reading metric (heart_rate), but
+    a running daily total (steps) stays one aggregated point -- the same-day rows there are
+    updates to one total, not independent measurements. A multi-day range keeps aggregating
+    heart_rate to one point per day, same as before this change."""
+    client, _, _ = env
+    headers, patient = register_patient(client)
+    pid = patient["patient_id"]
+    day = "2026-09-20"
+    for hour, value in [("08:00:00", 70), ("18:00:00", 90)]:
+        r = client.post(f"{API}/patients/{pid}/lifestyle", headers=headers, json={"metric_type": "heart_rate", "value": value, "recorded_at": f"{day}T{hour}+05:30", "local_date": day})
+        assert r.status_code == 201, r.text
+    for hour, value in [("08:00:00", 2000), ("18:00:00", 4000)]:
+        r = client.post(f"{API}/patients/{pid}/lifestyle", headers=headers, json={"metric_type": "steps", "value": value, "recorded_at": f"{day}T{hour}+05:30", "local_date": day})
+        assert r.status_code == 201, r.text
+
+    hr_points = client.get(f"{API}/patients/{pid}/trends?metric=heart_rate&range=custom&start={day}&end={day}", headers=headers).json()["points"]
+    assert [p["value"] for p in hr_points] == [70, 90]
+
+    steps_points = client.get(f"{API}/patients/{pid}/trends?metric=steps&range=custom&start={day}&end={day}", headers=headers).json()["points"]
+    assert [p["value"] for p in steps_points] == [6000]
+
+    hr_week = client.get(f"{API}/patients/{pid}/trends?metric=heart_rate&range=custom&start={day}&end=2026-09-21", headers=headers).json()["points"]
+    assert len(hr_week) == 1 and hr_week[0]["value"] == 80  # mean of 70 and 90, back to one point per day
+
+
+def test_metric_and_glucose_reminders_fire_daily_per_metric_and_dedupe(env):
+    client, _, _ = env
+    from datetime import datetime, timezone
+
+    from app import db as db_module
+    from app.services.reminders import run_reminders
+
+    headers, patient = register_patient(client)
+    pid = patient["patient_id"]
+    # Steps is recorded today; every other lifestyle metric and glucose are not.
+    r = client.post(f"{API}/patients/{pid}/lifestyle", headers=headers, json={"metric_type": "steps", "value": 1000, "recorded_at": "2026-09-25T09:00:00+05:30", "local_date": "2026-09-25"})
+    assert r.status_code == 201, r.text
+
+    # 2026-09-25 14:30 UTC = 20:00 IST -- clears the new local-evening gate; well before the
+    # separate (UTC-gated) food-reminder hour, so food noise doesn't need to be accounted for.
+    with db_module.SessionLocal() as db:
+        assert run_reminders(db, datetime(2026, 9, 25, 14, 30, tzinfo=timezone.utc)) >= 6
+
+    items = client.get(f"{API}/notifications", headers=headers).json()["items"]
+    lifestyle = [n for n in items if n["type"] == "lifestyle_reminder"]
+    assert {n["entity_id"] for n in lifestyle} == {"sleep", "heart_rate", "activity", "blood_pressure", "spo2", "glucose"}
+    assert all(n["entity_type"] == "lifestyle_metric" for n in lifestyle)
+
+    # Dedup: running again the same local day sends nothing more.
+    with db_module.SessionLocal() as db:
+        assert run_reminders(db, datetime(2026, 9, 25, 15, 0, tzinfo=timezone.utc)) == 0
+
+
 def test_health_reports_model_service_reachability(env):
     client, _, _ = env
     body = client.get("/health").json()

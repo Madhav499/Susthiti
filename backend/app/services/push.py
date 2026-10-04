@@ -5,6 +5,7 @@ key is set, so this is safe to ship and call before any Firebase project exists 
 state this backend is in until someone creates one and sets FCM_SERVICE_ACCOUNT_JSON.
 """
 
+import json
 import logging
 from functools import lru_cache
 
@@ -44,6 +45,29 @@ def _channel_for(notification_type: str | None) -> tuple[str, str]:
     return "susthiti_general", "normal"
 
 
+def _load_credentials(raw: str):
+    """Builds a firebase_admin credential from FCM_SERVICE_ACCOUNT_JSON, which is either:
+
+    - the service-account JSON itself (production/Render: the platform has no filesystem path
+      to a key file, only environment variables, so the whole JSON document is pasted in as the
+      variable's value), or
+    - a path to the JSON key file on disk (local development).
+
+    Detected by whether the value, once whitespace-trimmed, starts with '{' -- a file path never
+    does. Never logs, returns, or otherwise includes `raw` (or the parsed JSON) in any exception
+    message this raises; callers must keep it that way too."""
+    from firebase_admin import credentials
+
+    raw = raw.strip()
+    if raw.startswith("{"):
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise ValueError("FCM_SERVICE_ACCOUNT_JSON looks like inline JSON (starts with '{') but is not valid JSON.") from exc
+        return credentials.Certificate(parsed)
+    return credentials.Certificate(raw)
+
+
 @lru_cache(maxsize=1)
 def _app():
     """None when FCM isn't configured or the key is invalid. Cached: the key is read once."""
@@ -51,12 +75,16 @@ def _app():
     if not settings.fcm_configured:
         return None
     import firebase_admin
-    from firebase_admin import credentials
 
     try:
-        return firebase_admin.initialize_app(credentials.Certificate(settings.fcm_service_account_json))
-    except Exception:
-        log.exception("could not initialize the Firebase Admin SDK; check FCM_SERVICE_ACCOUNT_JSON")
+        return firebase_admin.initialize_app(_load_credentials(settings.fcm_service_account_json))
+    except Exception as exc:
+        # Deliberately logs only the exception's type, not str(exc)/exc_info: firebase_admin's
+        # own Certificate() validation errors are built from the certificate argument it was
+        # given, and on some failure paths that argument is echoed back into the message -- for
+        # the inline-JSON case, that argument is the parsed service-account dict, private key
+        # included. The type name is enough to diagnose "misconfigured" without that risk.
+        log.error("could not initialize the Firebase Admin SDK (%s); check FCM_SERVICE_ACCOUNT_JSON", type(exc).__name__)
         return None
 
 

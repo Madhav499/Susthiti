@@ -21,11 +21,15 @@ import 'trend_card.dart';
 
 final lifestyleOverviewProvider = FutureProvider.autoDispose.family<LifestyleOverview, String>((ref, pid) => ref.watch(lifestyleRepositoryProvider).overview(pid));
 
-const _lifestyleRanges = {'7d': 'Daily', '30d': 'Weekly', '3m': 'Monthly', 'custom': 'Custom'};
+const _lifestyleRanges = {'today': 'Daily', 'week': 'Weekly', 'month': 'Monthly', 'custom': 'Custom'};
 
 class LifestyleScreen extends StatelessWidget {
-  const LifestyleScreen({super.key, required this.patientId});
+  const LifestyleScreen({super.key, required this.patientId, this.initialMetric});
   final String patientId;
+
+  /// Metric to focus the trend chart on when opened from a lifestyle-reminder notification
+  /// (e.g. "steps") -- see notificationRoute() in notifications.dart.
+  final String? initialMetric;
 
   @override
   Widget build(BuildContext context) {
@@ -33,32 +37,51 @@ class LifestyleScreen extends StatelessWidget {
       title: 'Lifestyle',
       large: true,
       actions: const [NotificationBell()],
-      body: LifestyleView(patientId: patientId, isPatient: true),
+      body: LifestyleView(patientId: patientId, isPatient: true, initialMetric: initialMetric),
     );
   }
 }
 
 class LifestyleView extends ConsumerStatefulWidget {
-  const LifestyleView({super.key, required this.patientId, this.isPatient = false, this.embedded = false, this.ranges = _lifestyleRanges});
+  const LifestyleView({super.key, required this.patientId, this.isPatient = false, this.embedded = false, this.ranges = _lifestyleRanges, this.initialMetric});
   final String patientId;
   final bool isPatient;
   final bool embedded;
   final Map<String, String> ranges;
+  final String? initialMetric;
 
   @override
   ConsumerState<LifestyleView> createState() => _LifestyleViewState();
 }
 
 class _LifestyleViewState extends ConsumerState<LifestyleView> {
-  LifestyleMetricType _chartMetric = LifestyleMetricType.steps;
+  late LifestyleMetricType _chartMetric;
   DayChangeWatcher? _dayWatcher;
+
+  /// Falls back to steps on an unrecognized or absent value -- 'glucose'/'food' never reach
+  /// here (notificationRoute() sends those straight to their own screens instead).
+  static LifestyleMetricType _parseMetric(String? apiValue) {
+    for (final m in LifestyleMetricType.values) {
+      if (m.apiValue == apiValue) return m;
+    }
+    return LifestyleMetricType.steps;
+  }
 
   @override
   void initState() {
     super.initState();
+    _chartMetric = _parseMetric(widget.initialMetric);
     _dayWatcher = DayChangeWatcher(_refresh);
     // Health data syncs when the dashboard opens (background sync is not relied on).
     if (widget.isPatient) WidgetsBinding.instance.addPostFrameCallback((_) => syncHealthIfDue(ref, onSynced: _refresh));
+  }
+
+  @override
+  void didUpdateWidget(LifestyleView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialMetric != null && widget.initialMetric != oldWidget.initialMetric) {
+      setState(() => _chartMetric = _parseMetric(widget.initialMetric));
+    }
   }
 
   @override

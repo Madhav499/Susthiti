@@ -116,10 +116,14 @@ class _TrendCardState extends ConsumerState<TrendCard> {
             final values = series.points.map((p) => p.value).toList();
             final avg = values.reduce((a, b) => a + b) / values.length;
             final avgText = metricType == null ? _plainValue(avg, series.unit) : metricType.format(avg);
+            // A single-day range returns one point per reading, not one per day -- "readings"
+            // describes that correctly, same as it already does for glucose.
+            final sameDay = series.start != null && series.end != null && series.start!.isAtSameMomentAs(series.end!);
+            final unitWord = widget.metric == 'glucose' || sameDay ? 'readings' : 'days';
             return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               TrendLineChart(points: points, unit: series.unit, bars: widget.bars),
               const SizedBox(height: AppSpacing.sm),
-              Text('Average $avgText across ${values.length} recorded ${widget.metric == 'glucose' ? 'readings' : 'days'}', style: t.bodySmall),
+              Text('Average $avgText across ${values.length} recorded $unitWord', style: t.bodySmall),
             ]);
           },
         ),

@@ -167,7 +167,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         branches: [
           StatefulShellBranch(routes: [GoRoute(path: '/p/home', builder: (_, _) => PatientDashboardScreen(patientId: pid()))]),
           StatefulShellBranch(routes: [GoRoute(path: '/p/reports', builder: (_, _) => ReportsScreen(patientId: pid()))]),
-          StatefulShellBranch(routes: [GoRoute(path: '/p/lifestyle', builder: (_, _) => LifestyleScreen(patientId: pid()))]),
+          StatefulShellBranch(routes: [GoRoute(path: '/p/lifestyle', builder: (_, s) => LifestyleScreen(patientId: pid(), initialMetric: s.uri.queryParameters['metric']))]),
           StatefulShellBranch(routes: [GoRoute(path: '/p/diabetes', builder: (_, _) => DiabetesScreen(patientId: pid()))]),
           StatefulShellBranch(routes: [GoRoute(path: '/p/heart', builder: (_, _) => HeartScreen(patientId: pid()))]),
           StatefulShellBranch(routes: [GoRoute(path: '/p/profile', builder: (_, _) => const ProfileScreen())]),

@@ -68,6 +68,10 @@ class PushNotificationService {
   bool _ready = false;
   String? _registeredToken;
 
+  /// A tap that arrived before the session finished restoring (see [_handleTap]) -- resolved
+  /// once a signed-in user is available, by [retryBufferedTap].
+  Map<String, dynamic>? _pendingTapData;
+
   /// Sets up messaging plumbing but never prompts for permission here -- that happens in
   /// [registerForCurrentUser], once there's actually a signed-in user notifications are for.
   /// Asking at bare app launch, before login, would be exactly the premature prompt a
@@ -170,9 +174,29 @@ class PushNotificationService {
   void _handleTap(RemoteMessage message) {
     final notificationId = message.data['notification_id'] as String?;
     if (notificationId != null && notificationId.isNotEmpty) {
+      // Independent of AuthController's session restore -- ApiClient reads the persisted token
+      // directly from storage, so this already works even during the race handled below.
       _notifications.markRead(notificationId).catchError((_) {});
     }
+    if (currentUser?.call() == null) {
+      // Cold start: a tap launched the app, but the session hasn't finished restoring yet, so
+      // there's no signed-in user to resolve a role-aware route for. Buffer it instead of
+      // dropping it -- retryBufferedTap() (called from app.dart once sign-in resolves) finishes
+      // the job.
+      _pendingTapData = message.data;
+      return;
+    }
     final route = _routeFor(message.data);
+    if (route != null) onNavigate?.call(route);
+  }
+
+  /// Call once a user becomes signed in (including a session restored on cold launch), to
+  /// resolve a tap that arrived before that finished. A no-op if nothing is buffered.
+  void retryBufferedTap() {
+    final data = _pendingTapData;
+    if (data == null) return;
+    _pendingTapData = null;
+    final route = _routeFor(data);
     if (route != null) onNavigate?.call(route);
   }
 

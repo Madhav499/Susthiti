@@ -13,7 +13,7 @@ from ..models import (
     Doctor,
     FollowUp,
     FoodEntry,
-    LifestyleMetric,
+    GlucoseReading,
     Patient,
     Prescription,
     Surgery,
@@ -26,6 +26,8 @@ log = logging.getLogger("susthiti.reminders")
 
 
 def run_reminders(db: Session, now: datetime | None = None) -> int:
+    from .health_data.body import to_local_datetime
+
     now = now or datetime.now(timezone.utc)
     today = now.date()
     sent = 0
@@ -34,8 +36,11 @@ def run_reminders(db: Session, now: datetime | None = None) -> int:
     sent += _birthdays(db)
     if now.hour >= 19:
         sent += _food_reminders(db, today)
-    if now.hour >= 18 and today.weekday() == 6:
-        sent += _lifestyle_reminders(db, today)
+    local_now = to_local_datetime(now)
+    if local_now.hour >= 20:  # 8pm local time -- a plausible point by which a day's entries are done
+        local_today = local_now.date()
+        sent += _metric_reminders(db, local_today)
+        sent += _glucose_reminders(db, local_today)
     db.commit()
     return sent
 
@@ -118,19 +123,50 @@ def _food_reminders(db: Session, today: date) -> int:
         logged = db.scalar(select(func.count(FoodEntry.id)).where(FoodEntry.patient_id == patient.id, FoodEntry.eaten_at >= start))
         if not logged and notify(db, patient.user_id, "food_reminder", "Log today's meals",
                                  "No meals recorded today. A quick log helps you and your doctor see patterns.",
-                                 dedupe_key=f"food:{patient.id}:{today}"):
+                                 "lifestyle_metric", "food", patient.id, dedupe_key=f"food:{patient.id}:{today}"):
             sent += 1
     return sent
 
 
-def _lifestyle_reminders(db: Session, today: date) -> int:
+_LIFESTYLE_METRIC_LABELS = {
+    "steps": "step count", "sleep": "sleep", "heart_rate": "heart rate",
+    "activity": "activity minutes", "blood_pressure": "blood pressure", "spo2": "SpO2 reading",
+}
+
+
+def _metric_reminders(db: Session, today: date) -> int:
+    """One evening nudge per lifestyle metric per patient per local day, for any of the six
+    wearable/manual metrics with nothing recorded yet today. Reuses daily_series()'s own
+    local_date-aware bucketing instead of re-deriving it."""
+    from .lifestyle_data import daily_series
+
     sent = 0
-    since = datetime(today.year, today.month, today.day, tzinfo=timezone.utc) - timedelta(days=7)
     for patient in _active_patients(db):
-        recent = db.scalar(select(func.count(LifestyleMetric.id)).where(LifestyleMetric.patient_id == patient.id, LifestyleMetric.recorded_at >= since))
-        if not recent and notify(db, patient.user_id, "lifestyle_reminder", "Keep your lifestyle data current",
-                                 "No activity or sleep data this week. Sync your device or add a reading.",
-                                 dedupe_key=f"life:{patient.id}:{today}"):
+        for metric, label in _LIFESTYLE_METRIC_LABELS.items():
+            if daily_series(db, patient.id, metric, today, today):
+                continue  # already has a recorded value today
+            if notify(db, patient.user_id, "lifestyle_reminder", f"Log today's {label}",
+                      f"No {label} recorded today. A quick log helps you and your doctor see patterns.",
+                      "lifestyle_metric", metric, patient.id, dedupe_key=f"life:{metric}:{patient.id}:{today}"):
+                sent += 1
+    return sent
+
+
+def _glucose_reminders(db: Session, today: date) -> int:
+    from .health_data.body import to_local_date
+
+    window_start = datetime(today.year, today.month, today.day, tzinfo=timezone.utc) - timedelta(days=1)
+    window_end = datetime(today.year, today.month, today.day, tzinfo=timezone.utc) + timedelta(days=2)
+    sent = 0
+    for patient in _active_patients(db):
+        measured = db.scalars(select(GlucoseReading.measured_at).where(
+            GlucoseReading.patient_id == patient.id, GlucoseReading.measured_at >= window_start, GlucoseReading.measured_at < window_end,
+        ))
+        if any(to_local_date(m) == today for m in measured):
+            continue
+        if notify(db, patient.user_id, "lifestyle_reminder", "Log today's glucose",
+                  "No glucose reading recorded today. A quick log helps you and your doctor see patterns.",
+                  "lifestyle_metric", "glucose", patient.id, dedupe_key=f"life:glucose:{patient.id}:{today}"):
             sent += 1
     return sent
 

@@ -204,6 +204,17 @@ String? notificationRoute(AppNotification n, AppUser user) {
       return isDoctor ? '/d/requests' : '/p/access';
     case 'patient':
       return isDoctor && pid != null ? '/d/patients/$pid' : null;
+    case 'lifestyle_metric':
+      // Lifestyle/food/glucose "missing today" reminders are patient-only; entityId carries
+      // which metric so the tap lands on that metric specifically, not just the Lifestyle home.
+      switch (n.entityId) {
+        case 'glucose':
+          return '/p/glucose';
+        case 'food':
+          return '/p/food';
+        default:
+          return n.entityId == null ? '/p/lifestyle' : '/p/lifestyle?metric=${n.entityId}';
+      }
   }
   return null;
 }
@@ -326,7 +337,7 @@ class NotificationPreferencesCard extends ConsumerWidget {
         child: Column(children: [
           if (role == UserRole.patient) ...[
             SwitchListTile(title: const Text('Food logging reminders'), subtitle: const Text('An evening nudge if no meals are logged'), value: p.foodReminders, onChanged: (v) => set('food_reminders', v)),
-            SwitchListTile(title: const Text('Lifestyle reminders'), subtitle: const Text('When no activity or sleep data was recorded this week'), value: p.lifestyleReminders, onChanged: (v) => set('lifestyle_reminders', v)),
+            SwitchListTile(title: const Text('Lifestyle reminders'), subtitle: const Text('A daily nudge for any lifestyle metric or glucose reading with nothing recorded yet'), value: p.lifestyleReminders, onChanged: (v) => set('lifestyle_reminders', v)),
           ],
           SwitchListTile(title: const Text('Follow-up reminders'), value: p.followUpReminders, onChanged: (v) => set('follow_up_reminders', v)),
           if (role == UserRole.doctor)

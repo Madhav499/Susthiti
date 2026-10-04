@@ -284,14 +284,22 @@ class LifestyleOverview {
 }
 
 class TrendSeries {
-  const TrendSeries({required this.metric, required this.unit, required this.points});
+  const TrendSeries({required this.metric, required this.unit, required this.points, this.start, this.end});
   final String metric;
   final String unit;
   final List<DailyValue> points;
+
+  /// The resolved query range (not necessarily what was requested for 'today'/'week'/'month').
+  /// When [start] and [end] are the same day, [points] are raw, unaggregated readings rather
+  /// than one point per day -- see trend_card.dart's "readings" vs "days" caption.
+  final DateTime? start;
+  final DateTime? end;
 
   factory TrendSeries.fromJson(Map<String, dynamic> j) => TrendSeries(
         metric: j['metric'] as String,
         unit: j['unit'] as String,
         points: [for (final p in j['points'] as List) DailyValue.fromJson(p as Map<String, dynamic>)],
+        start: parseDate(j['start']),
+        end: parseDate(j['end']),
       );
 }

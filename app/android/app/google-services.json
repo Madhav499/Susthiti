@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "998208452283",
-    "project_id": "suthiti-a6423",
-    "storage_bucket": "suthiti-a6423.firebasestorage.app"
+    "project_number": "872535394071",
+    "project_id": "susthiti-96f26",
+    "storage_bucket": "susthiti-96f26.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:998208452283:android:65f52febfd89bc0b451b9e",
+        "mobilesdk_app_id": "1:872535394071:android:439924a677bc04b0689952",
         "android_client_info": {
           "package_name": "com.susthiti.susthiti"
         }
@@ -15,26 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAUtOsO0KUzzZW-A3yVjKLXJMftZy537ns"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:998208452283:android:0ba6781205f93614451b9e",
-        "android_client_info": {
-          "package_name": "com.suthiti.app"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyAUtOsO0KUzzZW-A3yVjKLXJMftZy537ns"
+          "current_key": "AIzaSyDO_BIwD-Hg-Or5u29cr91oJzg_Rs3EkXY"
         }
       ],
       "services": {
