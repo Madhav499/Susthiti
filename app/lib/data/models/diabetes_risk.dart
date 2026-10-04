@@ -62,12 +62,17 @@ enum AddDataTarget {
   profile,
   healthProfile,
   reportValues,
-  healthConnection;
+  healthConnection,
+  /// No standalone destination: only ever answered on the heart assessment form itself
+  /// (symptoms, cardiac test results). See HeartAddDataTarget-equivalent handling in
+  /// risk_widgets.dart's addDataRoute(), which returns no route for this case.
+  heartAssessmentForm;
 
   static AddDataTarget parse(String? v) => switch (v) {
         'profile' => profile,
         'report_values' => reportValues,
         'health_connection' => healthConnection,
+        'heart_assessment_form' => heartAssessmentForm,
         _ => healthProfile,
       };
 }

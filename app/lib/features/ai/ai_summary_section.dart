@@ -122,11 +122,22 @@ class _AiSummarySectionState extends ConsumerState<AiSummarySection> {
     if (_error != null) {
       final failure = asFailure(_error!);
       final notConfigured = failure is AIServiceFailure && failure.notConfigured;
+      // A non-retryable failure (e.g. "No sufficient patient history...") already carries its
+      // own clear, specific message -- show that instead of a generic failure, and skip the
+      // retry button since trying again can't help until there's more data.
+      final retryable = failure.isRetryable;
       return Column(key: const ValueKey('error'), crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(notConfigured ? 'AI features are not set up on this server yet.' : "We couldn't generate the summary right now.", style: t.titleSmall),
+        Text(
+          notConfigured
+              ? 'AI features are not set up on this server yet.'
+              : retryable
+                  ? "We couldn't generate the summary right now."
+                  : failure.message,
+          style: t.titleSmall,
+        ),
         const SizedBox(height: 4),
         Text(widget.failureReassurance, style: t.bodyMedium?.copyWith(color: AppColors.primary)),
-        if (!notConfigured) ...[
+        if (!notConfigured && retryable) ...[
           const SizedBox(height: AppSpacing.md),
           OutlinedButton.icon(onPressed: _generate, icon: const Icon(Icons.refresh), label: const Text('Try Again')),
         ],
@@ -181,65 +192,128 @@ class _AiSummarySectionState extends ConsumerState<AiSummarySection> {
   }
 }
 
-/// Structured rendering of each AI output shape. Interpretation is always visually separated
-/// from observed information.
-class AiSummaryContent extends StatelessWidget {
+/// Structured rendering of each AI output shape. A short, prioritized "quick view" always
+/// shows; secondary/clinical detail sits behind "View details" so the reader isn't forced
+/// through a long paragraph before finding what matters. Interpretation is always visually
+/// separated from observed information.
+class AiSummaryContent extends StatefulWidget {
   const AiSummaryContent(this.s, {super.key});
   final AISummary s;
 
   @override
+  State<AiSummaryContent> createState() => _AiSummaryContentState();
+}
+
+class _AiSummaryContentState extends State<AiSummaryContent> {
+  bool _open = false;
+
+  @override
   Widget build(BuildContext context) {
-    final blocks = switch (s.kind) {
-      AISummaryKind.individualReport => [
-          _para(context, null, s.text('summary')),
-          _para(context, 'Report information', s.text('report_information')),
-          _bullets(context, 'Key findings', s.list('key_findings')),
-          _values(context, s.maps('relevant_values')),
-          _bullets(context, 'Observed information', s.list('observed_trends')),
-          _interpretation(context, s.text('interpretation')),
-          _bullets(context, 'Questions to discuss', s.list('questions_for_doctor')),
-          _bullets(context, 'Limitations', s.list('limitations')),
-        ],
-      AISummaryKind.allReports => [
-          _para(context, null, s.text('summary')),
-          _trends(context, s.maps('observed_trends')),
-          _bullets(context, 'Key findings', s.list('key_findings')),
-          _bullets(context, 'Not enough information to compare', s.list('gaps')),
-          _interpretation(context, s.text('interpretation')),
-          _bullets(context, 'Questions to discuss', s.list('questions_for_doctor')),
-        ],
-      AISummaryKind.patientSummary => [
-          for (final (key, label) in const [
-            ('patient_overview', 'Patient Overview'),
-            ('diabetes_history', 'Diabetes History'),
-            ('recent_assessments', 'Recent Assessments'),
-            ('medical_reports', 'Medical Reports'),
-            ('relevant_trends', 'Relevant Trends'),
-            ('glucose_history', 'Glucose History'),
-            ('lifestyle_trends', 'Lifestyle Trends'),
-            ('medication_history', 'Medication / Prescription History'),
-            ('side_effects', 'Side Effects'),
-            ('doctor_visits', 'Doctor Visits'),
-            ('recent_developments', 'Recent Developments'),
-          ])
-            _para(context, label, s.text(key)),
-          _bullets(context, 'Items to Discuss With Patient', s.list('items_to_discuss')),
-          _interpretation(context, s.text('interpretation')),
-        ],
-      AISummaryKind.lifestyle => [
-          _para(context, null, s.text('headline')),
-          _overview(context, Map<String, dynamic>.from(s.content['overview'] as Map? ?? const {})),
-          _bullets(context, 'Observations', s.list('observations')),
-          _numbered(context, 'AI Suggestions', s.list('suggestions')),
-          _interpretation(context, s.text('interpretation')),
-        ],
-      AISummaryKind.assessmentInterpretation => [
-          _para(context, null, s.text('interpretation')),
-          _bullets(context, 'Patterns considered', s.list('contributing_patterns')),
-          _numbered(context, 'Suggestions', s.list('suggestions')),
-        ],
+    final s = widget.s;
+    final (quick, details) = switch (s.kind) {
+      AISummaryKind.individualReport => (
+          [
+            _para(context, null, s.text('summary')),
+            _bullets(context, 'Key findings', s.list('key_findings')),
+            _values(context, s.maps('relevant_values')),
+            _interpretation(context, s.text('interpretation')),
+          ],
+          [
+            _para(context, 'Report information', s.text('report_information')),
+            _bullets(context, 'Observed within this report', s.list('observed_trends')),
+            _bullets(context, 'Questions to discuss', s.list('questions_for_doctor')),
+            _bullets(context, 'Limitations', s.list('limitations')),
+          ],
+        ),
+      AISummaryKind.allReports => (
+          [
+            _para(context, null, s.text('summary')),
+            _trendsGrouped(context, s.maps('observed_trends')),
+            _bullets(context, 'Key findings', s.list('key_findings')),
+          ],
+          [
+            _bullets(context, 'Not enough information to compare', s.list('gaps')),
+            _interpretation(context, s.text('interpretation')),
+            _bullets(context, 'Questions to discuss', s.list('questions_for_doctor')),
+          ],
+        ),
+      AISummaryKind.patientSummary => (
+          [
+            _para(context, null, s.text('current_status')),
+            _bullets(context, 'Key findings', s.list('key_findings')),
+            _bullets(context, 'Trends', s.list('trends')),
+            _bullets(context, 'Attention', s.list('attention_items')),
+            _bullets(context, 'Recent changes', s.list('recent_changes')),
+            _interpretation(context, s.text('interpretation')),
+          ],
+          [
+            for (final (key, label) in const [
+              ('diabetes_history', 'Diabetes History'),
+              ('recent_assessments', 'Recent Assessments'),
+              ('medical_reports', 'Medical Reports'),
+              ('glucose_history', 'Glucose History'),
+              ('lifestyle_trends', 'Lifestyle Trends'),
+              ('medication_history', 'Medication / Prescription History'),
+              ('side_effects', 'Side Effects'),
+              ('doctor_visits', 'Doctor Visits'),
+              ('recent_developments', 'Recent Developments'),
+              ('heart_history', 'Heart History'),
+            ])
+              _para(context, label, s.text(key)),
+          ],
+        ),
+      AISummaryKind.patientFriendlySummary => (
+          [
+            _para(context, null, s.text('overall')),
+            _bullets(context, 'What stands out', s.list('standouts')),
+            _bullets(context, 'What has changed', s.list('changes')),
+            _bullets(context, 'What to keep in mind', s.list('keep_in_mind')),
+            _bullets(context, 'What to discuss with your doctor', s.list('discuss_with_doctor')),
+          ],
+          const <Widget?>[],
+        ),
+      AISummaryKind.lifestyle => (
+          [
+            _para(context, null, s.text('headline')),
+            _overview(context, Map<String, dynamic>.from(s.content['overview'] as Map? ?? const {})),
+            _interpretation(context, s.text('interpretation')),
+          ],
+          [
+            _bullets(context, 'Observations', s.list('observations')),
+            _numbered(context, 'AI Suggestions', s.list('suggestions')),
+          ],
+        ),
+      AISummaryKind.assessmentInterpretation => (
+          [_para(context, null, s.text('interpretation'))],
+          [
+            _bullets(context, 'Patterns considered', s.list('contributing_patterns')),
+            _numbered(context, 'Suggestions', s.list('suggestions')),
+          ],
+        ),
+      AISummaryKind.heartInterpretation => (
+          [_para(context, null, s.text('interpretation'))],
+          [
+            _bullets(context, 'Patterns considered', s.list('contributing_patterns')),
+            _numbered(context, 'Suggestions', s.list('suggestions')),
+          ],
+        ),
     };
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [for (final b in blocks) ?b]);
+    final detailBlocks = [for (final b in details) ?b];
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      for (final b in quick) ?b,
+      if (detailBlocks.isNotEmpty) ...[
+        const SizedBox(height: AppSpacing.sm),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () => setState(() => _open = !_open),
+            icon: Icon(_open ? Icons.expand_less : Icons.expand_more),
+            label: Text(_open ? 'Hide details' : 'View details'),
+          ),
+        ),
+        if (_open) ...detailBlocks,
+      ],
+    ]);
   }
 
   static Widget _heading(BuildContext context, String text) => Padding(
@@ -329,7 +403,25 @@ class AiSummaryContent extends StatelessWidget {
     ]);
   }
 
-  Widget? _trends(BuildContext context, List<Map<String, dynamic>> trends) {
+  // Direction/category are backend-computed (never AI-guessed, see report_values.classify_trend
+  // server-side). Grouped in this fixed order so the most actionable groups aren't buried.
+  static const _trendCategoryOrder = ['recent_change', 'stable', 'improving', 'worsening', 'unknown'];
+  static const _trendCategoryLabels = {
+    'recent_change': 'Recent change',
+    'stable': 'Stable',
+    'improving': 'Improving',
+    'worsening': 'Worsening',
+    'unknown': 'Unknown',
+  };
+  static const _trendCategoryColors = {
+    'recent_change': AppColors.textSecondary,
+    'stable': AppColors.textSecondary,
+    'improving': AppColors.success,
+    'worsening': AppColors.error,
+    'unknown': AppColors.textSecondary,
+  };
+
+  Widget? _trendsGrouped(BuildContext context, List<Map<String, dynamic>> trends) {
     if (trends.isEmpty) return null;
     final t = Theme.of(context).textTheme;
     String point(Object? p) {
@@ -338,22 +430,35 @@ class AiSummaryContent extends StatelessWidget {
       return '${p['value']}$date';
     }
 
+    final groups = <String, List<Map<String, dynamic>>>{};
+    for (final tr in trends) {
+      final category = tr['category'] as String?;
+      final key = _trendCategoryOrder.contains(category) ? category! : 'unknown';
+      groups.putIfAbsent(key, () => []).add(tr);
+    }
+
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _heading(context, 'Observed trends'),
-      for (final tr in trends)
-        Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-          child: AppCard(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('${tr['parameter']}', style: t.titleSmall),
-              const SizedBox(height: 6),
-              KeyValueRow('Earlier', point(tr['earlier'])),
-              KeyValueRow('Latest', point(tr['latest'])),
-              KeyValueRow('Observed change', '${tr['observed_change'] ?? '—'}'),
-            ]),
-          ),
-        ),
+      for (final category in _trendCategoryOrder)
+        if ((groups[category] ?? const []).isNotEmpty) ...[
+          _heading(context, _trendCategoryLabels[category]!),
+          for (final tr in groups[category]!)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: AppCard(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    Container(width: 8, height: 8, margin: const EdgeInsets.only(right: 8), decoration: BoxDecoration(color: _trendCategoryColors[category], shape: BoxShape.circle)),
+                    Text('${tr['parameter']}', style: t.titleSmall),
+                  ]),
+                  const SizedBox(height: 6),
+                  KeyValueRow('Earlier', point(tr['earlier'])),
+                  KeyValueRow('Latest', point(tr['latest'])),
+                  KeyValueRow('Observed change', '${tr['observed_change'] ?? '—'}'),
+                ]),
+              ),
+            ),
+        ],
     ]);
   }
 

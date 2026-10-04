@@ -19,6 +19,7 @@ from ..models import (
     DiabetesAssessment,
     DiabetesRiskAssessment,
     GlucoseReading,
+    HeartRiskAssessment,
     Patient,
     Prescription,
     Report,
@@ -31,12 +32,15 @@ from ..services.ai.openrouter import DISCLAIMER, AIResult
 from ..services.ai.services import (
     AllReportsSummaryService,
     LifestyleAIService,
+    PatientFriendlySummaryService,
     PatientSummaryService,
     ReportSummaryService,
     get_ai_client,
 )
 from ..services.ai import safety
+from ..services.heart_risk.presentation import FEATURE_GROUP as HEART_FEATURE_GROUP
 from ..services.health_data import latest_facts
+from ..services.health_data.report_values import classify_trend
 from ..services.lifestyle_data import food_overview, glucose_overview, lifestyle_snapshot, to_mg_dl
 from ..services.pdf import pdf_filename, render_summary_pdf
 from ..services.records import audit, notify
@@ -187,6 +191,11 @@ def generate_all_reports_summary(patient_id: str, response: Response, body: AllR
             inline_bytes += r.file_size
         payload.append(item)
     result = AllReportsSummaryService(get_ai_client()).summarize(payload)
+    for trend in result.content.get("observed_trends") or []:
+        if isinstance(trend, dict):
+            earlier = (trend.get("earlier") or {}).get("value")
+            latest = (trend.get("latest") or {}).get("value")
+            trend.update(classify_trend(str(trend.get("parameter") or ""), earlier, latest))
     summary = _store(db, current, patient, "all_reports", result, ids, _fingerprint(sorted(ids)))
     notify(db, patient.user_id, "report_summary_ready", "Report summary ready", "Your all-reports AI summary is ready.", "ai_summary", summary.id, patient.id)
     db.commit()
@@ -200,6 +209,7 @@ def _patient_record(db: Session, patient: Patient) -> dict:
     """Authorized longitudinal record (real data only; DEMO data and contact details excluded)."""
     assessments = db.scalars(select(DiabetesAssessment).where(DiabetesAssessment.patient_id == patient.id).order_by(DiabetesAssessment.assessed_at))
     risk_assessments = db.scalars(select(DiabetesRiskAssessment).where(DiabetesRiskAssessment.patient_id == patient.id).order_by(DiabetesRiskAssessment.created_at))
+    heart_assessments = db.scalars(select(HeartRiskAssessment).where(HeartRiskAssessment.patient_id == patient.id).order_by(HeartRiskAssessment.created_at))
     reports = list(db.scalars(select(Report).where(Report.patient_id == patient.id).order_by(Report.report_date)))
     report_items = []
     for r in reports:
@@ -231,6 +241,15 @@ def _patient_record(db: Session, patient: Patient) -> dict:
             {"code": a.assessment_code, "date": iso(a.assessed_at), "model_classification": a.prediction, "classification_probability": a.classification_probability, "model_version": a.model_version}
             for a in assessments
         ],
+        # Heart disease risk SCREENING (synthetic-data model susthiti-heart-v3; a screening
+        # signal, never a diagnosis, never clinically validated, never the same thing as the
+        # diabetes risk estimate above).
+        "heart_risk_assessments": [
+            {"code": a.assessment_code, "date": iso(a.created_at), "screening_score_percent": a.probability_percent, "risk_level": a.risk_level,
+             "basis": "includes medical report values" if a.report_available else "symptoms and risk factors only",
+             "report_values_used": list(a.report_fields_present or []), "model_version": a.model_version}
+            for a in heart_assessments
+        ],
         "reports": report_items,
         "all_reports_summary": None if all_reports is None else {k: all_reports.content.get(k) for k in ("summary", "observed_trends")},
         "glucose": {"current": glucose_overview(db, patient.id), "monthly_average_mg_dl": {k: round(sum(v) / len(v), 1) for k, v in monthly.items()}, "total_readings": len(glucose_rows)},
@@ -252,10 +271,29 @@ def _patient_record(db: Session, patient: Patient) -> dict:
     }
 
 
+def _has_sufficient_patient_data(record: dict) -> bool:
+    """Whether the authorized record has anything worth summarizing. Shared by the doctor's
+    patient summary and the patient-friendly summary, which both read the same record."""
+    return bool(
+        record["reports"]
+        or record["future_diabetes_risk_assessments"]
+        or record["earlier_symptom_model_assessments"]
+        or record["heart_risk_assessments"]
+        or record["prescriptions"]
+        or record["side_effects"]
+        or record["doctor_visits"]
+        or record["appointment_recommendations"]
+        or record["glucose"]["total_readings"]
+        or record["lifestyle_recent"]
+        or (record["food_recent"] or {}).get("entries_count")
+    )
+
+
 def _record_version(db: Session, patient_id: str) -> str:
     parts = []
     for model, column in ((Report, Report.uploaded_at), (DiabetesAssessment, DiabetesAssessment.assessed_at),
-                          (DiabetesRiskAssessment, DiabetesRiskAssessment.created_at), (Prescription, Prescription.created_at),
+                          (DiabetesRiskAssessment, DiabetesRiskAssessment.created_at), (HeartRiskAssessment, HeartRiskAssessment.created_at),
+                          (Prescription, Prescription.created_at),
                           (Visit, Visit.created_at), (SideEffect, SideEffect.created_at), (GlucoseReading, GlucoseReading.created_at),
                           (SideEffectEvent, None)):
         if column is None:
@@ -287,8 +325,43 @@ def generate_patient_summary(patient_id: str, response: Response, force: bool = 
             audit(db, current, "ai_patient_summary_regeneration_skipped", "ai_summary", reused.id, None, {"patient_code": patient.patient_code})
             db.commit()
             return {"created": False, "summary": summary_out(reused, False, ["Full authorized patient record"])}
-    result = PatientSummaryService(get_ai_client()).summarize(_patient_record(db, patient))
+    record = _patient_record(db, patient)
+    if not _has_sufficient_patient_data(record):
+        raise errors.unprocessable("No sufficient patient history is available to generate a meaningful summary.")
+    result = PatientSummaryService(get_ai_client()).summarize(record)
     summary = _store(db, current, patient, "patient_summary", result, [], record_version)
+    db.commit()
+    return {"created": True, "summary": summary_out(summary, False, ["Full authorized patient record"])}
+
+
+# ---------- Patient-friendly summary ----------
+
+@router.get("/patients/{patient_id}/friendly-summary")
+def get_patient_friendly_summary(patient_id: str, current: CurrentUser = Depends(require_record_reader), db: Session = Depends(get_db)):
+    patient = authorize_patient(db, current, patient_id)
+    summary = _latest(db, patient.id, "patient_friendly_summary")
+    if summary is None:
+        return {"summary": None}
+    stale = summary.source_fingerprint != _record_version(db, patient.id) or summary.prompt_version != PatientFriendlySummaryService.PROMPT_VERSION
+    return {"summary": summary_out(summary, stale, ["Full authorized patient record"])}
+
+
+@router.post("/patients/{patient_id}/friendly-summary", status_code=201)
+def generate_patient_friendly_summary(patient_id: str, response: Response, force: bool = Query(False), current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
+    patient = authorize_patient(db, current, patient_id)
+    record_version = _record_version(db, patient.id)
+    if not force:
+        reused = _reusable(db, patient, "patient_friendly_summary", record_version, PatientFriendlySummaryService.PROMPT_VERSION)
+        if reused is not None:
+            response.status_code = 200
+            audit(db, current, "ai_patient_friendly_summary_regeneration_skipped", "ai_summary", reused.id, None, {"patient_code": patient.patient_code})
+            db.commit()
+            return {"created": False, "summary": summary_out(reused, False, ["Full authorized patient record"])}
+    record = _patient_record(db, patient)
+    if not _has_sufficient_patient_data(record):
+        raise errors.unprocessable("No sufficient patient history is available to generate a meaningful summary.")
+    result = PatientFriendlySummaryService(get_ai_client()).summarize(record)
+    summary = _store(db, current, patient, "patient_friendly_summary", result, [], record_version)
     db.commit()
     return {"created": True, "summary": summary_out(summary, False, ["Full authorized patient record"])}
 
@@ -297,6 +370,7 @@ def generate_patient_summary(patient_id: str, response: Response, force: bool = 
 
 def _lifestyle_context(db: Session, patient: Patient) -> dict:
     latest_risk = db.scalar(select(DiabetesRiskAssessment).where(DiabetesRiskAssessment.patient_id == patient.id).order_by(DiabetesRiskAssessment.created_at.desc()).limit(1))
+    latest_heart = db.scalar(select(HeartRiskAssessment).where(HeartRiskAssessment.patient_id == patient.id).order_by(HeartRiskAssessment.created_at.desc()).limit(1))
     reports = db.scalars(select(Report).where(Report.patient_id == patient.id, Report.category.in_(["hba1c", "blood_glucose", "lipid_profile", "blood_report"])).order_by(Report.report_date.desc()).limit(5))
     report_context = []
     for r in reports:
@@ -312,6 +386,10 @@ def _lifestyle_context(db: Session, patient: Patient) -> dict:
         "food_last_7_days": food_overview(db, patient.id),
         "latest_future_diabetes_risk_estimate": None if latest_risk is None else {
             "date": iso(latest_risk.created_at), "model_estimated_risk_percent": latest_risk.risk_percent, "risk_category": latest_risk.risk_category},
+        # Separate synthetic-data screening model (susthiti-heart-v3) -- context only, never a
+        # lab value, never equivalent to the diabetes estimate above.
+        "latest_heart_risk_screening": None if latest_heart is None else {
+            "date": iso(latest_heart.created_at), "screening_score_percent": latest_heart.probability_percent, "risk_level": latest_heart.risk_level},
         "diabetes_report_findings": report_context,
         # Documented and authoritative: suggestions must never conflict with these.
         "allergies": allergies,
@@ -378,6 +456,39 @@ def interpret_assessment(assessment_id: str, response: Response, force: bool = Q
     lifestyle_ctx = _lifestyle_context(db, patient)
     result = LifestyleAIService(get_ai_client()).interpret_assessment(model_output, lifestyle_ctx)
     summary = _store(db, current, patient, "assessment_interpretation", result, [assessment.id], fingerprint, subject_id=assessment.id, context=lifestyle_ctx)
+    db.commit()
+    return {"created": True, "summary": summary_out(summary)}
+
+
+@router.post("/heart-risk/{assessment_id}/interpretation", status_code=201)
+def interpret_heart_assessment(assessment_id: str, response: Response, force: bool = Query(False), current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
+    """AI interpretation of a heart disease risk SCREENING result (synthetic-data model
+    susthiti-heart-v3) combined with lifestyle context. Mirrors interpret_assessment() above as
+    a parallel endpoint -- not a generalization of it -- so diabetes interpretation is untouched.
+    It is NOT a new ML prediction, and the assessment record itself is never changed."""
+    assessment = db.get(HeartRiskAssessment, assessment_id)
+    if assessment is None:
+        raise errors.not_found("Assessment")
+    patient = authorize_patient(db, current, assessment.patient_id)
+    model_output = {
+        "screening_result": assessment.prediction_label,
+        "screening_score_percent": assessment.probability_percent,
+        "risk_level": assessment.risk_level,
+        "assessed_at": iso(assessment.created_at),
+        "model_version": assessment.model_version,
+        "reported_symptoms": [k for k, v in (assessment.input_features or {}).items() if v == 1 and HEART_FEATURE_GROUP.get(k) == "symptoms"],
+    }
+    fingerprint = _fingerprint(model_output)
+    if not force:
+        reused = _reusable(db, patient, "heart_interpretation", fingerprint, LifestyleAIService.HEART_INTERPRETATION_PROMPT_VERSION, subject_id=assessment.id)
+        if reused is not None:
+            response.status_code = 200
+            audit(db, current, "ai_heart_interpretation_regeneration_skipped", "ai_summary", reused.id, None, {"patient_code": patient.patient_code})
+            db.commit()
+            return {"created": False, "summary": summary_out(reused)}
+    lifestyle_ctx = _lifestyle_context(db, patient)
+    result = LifestyleAIService(get_ai_client()).interpret_heart_assessment(model_output, lifestyle_ctx)
+    summary = _store(db, current, patient, "heart_interpretation", result, [assessment.id], fingerprint, subject_id=assessment.id, context=lifestyle_ctx)
     db.commit()
     return {"created": True, "summary": summary_out(summary)}
 

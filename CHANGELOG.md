@@ -2,6 +2,58 @@
 
 Dates are when the work was done in this engagement, not a release schedule.
 
+## 2026-10-04 — Heart disease risk screening, patient QR identity
+
+Additive throughout: every existing diabetes/AI/notification/access-request behavior keeps
+working unchanged. Full detail in [ML_MODEL_SETUP.md](ML_MODEL_SETUP.md),
+[AI_ARCHITECTURE.md](AI_ARCHITECTURE.md), [DATABASE.md](DATABASE.md) and
+[ARCHITECTURE.md](ARCHITECTURE.md); this is the shipped-in-order summary.
+
+- **New ML service `heart_risk_api/`** (port 8002): the supplied model `susthiti-heart-v3`
+  (Extra Trees, 600 trees, Platt-calibrated, threshold 0.3275, trained on a **20,000-row
+  SYNTHETIC dataset**), deployed verbatim -- no retraining, no threshold change. Mirrors
+  `diabetes_risk_api`'s packaging exactly.
+- **New backend package `services/heart_risk/`** (client, feature builder, coordinator,
+  presentation) and table `heart_risk_assessments` -- sibling to `services/diabetes_risk/`,
+  independent, immutable, full provenance per assessment, never overwritten. New router
+  `routers/heart_risk.py` (`GET`/`POST /patients/{id}/heart-risk`, `.../history`,
+  `GET /heart-risk/{id}`), reusing the same `authorize_patient`/`require_clinical` deps as
+  diabetes. Also wired into the existing patient dashboard, timeline and admin patient-profile
+  endpoints alongside diabetes, unchanged.
+- **Data reuse, not re-asking**: 7 new report-value analytes (total/LDL/HDL cholesterol,
+  triglycerides, troponin, hemoglobin, creatinine) and 5 new health-profile fields (family
+  history of heart disease, previous heart disease/attack, kidney disease, stroke), both
+  reusable generically by the existing report-confirmation and health-profile UI. Vitals
+  (heart rate, SpO2, blood pressure) reused from the existing wearable/lifestyle data. Symptom
+  and cardiac-test fields are always answered fresh on the assessment form, never prefilled,
+  never inferred.
+- **AI summaries are heart-aware**: `PatientSummaryService`, `PatientFriendlySummaryService`
+  and `LifestyleAIService` (patient summary, your-health summary, lifestyle insight, and a new
+  `interpret_heart_assessment()` parallel to the existing diabetes interpretation) now receive
+  structured heart screening data and are explicitly instructed never to call it a diagnosis,
+  never claim it's clinically validated, and never conflate it with the diabetes estimate.
+  `services/ai/safety.py` gained matching deterministic checks. Diabetes AI behavior and
+  prompts are otherwise untouched (new prompt versions were bumped where the shared instruction
+  text changed, so stale cached summaries regenerate once).
+- **Flutter**: Diabetes and Heart are now two tabs of one swipeable page (same `TabBarView`
+  construction the doctor/admin patient-detail screens already use for their own tabs), plus a
+  7-section assessment form, result/history/detail screens, all under `features/heart/` and
+  `data/models/heart_risk.dart` -- sibling to the diabetes feature, not a modification of it.
+- **Patient QR identity**: `PatientQrCard` on the profile screen encodes only the patient's
+  name and opaque Patient ID -- the same two fields a doctor already has to type into the
+  existing manual "Request Access" form. The doctor's new scanner
+  (`features/doctor/qr_scan_screen.dart`, reached from the Patients list and from "Add
+  Patient") decodes it **entirely client-side** and hands the two fields to the exact same
+  `POST /access-requests` call the manual form uses -- no new backend endpoint, no lookup-by-
+  code, no new enumeration surface. Manual entry is untouched and still the primary flow.
+- **Wording fix**: the doctor's submit button read "Send access request"; renamed to
+  "Request Access" (a doctor requests access, they don't send a request).
+- Three real bugs caught and fixed during implementation before they shipped: a `sex`
+  vocabulary case mismatch and a troponin-precision rounding bug in the new heart feature
+  mapping (both silently dropped/zeroed real values), and a latent `AddDataTarget`/
+  `stress_level` gap that would have mis-routed a missing-data link or silently failed to
+  reuse an incompatible profile field.
+
 ## 2026-10-02 — Spec-alignment hardening
 
 Starting point: an audit found SUSTHITI already had a mature, working architecture (Flutter +

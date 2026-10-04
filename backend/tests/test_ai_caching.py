@@ -61,8 +61,9 @@ def test_patient_summary_reuses_an_unchanged_result_unless_forced(env):
     patient_headers, patient = register_patient(client)
     pid = patient["patient_id"]
     grant_access(client, doctor_headers, patient_headers, patient)
+    upload(client, doctor_headers, pid)  # some data is required before a summary can generate
 
-    gemini.queue_json({"patient_overview": "45-year-old male."})
+    gemini.queue_json({"current_status": "45-year-old male."})
     first = client.post(f"{API}/patients/{pid}/patient-summary", headers=doctor_headers)
     assert first.status_code == 201 and first.json()["created"] is True
 
@@ -73,7 +74,7 @@ def test_patient_summary_reuses_an_unchanged_result_unless_forced(env):
     # A real change (a new report) makes the cached summary stale, so it regenerates
     # even without force.
     upload(client, doctor_headers, pid)
-    gemini.queue_json({"patient_overview": "45-year-old male. One report on file."})
+    gemini.queue_json({"current_status": "45-year-old male. One report on file."})
     after_change = client.post(f"{API}/patients/{pid}/patient-summary", headers=doctor_headers)
     assert after_change.status_code == 201 and after_change.json()["created"] is True
     assert len(gemini.requests) == 2

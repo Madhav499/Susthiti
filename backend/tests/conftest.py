@@ -18,6 +18,7 @@ from app import db as db_module  # noqa: E402
 from app.db import Base  # noqa: E402
 from app.services import storage  # noqa: E402
 from app.services.diabetes_risk import client as risk_client  # noqa: E402
+from app.services.heart_risk import client as heart_client  # noqa: E402
 from app.services.ai import services as ai_services  # noqa: E402
 from app.services.ai.openrouter import OpenRouterClient  # noqa: E402
 
@@ -75,6 +76,85 @@ class FakeRiskAPI:
             "report_available": bool(present), "report_fields_present": present, "bmi": bmi, "model_version": "4.0.0",
             "warning": "TEST warning: not a medical diagnosis." if present else "TEST warning: no report data; not fully trusted.",
         })
+
+
+class FakeHeartRiskAPI:
+    """TEST double of the supplied SUSTHITI Heart Risk API (model susthiti-heart-v3). Follows
+    its real contract (binary/categorical validation, numeric ranges, threshold); only the
+    probability is fake. See heart_risk_api/main.py for the real behaviour this mirrors."""
+
+    BINARY = {
+        "family_history_heart_disease", "previous_heart_disease", "previous_heart_attack", "hypertension", "diabetes",
+        "high_cholesterol", "kidney_disease", "stroke_history", "chest_pain", "shortness_of_breath", "fatigue",
+        "dizziness", "fainting", "sweating", "nausea", "palpitations", "pain_left_arm", "pain_jaw_neck", "pain_back",
+        "ecg_abnormality", "exercise_induced_angina", "heart_wall_motion_abnormality", "previous_cardiac_test_abnormal",
+    }
+    CATEGORICAL = {
+        "sex": {"Male", "Female"}, "smoking_status": {"Never", "Former", "Current"},
+        "alcohol_frequency": {"Never", "Rare", "Occasional", "Frequent"}, "physical_activity_level": {"Low", "Moderate", "High"},
+        "chest_pain_type": {"Typical_Angina", "Atypical_Angina", "Non_Anginal"},
+        "resting_ecg": {"Normal", "Normal_Variant", "ST_T_Abnormality", "Old_Infarct_Pattern", "LVH"},
+        "stress_test_result": {"Negative", "Borderline", "Positive"},
+        "echocardiogram_result": {"Normal", "Mild_Abnormality", "Significant_Abnormality"},
+        "diet_quality": {"Average", "Excellent", "Good", "Poor"},
+    }
+    NUM_RANGES = {"age": (0, 120)}  # the real API checks many more; one is enough to test the path
+
+    def __init__(self):
+        self.calls = []
+        self.health_calls = 0
+        self.fail = False
+        self.probability_percent = 20.0  # below the real threshold (32.75%) by default
+        self.model_version = "susthiti-heart-v3"
+        self.respond_with = None
+
+    def _risk_level(self, p: float) -> str:
+        return "high" if p >= 70 else "moderate" if p >= 40 else "low"
+
+    def handler(self, request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/health":
+            self.health_calls += 1
+            return httpx.Response(503) if self.fail else httpx.Response(200, json={"status": "ok", "model_version": self.model_version})
+        if request.url.path == "/model-info":
+            from app.services.heart_risk.features import FEATURES
+            return httpx.Response(200, json={"model_version": self.model_version, "features": list(FEATURES), "threshold": 0.3275, "metrics": {}, "note": "TEST fixture"})
+        if self.fail:
+            return httpx.Response(503, json={"detail": "unavailable"})
+        if isinstance(self.respond_with, Exception):
+            raise self.respond_with
+        if self.respond_with is not None:
+            return self.respond_with
+        data = json.loads(request.content)["data"]
+        self.calls.append(data)
+        errors = []
+        for k, v in data.items():
+            if k in self.BINARY and v not in (0, 1):
+                errors.append(f"{k} must be 0/1 or yes/no")
+            if k in self.CATEGORICAL and v not in self.CATEGORICAL[k]:
+                errors.append(f"{k} must be one of: {sorted(self.CATEGORICAL[k])}")
+            if k in self.NUM_RANGES and not (self.NUM_RANGES[k][0] <= v <= self.NUM_RANGES[k][1]):
+                errors.append(f"{k} must be between {self.NUM_RANGES[k][0]} and {self.NUM_RANGES[k][1]}")
+        if errors:
+            return httpx.Response(422, json={"detail": {"errors": errors}})
+        p = self.probability_percent / 100
+        return httpx.Response(200, json={
+            "model_version": self.model_version, "prediction": 1 if p >= 0.3275 else 0,
+            "prediction_label": "Heart disease risk detected" if p >= 0.3275 else "No high heart-disease risk detected",
+            "probability": round(p, 4), "probability_percent": round(self.probability_percent, 2), "risk_level": self._risk_level(self.probability_percent),
+            "decision_threshold": 0.3275, "warnings": [],
+            "disclaimer": "For Susthiti software/project screening only. This synthetic-data model is not a medical diagnosis.",
+        })
+
+
+@pytest.fixture()
+def heart_ml():
+    """Independent of `env`: combine as `def test_x(env, heart_ml): ...` when a test needs the
+    heart risk service mocked too. Never wired into `env` itself, so every existing test's
+    `client, ml, gemini = env` unpacking stays unchanged."""
+    fake = FakeHeartRiskAPI()
+    heart_client.set_risk_client(heart_client.HeartRiskApiV3Client("http://heart.test", transport=httpx.MockTransport(fake.handler)))
+    yield fake
+    heart_client.set_risk_client(None)
 
 
 class FakeOpenRouter:

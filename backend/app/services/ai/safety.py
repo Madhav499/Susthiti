@@ -16,7 +16,13 @@ import re
 # Some checks only make sense scoped to these — checking everywhere would also catch a
 # legitimate restatement of the patient's own recorded history (e.g. a past visit's
 # "diagnosed with hypertension"), which is not an AI diagnosis, just a documented fact.
-_ADVICE_FIELDS = {"interpretation", "suggestions", "observations", "contributing_patterns", "questions_for_doctor"}
+_ADVICE_FIELDS = {
+    "interpretation", "suggestions", "observations", "contributing_patterns", "questions_for_doctor",
+    # Patient-summary quick-view fields (AI's own prioritized read, not a verbatim record recitation).
+    "current_status", "key_findings", "attention_items", "recent_changes",
+    # Patient-friendly summary fields (same reasoning, plain-language audience).
+    "overall", "discuss_with_doctor",
+}
 
 
 def _patterns(*phrases: str) -> list[re.Pattern]:
@@ -48,6 +54,7 @@ _PATTERNS: dict[str, list[re.Pattern]] = {
     ),
     "future_onset_claim": _patterns(
         r"\bwill\s+develop\s+diabetes\b",
+        r"\bwill\s+develop\s+heart\s+disease\b",
         r"\d+\s*%\s+chance\s+of\s+developing\b",
         r"\bwithin\s+\d+\s+(years?|months?)\s+you\s+will\b",
     ),
@@ -55,12 +62,21 @@ _PATTERNS: dict[str, list[re.Pattern]] = {
     # own claim, not when a field is reciting an actual documented diagnosis from records.
     "diagnosis_certainty": _patterns(
         r"\byou\s+(have|are)\s+(?:\w+\s+){0,2}diabet(es|ic)\b",
+        r"\byou\s+(have|are)\s+(?:\w+\s+){0,2}heart\s+disease\b",
         r"\bthis\s+confirms\s+(that\s+)?you\b",
         r"\byou\s+definitely\s+have\b",
+        r"\bheart\s+disease\s+is\s+confirmed\b",
+    ),
+    # The supplied heart model is trained on synthetic data and is never clinically validated
+    # or a diagnosis -- scoped the same way, so a legitimate recitation of the model's own
+    # metadata elsewhere isn't caught.
+    "heart_screening_overclaim": _patterns(
+        r"\bclinically\s+validated\b",
+        r"\b(confirmed|definite|certain)\s+diagnosis\b",
     ),
 }
 
-_SCOPED: dict[str, set[str]] = {"diagnosis_certainty": _ADVICE_FIELDS}
+_SCOPED: dict[str, set[str]] = {"diagnosis_certainty": _ADVICE_FIELDS, "heart_screening_overclaim": _ADVICE_FIELDS}
 
 # Allergy/restriction-conflict keyword matching: short, generic words are excluded so a
 # documented restriction like "no high-intensity exercise" matches on "intensity", not on

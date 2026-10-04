@@ -6,11 +6,10 @@ a patient or doctor ever sees it.
 
 ## Provider
 
-Google AI Studio (Gemini), called directly over HTTPS from the backend
-(`backend/app/services/ai/gemini.py`) — no SDK, no OpenRouter, no other provider. The key lives
-only in backend environment config and is sent as the `x-goog-api-key` header. The Flutter app
-never holds a key and never calls Gemini directly; it calls the SUSTHITI backend, which calls
-Gemini.
+OpenRouter (`backend/app/services/ai/openrouter.py`), called over HTTPS from the backend — no
+SDK, no direct provider calls. The key (`OPENROUTER_API_KEY`) lives only in backend environment
+config. The Flutter app never holds a key and never calls OpenRouter directly; it calls the
+SUSTHITI backend, which calls OpenRouter.
 
 ## The four services
 
@@ -24,6 +23,7 @@ system instruction and JSON output schema (`backend/app/services/ai/schemas.py`)
 | `PatientSummaryService` | What is this patient's longitudinal history? | `patient-summary-v1` | `patient_summary` |
 | `LifestyleAIService.suggest()` | What lifestyle changes might help? | `lifestyle-v1` | `lifestyle` |
 | `LifestyleAIService.interpret_assessment()` | How does a symptom-model result relate to recent lifestyle? | `assessment-interpretation-v1` | `assessment_interpretation` |
+| `LifestyleAIService.interpret_heart_assessment()` | How does a heart risk *screening* result relate to recent lifestyle? | `heart-assessment-interpretation-v1` | `heart_interpretation` |
 
 A fifth, narrower service, `LabValuesExtractionService` (`lab-values-extraction-v1`), only
 copies HbA1c/glucose values verbatim from a scanned report image — it never interprets, and its
@@ -32,8 +32,11 @@ instead (`backend/app/services/health_data/report_extraction.py`).
 
 Every system instruction shares one `_SAFETY` clause (`services.py`): never diagnose with
 certainty, never prescribe or change medication/dosage, never declare an emergency, never
-predict a timeframe or probability of developing diabetes, never tell the patient to ignore
-their doctor, and always say "not available" rather than guessing. The two `LifestyleAIService`
+predict a timeframe or probability of developing diabetes **or heart disease**, never tell the
+patient to ignore their doctor, and always say "not available" rather than guessing. `_SAFETY`
+also states explicitly that the heart risk screening (model `susthiti-heart-v3`, trained on
+synthetic data) is a screening signal, never a diagnosis, never clinically validated, and never
+to be treated as equivalent to the separate diabetes risk estimate. The two `LifestyleAIService`
 instructions additionally tell the model that supplied allergies and doctor-recorded
 restrictions are authoritative and must never be contradicted by a suggestion.
 
@@ -78,7 +81,8 @@ Categories checked, with scope:
 | `emergency_declaration` | every string field | "this is an emergency", "go to the ER", "call 911" |
 | `numeric_target` | every string field | "walk exactly 8000 steps", "drink 2L of water", "eat 1800 calories" |
 | `future_onset_claim` | every string field | "will develop diabetes", "80% chance of developing..." |
-| `diagnosis_certainty` | advice fields only (`interpretation`, `suggestions`, `observations`, `contributing_patterns`, `questions_for_doctor`) | "you have diabetes", "this confirms you..." |
+| `diagnosis_certainty` | advice fields only (`interpretation`, `suggestions`, `observations`, `contributing_patterns`, `questions_for_doctor`) | "you have diabetes", "you have heart disease", "this confirms you...", "heart disease is confirmed" |
+| `heart_screening_overclaim` | advice fields only | "clinically validated", "confirmed/definite/certain diagnosis" — guards the synthetic heart model specifically |
 | `allergy_or_restriction_conflict` | advice fields only | a suggestion naming a documented allergen/restriction without a negation nearby |
 
 `diagnosis_certainty` is deliberately scoped to the AI's own advice-voice fields, not to fields
@@ -131,6 +135,11 @@ the existing `ai_service_unavailable` (503) / `ai_timeout` (504) codes the app a
   dedicated prompt-injection sanitizer beyond that structuring plus the output-side safety
   checks above; treat this as defense-in-depth, not a guarantee, same as any LLM-backed feature.
 - The AI never computes a numeric trend, a health score, or a risk percentage. Those come from
-  stored, backend-computed values (`lifestyle_data.py`, `diabetes_risk/coordinator.py`); the AI
-  explains a number it was handed, it does not produce one.
+  stored, backend-computed values (`lifestyle_data.py`, `diabetes_risk/coordinator.py`,
+  `heart_risk/coordinator.py`); the AI explains a number it was handed, it does not produce one.
 - The AI never changes a `report_values`, `health_facts`, `prescriptions`, or `visits` row.
+- The AI never turns the heart risk screening's model score into a confirmed diagnosis, never
+  states the synthetic-data model is clinically validated, and never merges it with the
+  diabetes risk estimate as if they measured the same thing — see `heart_risk_assessments` /
+  `latest_heart_risk_screening` in the structured context passed to `PatientSummaryService`,
+  `PatientFriendlySummaryService` and `LifestyleAIService` (`routers/ai.py`).

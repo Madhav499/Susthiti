@@ -6,6 +6,11 @@
          app still works. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
+    <!-- Doctor scans a patient's QR code to prefill the existing manual access-request form;
+         see features/doctor/qr_scan_screen.dart. Camera only, no photo library access. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+
     <!-- Health Connect: READ only, and only for the data SUSTHITI shows on the lifestyle dashboard. -->
     <uses-permission android:name="android.permission.health.READ_STEPS"/>
     <uses-permission android:name="android.permission.health.READ_HEART_RATE"/>

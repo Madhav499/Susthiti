@@ -22,10 +22,14 @@ import '../../features/diabetes/diabetes_screen.dart';
 import '../../features/doctor/doctor_dashboard_screen.dart';
 import '../../features/doctor/doctor_patient_detail_screen.dart';
 import '../../features/doctor/doctor_patients_screens.dart';
+import '../../features/doctor/qr_scan_screen.dart';
 import '../../features/follow_ups/follow_ups_screens.dart';
 import '../../features/food/food_screen.dart';
 import '../../features/glucose/glucose_screen.dart';
 import '../../features/health_profile/health_profile_screen.dart';
+import '../../features/heart/heart_detail_screen.dart';
+import '../../features/heart/heart_questionnaire_screen.dart';
+import '../../features/heart/heart_screen.dart';
 import '../../features/lifestyle/lifestyle_screen.dart';
 import '../../features/notifications/notifications.dart';
 import '../../features/patient/patient_dashboard_screen.dart';
@@ -131,7 +135,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       page('/p/glucose', (_) => GlucoseScreen(patientId: pid())),
       page('/p/food', (_) => FoodScreen(patientId: pid())),
       page('/p/lifestyle/insight', (_) => LifestyleInsightScreen(patientId: pid())),
+      page('/p/health-summary', (_) => YourHealthSummaryScreen(patientId: pid())),
       page('/p/diabetes/assess', (_) => DiabetesQuestionnaireScreen(patientId: pid())),
+      page('/p/heart/assess', (_) => HeartQuestionnaireScreen(patientId: pid())),
       page('/p/side-effects/new', (_) => ReportSideEffectScreen(patientId: pid())),
       page('/p/timeline', (_) => TimelineScreen(patientId: pid())),
       page('/p/appointments', (_) => AppointmentsScreen(patientId: pid())),
@@ -155,6 +161,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ShellDestination('Reports', Icons.description_outlined, Icons.description),
           ShellDestination('Lifestyle', Icons.directions_walk_outlined, Icons.directions_walk),
           ShellDestination('Diabetes', Icons.fact_check_outlined, Icons.fact_check),
+          ShellDestination('Heart', Icons.favorite_border, Icons.favorite),
           ShellDestination('Profile', Icons.person_outline, Icons.person),
         ]),
         branches: [
@@ -162,6 +169,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(routes: [GoRoute(path: '/p/reports', builder: (_, _) => ReportsScreen(patientId: pid()))]),
           StatefulShellBranch(routes: [GoRoute(path: '/p/lifestyle', builder: (_, _) => LifestyleScreen(patientId: pid()))]),
           StatefulShellBranch(routes: [GoRoute(path: '/p/diabetes', builder: (_, _) => DiabetesScreen(patientId: pid()))]),
+          StatefulShellBranch(routes: [GoRoute(path: '/p/heart', builder: (_, _) => HeartScreen(patientId: pid()))]),
           StatefulShellBranch(routes: [GoRoute(path: '/p/profile', builder: (_, _) => const ProfileScreen())]),
         ],
       ),
@@ -169,6 +177,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // ---------- Doctor ----------
       page('/d/notifications', (_) => const NotificationsScreen()),
       page('/d/patients/add', (_) => const AddPatientScreen()),
+      page('/d/scan', (_) => const QrScanScreen()),
       page('/d/patients/:pid', (s) => DoctorPatientDetailScreen(patientId: s.pathParameters['pid']!, initialTab: int.tryParse(s.uri.queryParameters['tab'] ?? '') ?? 0)),
       page('/d/patients/:pid/prescriptions/new', (s) => CreatePrescriptionScreen(patientId: s.pathParameters['pid']!)),
       page('/d/patients/:pid/visits/new', (s) => RecordVisitScreen(patientId: s.pathParameters['pid']!)),
@@ -226,6 +235,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       page('/r/:pid/patient-summary', (s) => PatientSummaryScreen(patientId: s.pathParameters['pid']!)),
       page('/r/:pid/assessments/:aid', (s) => AssessmentDetailScreen(assessmentId: s.pathParameters['aid']!)),
       page('/r/:pid/diabetes-risk/:aid', (s) => RiskDetailScreen(patientId: s.pathParameters['pid']!, assessmentId: s.pathParameters['aid']!)),
+      page('/r/:pid/heart-risk/:aid', (s) => HeartRiskDetailScreen(patientId: s.pathParameters['pid']!, assessmentId: s.pathParameters['aid']!)),
       page('/r/:pid/health-profile', (s) => HealthProfileScreen(patientId: s.pathParameters['pid']!)),
       page('/r/:pid/prescriptions', (s) => PrescriptionsScreen(patientId: s.pathParameters['pid']!)),
       page('/r/:pid/prescriptions/:id', (s) => PrescriptionDetailScreen(prescriptionId: s.pathParameters['id']!)),

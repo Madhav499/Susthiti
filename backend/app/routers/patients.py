@@ -14,6 +14,7 @@ from ..models import (
     DiabetesAssessment,
     DiabetesRiskAssessment,
     FollowUp,
+    HeartRiskAssessment,
     Notification,
     Prescription,
     Report,
@@ -25,6 +26,8 @@ from ..models import (
 from ..schemas import PatientProfileIn, appointment_out, follow_up_out, iso, patient_out, report_out, surgery_out
 from ..services.diabetes_risk import coordinator as risk_coordinator
 from ..services.diabetes_risk import presentation as risk_presentation
+from ..services.heart_risk import coordinator as heart_coordinator
+from ..services.heart_risk import presentation as heart_presentation
 from ..services.health_data import report_values as rv
 from ..services.health_data.body import body_measurements, is_birthday, local_today
 from ..services.lifestyle_data import daily_series, glucose_overview, metric_overview
@@ -91,6 +94,8 @@ def dashboard(patient_id: str, current: CurrentUser = Depends(require_record_rea
     patient = authorize_patient(db, current, patient_id)
     latest_risk = risk_coordinator.latest(db, patient.id)
     risk_reasons = risk_coordinator.stale_reasons(latest_risk, risk_coordinator.evaluate(db, patient)[1]) if latest_risk else []
+    latest_heart = heart_coordinator.latest(db, patient.id)
+    heart_reasons = heart_coordinator.stale_reasons(latest_heart, heart_coordinator.evaluate(db, patient)[1]) if latest_heart else []
     reports = db.scalars(select(Report).where(Report.patient_id == patient.id).order_by(Report.report_date.desc(), Report.uploaded_at.desc()).limit(3))
     insight = db.scalar(
         select(AISummary).where(AISummary.patient_id == patient.id, AISummary.kind == "lifestyle").order_by(AISummary.generated_at.desc()).limit(1)
@@ -128,6 +133,10 @@ def dashboard(patient_id: str, current: CurrentUser = Depends(require_record_rea
         "diabetes_risk": {
             "latest": None if latest_risk is None else risk_presentation.assessment_summary(latest_risk),
             "stale": bool(risk_reasons), "stale_reasons": risk_reasons,
+        },
+        "heart_risk": {
+            "latest": None if latest_heart is None else heart_presentation.assessment_summary(latest_heart),
+            "stale": bool(heart_reasons), "stale_reasons": heart_reasons,
         },
         "glucose": glucose_overview(db, patient.id),
         "metrics": {m: metric_overview(db, patient.id, m) for m in ("steps", "sleep", "activity", "heart_rate")},
@@ -206,7 +215,7 @@ REPORT_TYPE_LABELS = {
 TIMELINE_FILTERS = ("all", "reports", "assessments", "prescriptions", "visits", "side_effects", "appointments", "ai")
 # Filters also accept the names of the event types they show, so a filter always matches its events.
 TIMELINE_FILTER_ALIASES = {
-    "report": "reports", "assessment": "assessments", "diabetes_risk": "assessments", "prescription": "prescriptions",
+    "report": "reports", "assessment": "assessments", "diabetes_risk": "assessments", "heart_risk": "assessments", "prescription": "prescriptions",
     "visit": "visits", "side_effect": "side_effects", "appointment": "appointments", "appointment_recommendation": "appointments",
     "ai_summary": "ai", "ai_summaries": "ai",
 }
@@ -244,6 +253,10 @@ def timeline(
                            "subtitle": f"{a.risk_percent:g}% model-estimated risk ({a.risk_category}), {basis}", "code": a.assessment_code})
         for a in db.scalars(select(DiabetesAssessment).where(DiabetesAssessment.patient_id == patient.id)):
             events.append({"type": "assessment", "id": a.id, "date": at(a.assessed_at), "title": "Symptom questionnaire (earlier model)", "subtitle": f"Model classification: {a.prediction}", "code": a.assessment_code})
+        for a in db.scalars(select(HeartRiskAssessment).where(HeartRiskAssessment.patient_id == patient.id)):
+            basis = "includes report values" if a.report_available else "without report values"
+            events.append({"type": "heart_risk", "id": a.id, "date": at(a.created_at), "title": "Heart disease risk screening",
+                           "subtitle": f"{a.probability_percent:g}% model score ({a.risk_level} risk signal), {basis}", "code": a.assessment_code})
     if type in ("all", "prescriptions"):
         for p in db.scalars(select(Prescription).where(Prescription.patient_id == patient.id)):
             events.append({"type": "prescription", "id": p.id, "date": at(p.prescribed_on), "title": "Prescription", "subtitle": f"By Dr. {p.doctor_name}", "code": p.prescription_code})

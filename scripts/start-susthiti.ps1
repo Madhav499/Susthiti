@@ -3,8 +3,9 @@
   Starts the whole SUSTHITI stack in the right order and checks each part is healthy.
 
   1. Diabetes risk model     (diabetes_risk_api, port 8001) - the supplied API v4 and its .joblib model
-  2. SUSTHITI backend        (backend,      port 8000)  - sign-in, records, AI, calls the model service
-  3. Flutter app in Chrome   (app,          port 8080)  - optional; use -App none when running from Android Studio
+  2. Heart risk model        (heart_risk_api,    port 8002) - the supplied susthiti-heart-v3 model (synthetic data)
+  3. SUSTHITI backend        (backend,      port 8000)  - sign-in, records, AI, calls both model services
+  4. Flutter app in Chrome   (app,          port 8080)  - optional; use -App none when running from Android Studio
 
   Each service runs in its own window titled "SUSTHITI ...". Closing a window stops that service.
   Anything missing (virtual environments, packages, backend .env) is set up on first run.
@@ -24,6 +25,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $apiDir = Join-Path $root 'diabetes_risk_api'
+$heartApiDir = Join-Path $root 'heart_risk_api'
 $backendDir = Join-Path $root 'backend'
 $appDir = Join-Path $root 'app'
 
@@ -124,7 +126,19 @@ Start-ServiceWindow 'SUSTHITI model service :8001' $apiDir "& '$apiPython' -m uv
 $ml = Wait-Healthy 'http://127.0.0.1:8001/health' 'The model service' 90 { param($r) $r.status -eq 'ok' -and $r.model_loaded -eq $true }
 Say "   Ready: SUSTHITI Future Diabetes Risk API, model $($ml.model_version)" 'Green'
 
-# ---------- 2. backend ----------
+# ---------- 2. heart risk model service ----------
+
+Step 'Heart risk model service (heart_risk_api, model susthiti-heart-v3, port 8002)'
+if (-not (Test-Path (Join-Path $heartApiDir 'model.joblib'))) {
+    Fail 'The model file heart_risk_api\model.joblib is missing.'
+}
+$heartApiPython = Ensure-Venv $heartApiDir 'heart model service' @('3.13', '3.12', '3.11')
+Stop-OldService 8002 @('main:app') 'heart model service'
+Start-ServiceWindow 'SUSTHITI heart model service :8002' $heartApiDir "& '$heartApiPython' -m uvicorn main:app --host 127.0.0.1 --port 8002"
+$heartMl = Wait-Healthy 'http://127.0.0.1:8002/health' 'The heart model service' 90 { param($r) $r.status -eq 'ok' }
+Say "   Ready: SUSTHITI Heart Risk API, model $($heartMl.model_version) (synthetic data; screening only, not a diagnosis)" 'Green'
+
+# ---------- 3. backend ----------
 
 Step 'SUSTHITI backend (port 8000)'
 $envFile = Join-Path $backendDir '.env'
@@ -139,6 +153,10 @@ $mlUrl = (Select-String -Path $envFile -Pattern '^ML_SERVICE_URL=(.*)$' | Select
 if ($mlUrl -and $mlUrl.Matches[0].Groups[1].Value.Trim() -notmatch '127\.0\.0\.1:8001|localhost:8001') {
     Say "   Note: backend\.env has ML_SERVICE_URL=$($mlUrl.Matches[0].Groups[1].Value). This script starts the model service on http://127.0.0.1:8001." 'Yellow'
 }
+$heartMlUrl = (Select-String -Path $envFile -Pattern '^HEART_MODEL_SERVICE_URL=(.*)$' | Select-Object -First 1)
+if ($heartMlUrl -and $heartMlUrl.Matches[0].Groups[1].Value.Trim() -notmatch '127\.0\.0\.1:8002|localhost:8002') {
+    Say "   Note: backend\.env has HEART_MODEL_SERVICE_URL=$($heartMlUrl.Matches[0].Groups[1].Value). This script starts the heart model service on http://127.0.0.1:8002." 'Yellow'
+}
 $backendPython = Ensure-Venv $backendDir 'backend' @('3.14', '3.13', '3.12', '3.11')
 Stop-OldService 8000 @('app.main:app') 'backend'
 if ($SeedDemo) {
@@ -149,7 +167,8 @@ $bindHost = '127.0.0.1'; if ($Lan) { $bindHost = '0.0.0.0' }
 Start-ServiceWindow 'SUSTHITI backend :8000' $backendDir "& '$backendPython' -m uvicorn app.main:app --host $bindHost --port 8000"
 $api = Wait-Healthy 'http://127.0.0.1:8000/health' 'The backend' 90 { param($r) $r.status -eq 'ok' }
 if ($api.model_service -ne 'ok') { Fail "The backend is up but cannot reach the model service (model_service=$($api.model_service)). Check ML_SERVICE_URL in backend\.env." }
-Say '   Ready, and connected to the model service.' 'Green'
+if ($api.heart_model_service -ne 'ok') { Fail "The backend is up but cannot reach the heart model service (heart_model_service=$($api.heart_model_service)). Check HEART_MODEL_SERVICE_URL in backend\.env." }
+Say '   Ready, and connected to both model services.' 'Green'
 if (-not $api.ai_configured) { Say '   AI summaries are off: set GEMINI_API_KEY in backend\.env to enable them (optional).' 'Yellow' }
 
 # ---------- phones on USB ----------
@@ -157,7 +176,7 @@ if (-not $api.ai_configured) { Say '   AI summaries are off: set GEMINI_API_KEY 
 Step 'Phones connected with USB'
 & (Join-Path $PSScriptRoot 'phone-usb.ps1')
 
-# ---------- 3. app ----------
+# ---------- 4. app ----------
 
 if ($App -eq 'chrome') {
     Step 'Flutter app in Chrome (port 8080)'
@@ -194,6 +213,7 @@ if ($Lan) {
 Write-Host ''
 Write-Host 'SUSTHITI is running.' -ForegroundColor Green
 Write-Host "   Model service  http://127.0.0.1:8001/docs"
+Write-Host "   Heart model    http://127.0.0.1:8002/docs"
 Write-Host "   Backend        http://127.0.0.1:8000/docs"
 if ($App -eq 'chrome') { Write-Host "   App            http://localhost:8080" } else { Write-Host '   App            run it from Android Studio (Chrome with --web-port 8080, or the Android emulator)' }
 Write-Host "$lanNote"

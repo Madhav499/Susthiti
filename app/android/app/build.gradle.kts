@@ -3,14 +3,19 @@ plugins {
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
-
+import java.util.Properties
 // Push notifications: applied only once google-services.json exists (see settings.gradle.kts),
 // so the build keeps working today and starts using Firebase automatically the moment that file
 // is dropped in -- no other build-file change needed to turn FCM on.
 if (file("google-services.json").exists()) {
     apply(plugin = "com.google.gms.google-services")
 }
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
 
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(keystorePropertiesFile.inputStream())
+}
 android {
     namespace = "com.susthiti.susthiti"
     compileSdk = flutter.compileSdkVersion
@@ -39,13 +44,20 @@ android {
         versionName = flutter.versionName
     }
 
-    buildTypes {
-        release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
-        }
+signingConfigs {
+    create("release") {
+        keyAlias = keystoreProperties["keyAlias"] as String
+        keyPassword = keystoreProperties["keyPassword"] as String
+        storeFile = file(keystoreProperties["storeFile"] as String)
+        storePassword = keystoreProperties["storePassword"] as String
     }
+}
+
+buildTypes {
+    release {
+        signingConfig = signingConfigs.getByName("release")
+    }
+}
 }
 
 kotlin {

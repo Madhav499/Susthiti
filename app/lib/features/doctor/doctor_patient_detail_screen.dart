@@ -18,6 +18,7 @@ import '../ai/ai_screens.dart';
 import '../diabetes/diabetes_screen.dart';
 import '../follow_ups/follow_ups_screens.dart';
 import '../glucose/glucose_screen.dart';
+import '../heart/heart_screen.dart';
 import '../lifestyle/lifestyle_screen.dart';
 import '../lifestyle/trend_card.dart';
 import '../patient/profile_screen.dart';
@@ -28,7 +29,7 @@ import '../side_effects/side_effects_screens.dart';
 import '../surgery/surgery_screens.dart';
 import '../visits/visits_screens.dart';
 
-const _tabs = ['Overview', 'Diabetes', 'Reports', 'Glucose', 'Lifestyle', 'Prescriptions', 'Visits', 'Follow-ups', 'Surgeries', 'Side Effects', 'AI Summary'];
+const _tabs = ['Overview', 'AI Summary', 'Diabetes', 'Heart', 'Reports', 'Glucose', 'Lifestyle', 'Prescriptions', 'Visits', 'Follow-ups', 'Surgeries', 'Side Effects'];
 
 /// Everything here is read through endpoints that re-check the doctor's approved access.
 class DoctorPatientDetailScreen extends ConsumerWidget {
@@ -55,7 +56,9 @@ class DoctorPatientDetailScreen extends ConsumerWidget {
         bottom: TabBar(isScrollable: true, tabAlignment: TabAlignment.start, tabs: [for (final t in _tabs) Tab(text: t)]),
         body: TabBarView(children: [
           tab(_OverviewTab(patientId: patientId)),
+          tab(PatientSummaryView(patientId: patientId, embedded: true)),
           tab(DiabetesView(patientId: patientId, embedded: true, canAssess: true)),
+          tab(HeartView(patientId: patientId, embedded: true, canAssess: true)),
           tab(ReportsView(patientId: patientId, uploadRoute: '/r/$patientId/reports/upload', embedded: true)),
           tab(GlucoseView(patientId: patientId, embedded: true, ranges: TrendCard.clinicalRanges)),
           tab(LifestyleView(patientId: patientId, embedded: true, ranges: TrendCard.clinicalRanges)),
@@ -64,7 +67,6 @@ class DoctorPatientDetailScreen extends ConsumerWidget {
           tab(FollowUpsView(patientId: patientId, embedded: true)),
           tab(SurgeriesView(patientId: patientId, embedded: true)),
           tab(SideEffectsView(patientId: patientId, embedded: true)),
-          tab(PatientSummaryView(patientId: patientId, embedded: true)),
         ]),
       ),
     );

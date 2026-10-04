@@ -30,3 +30,10 @@ app/build/
 release/
 deploy/web/*
 !deploy/web/README.txt
+
+# Android release signing
+app/android/key.properties
+app/android/*.jks
+
+# Local Heart ML virtual environment
+heart_risk_api/.venv/

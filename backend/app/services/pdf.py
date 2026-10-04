@@ -23,15 +23,19 @@ TITLES = {
     "individual_report": "Individual Report Summary",
     "all_reports": "All Reports Summary",
     "patient_summary": "AI Patient Summary",
+    "patient_friendly_summary": "Your Health Summary",
     "lifestyle": "Lifestyle Insight",
     "assessment_interpretation": "Assessment Interpretation",
+    "heart_interpretation": "Heart Risk Screening Interpretation",
 }
 FILE_LABELS = {
     "individual_report": "Individual_Report_Summary",
     "all_reports": "All_Reports_Summary",
     "patient_summary": "Patient_Summary",
+    "patient_friendly_summary": "Your_Health_Summary",
     "lifestyle": "Lifestyle_Insight",
     "assessment_interpretation": "Assessment_Interpretation",
+    "heart_interpretation": "Heart_Risk_Screening_Interpretation",
 }
 
 # Section order and labels per summary kind.
@@ -55,19 +59,28 @@ SECTIONS = {
         ("questions_for_doctor", "Questions to discuss with your doctor"),
     ],
     "patient_summary": [
-        ("patient_overview", "Patient overview"),
+        ("current_status", "Current status"),
+        ("key_findings", "Key findings"),
+        ("trends", "Trends"),
+        ("attention_items", "Attention"),
+        ("recent_changes", "Recent changes"),
+        ("interpretation", "AI interpretation"),
         ("diabetes_history", "Diabetes history"),
         ("recent_assessments", "Recent assessments"),
         ("medical_reports", "Medical reports"),
-        ("relevant_trends", "Relevant trends"),
         ("glucose_history", "Glucose history"),
         ("lifestyle_trends", "Lifestyle trends"),
         ("medication_history", "Medication / prescription history"),
         ("side_effects", "Side effects"),
         ("doctor_visits", "Doctor visits"),
         ("recent_developments", "Recent developments"),
-        ("items_to_discuss", "Items to discuss with patient"),
-        ("interpretation", "AI interpretation"),
+    ],
+    "patient_friendly_summary": [
+        ("overall", "Overall"),
+        ("standouts", "What stands out"),
+        ("changes", "What has changed"),
+        ("keep_in_mind", "What to keep in mind"),
+        ("discuss_with_doctor", "What to discuss with your doctor"),
     ],
     "lifestyle": [
         ("headline", "Overview"),
@@ -77,6 +90,11 @@ SECTIONS = {
         ("interpretation", "AI interpretation"),
     ],
     "assessment_interpretation": [
+        ("interpretation", "Interpretation"),
+        ("contributing_patterns", "Contributing patterns"),
+        ("suggestions", "Suggestions"),
+    ],
+    "heart_interpretation": [
         ("interpretation", "Interpretation"),
         ("contributing_patterns", "Contributing patterns"),
         ("suggestions", "Suggestions"),

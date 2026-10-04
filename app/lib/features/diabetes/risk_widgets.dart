@@ -215,6 +215,8 @@ String? addDataRoute(AddDataTarget target, String patientId, UserRole? role) {
     AddDataTarget.healthProfile => '/r/$patientId/health-profile',
     AddDataTarget.reportValues => '/r/$patientId/reports',
     AddDataTarget.healthConnection => patient ? '/p/devices' : null,
+    // Only ever answered on the heart assessment form itself: no separate screen to link to.
+    AddDataTarget.heartAssessmentForm => null,
   };
 }
 
@@ -223,6 +225,7 @@ String addDataLabel(AddDataTarget target) => switch (target) {
       AddDataTarget.healthProfile => 'Open health profile',
       AddDataTarget.reportValues => 'Add values from a report',
       AddDataTarget.healthConnection => 'Connect health data',
+      AddDataTarget.heartAssessmentForm => 'Answer on the heart assessment form',
     };
 
 /// Information the estimate could use but doesn't have, and where to add it. Nothing is guessed.

@@ -6,12 +6,17 @@ Concept names (keys of `observations`):
   lab.<analyte>                              values confirmed from uploaded reports
   measured.sleep_hours                       average nightly sleep, health platform / manual logs
   measured.daily_steps                       average daily steps, health platform / manual logs
+  measured.resting_heart_rate                most recent heart-rate reading, health platform / manual logs
+  measured.oxygen_saturation                 most recent SpO2 reading, health platform / manual logs
+  measured.systolic_bp, measured.diastolic_bp  most recent blood-pressure reading, health platform / manual logs
   questionnaire.<symptom>                    answers from the earlier symptom questionnaire
 
 Freshness (documented in docs/diabetes-api-v4-integration.md):
   * health profile answers expire after their field's fresh_days (None: never);
   * report values: newest report wins; reports older than 2 years are not current;
   * sleep: last 14 days, at least 3 nights recorded; steps: last 14 days, at least 7 days;
+  * heart rate / SpO2 / blood pressure: most recent single reading within the last 14 days
+    (these are point-in-time vitals, not averaged like sleep/steps);
   * questionnaire symptoms: only if answered within the last 90 days.
 Demo data (is_demo) is never used as health data.
 """
@@ -39,6 +44,7 @@ QUESTIONNAIRE = "symptom_questionnaire"
 LIFESTYLE_WINDOW_DAYS = 14
 MIN_SLEEP_NIGHTS = 3
 MIN_STEP_DAYS = 7
+VITALS_WINDOW_DAYS = 14
 QUESTIONNAIRE_FRESH_DAYS = 90
 
 # Old questionnaire (retired 16-feature model) answers that mean the same symptom.
@@ -90,6 +96,7 @@ def build_snapshot(db: Session, patient: Patient, now: datetime | None = None) -
     _health_profile(db, snap, patient, now)
     _reports(db, snap, patient, today)
     _lifestyle(db, snap, patient, today)
+    _vitals(db, snap, patient, today)
     _questionnaire(db, snap, patient, now)
     return snap
 
@@ -190,6 +197,49 @@ def _lifestyle(db: Session, snap: PatientHealthSnapshot, patient: Patient, today
         )
     else:
         snap.unknown["measured.daily_steps"] = f"Steps recorded on {len(steps)} of the last {LIFESTYLE_WINDOW_DAYS} days (needs {MIN_STEP_DAYS})"
+
+
+def _vitals(db: Session, snap: PatientHealthSnapshot, patient: Patient, today: date) -> None:
+    """Resting heart rate, SpO2 and blood pressure: the most recent single reading within the
+    window, not an average (unlike sleep/steps, these are point-in-time vitals). Used only by
+    the heart risk assessment; the diabetes model has no field for any of them."""
+    start = today - timedelta(days=VITALS_WINDOW_DAYS - 1)
+
+    def source_of(point: dict) -> str:
+        return WEARABLE if set(point.get("sources", [])) & {"health_platform", "device", "imported"} else LIFESTYLE_LOG
+
+    def latest_point(metric: str) -> dict | None:
+        points = [p for p in daily_series(db, patient.id, metric, start, today, include_demo=False) if p.get("value") is not None]
+        return points[-1] if points else None
+
+    heart_rate = latest_point("heart_rate")
+    if heart_rate is not None:
+        snap.observations["measured.resting_heart_rate"] = Observation(
+            round(heart_rate["value"]), source_of(heart_rate), date.fromisoformat(heart_rate["date"]), None,
+            f"Recorded {heart_rate['date']}", {"window_days": VITALS_WINDOW_DAYS},
+        )
+    else:
+        snap.unknown["measured.resting_heart_rate"] = f"No heart-rate reading in the last {VITALS_WINDOW_DAYS} days"
+
+    spo2 = latest_point("spo2")
+    if spo2 is not None:
+        snap.observations["measured.oxygen_saturation"] = Observation(
+            round(spo2["value"]), source_of(spo2), date.fromisoformat(spo2["date"]), None,
+            f"Recorded {spo2['date']}", {"window_days": VITALS_WINDOW_DAYS},
+        )
+    else:
+        snap.unknown["measured.oxygen_saturation"] = f"No SpO2 reading in the last {VITALS_WINDOW_DAYS} days"
+
+    bp = latest_point("blood_pressure")
+    if bp is not None and bp.get("value2") is not None:
+        source = source_of(bp)
+        detail = f"Recorded {bp['date']}"
+        snap.observations["measured.systolic_bp"] = Observation(round(bp["value"]), source, date.fromisoformat(bp["date"]), None, detail, {"window_days": VITALS_WINDOW_DAYS})
+        snap.observations["measured.diastolic_bp"] = Observation(round(bp["value2"]), source, date.fromisoformat(bp["date"]), None, detail, {"window_days": VITALS_WINDOW_DAYS})
+    else:
+        reason = f"No blood-pressure reading in the last {VITALS_WINDOW_DAYS} days"
+        snap.unknown["measured.systolic_bp"] = reason
+        snap.unknown["measured.diastolic_bp"] = reason
 
 
 def _questionnaire(db: Session, snap: PatientHealthSnapshot, patient: Patient, now: datetime) -> None:

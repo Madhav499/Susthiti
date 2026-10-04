@@ -36,7 +36,11 @@ class SplashScreen extends ConsumerStatefulWidget {
     } else {
       byWidth = size.width * 0.68;
     }
-    return byWidth.clamp(120.0, size.height * 0.55);
+    // size.height * 0.55 can be transiently smaller than 120 (e.g. a zero-ish first frame before
+    // real window metrics arrive), which would otherwise make clamp's upper bound smaller than
+    // its lower bound and throw. Never let the cap fall below the floor.
+    final heightCap = size.height * 0.55;
+    return byWidth.clamp(120.0, heightCap < 120.0 ? 120.0 : heightCap);
   }
 
   @override

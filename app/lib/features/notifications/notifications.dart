@@ -197,9 +197,9 @@ String? notificationRoute(AppNotification n, AppUser user) {
     case 'appointment':
       return '/p/appointments';
     case 'follow_up':
-      return isDoctor ? (pid == null ? null : '/d/patients/$pid?tab=7') : '/p/follow-ups';
+      return isDoctor ? (pid == null ? null : '/d/patients/$pid?tab=8') : '/p/follow-ups';
     case 'surgery':
-      return isDoctor ? (pid == null ? null : '/d/patients/$pid?tab=8') : '/p/surgeries';
+      return isDoctor ? (pid == null ? null : '/d/patients/$pid?tab=9') : '/p/surgeries';
     case 'access_request':
       return isDoctor ? '/d/requests' : '/p/access';
     case 'patient':

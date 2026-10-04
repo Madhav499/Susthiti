@@ -156,7 +156,8 @@ class AISummary(Base):
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
     patient_id: Mapped[str] = mapped_column(ForeignKey("patients.id"), index=True)
-    # individual_report | all_reports | patient_summary | lifestyle | assessment_interpretation
+    # individual_report | all_reports | patient_summary | patient_friendly_summary | lifestyle |
+    # assessment_interpretation
     kind: Mapped[str] = mapped_column(String(40), index=True)
     subject_id: Mapped[str | None] = mapped_column(String(32), index=True)  # report or assessment id
     source_ids: Mapped[list] = mapped_column(JSON, default=list)
@@ -276,6 +277,41 @@ class DiabetesRiskAssessment(Base):
     provenance: Mapped[list] = mapped_column(JSON, default=list)
     missing_features: Mapped[list] = mapped_column(JSON, default=list)
     # Change detection: a new assessment is only needed when this fingerprint changes.
+    input_fingerprint: Mapped[str] = mapped_column(String(64), index=True)
+    snapshot_built_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class HeartRiskAssessment(Base):
+    """One heart-disease risk screening result from the supplied SUSTHITI Heart Risk API
+    (model susthiti-heart-v3, trained on synthetic data -- never a diagnosis). Immutable: a new
+    assessment (bare refresh or questionnaire submission) creates a new row. Stores exactly what
+    was sent to the model and where each value came from, so every result can be reproduced and
+    explained later. Independent of DiabetesRiskAssessment: a sibling table, not an extension."""
+
+    __tablename__ = "heart_risk_assessments"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    assessment_code: Mapped[str] = mapped_column(String(20), unique=True, index=True)
+    patient_id: Mapped[str] = mapped_column(ForeignKey("patients.id"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+    performed_by_user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    performed_by_role: Mapped[str] = mapped_column(String(16))
+    # The API's response, as returned.
+    model_version: Mapped[str] = mapped_column(String(40))
+    probability_percent: Mapped[float] = mapped_column(Float)
+    risk_level: Mapped[str] = mapped_column(String(16))
+    prediction: Mapped[int] = mapped_column(Integer)
+    prediction_label: Mapped[str] = mapped_column(String(80))
+    decision_threshold: Mapped[float] = mapped_column(Float)
+    report_available: Mapped[bool] = mapped_column(Boolean)
+    report_fields_present: Mapped[list] = mapped_column(JSON, default=list)
+    bmi: Mapped[float | None] = mapped_column(Float)
+    warnings: Mapped[list] = mapped_column(JSON, default=list)
+    # What SUSTHITI sent (only the model's features) and where each value came from.
+    input_features: Mapped[dict] = mapped_column(JSON, default=dict)
+    provenance: Mapped[list] = mapped_column(JSON, default=list)
+    missing_features: Mapped[list] = mapped_column(JSON, default=list)
+    # Change detection: a bare refresh only needs a new assessment when this fingerprint changes.
     input_fingerprint: Mapped[str] = mapped_column(String(64), index=True)
     snapshot_built_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 

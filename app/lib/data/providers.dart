@@ -8,6 +8,7 @@ import 'repositories/auth_repository.dart';
 import 'repositories/diabetes_repository.dart';
 import 'repositories/food_repository.dart';
 import 'repositories/glucose_repository.dart';
+import 'repositories/heart_repository.dart';
 import 'repositories/lifestyle_repository.dart';
 import 'repositories/notification_repository.dart';
 import 'repositories/patient_repository.dart';
@@ -30,6 +31,7 @@ final doctorRepositoryProvider = Provider<DoctorRepository>((ref) => ApiDoctorRe
 final adminRepositoryProvider = Provider<AdminRepository>((ref) => ApiAdminRepository(ref.watch(apiClientProvider)));
 final reportRepositoryProvider = Provider<ReportRepository>((ref) => ApiReportRepository(ref.watch(apiClientProvider)));
 final diabetesRepositoryProvider = Provider<DiabetesRepository>((ref) => ApiDiabetesRepository(ref.watch(apiClientProvider)));
+final heartRepositoryProvider = Provider<HeartRepository>((ref) => ApiHeartRepository(ref.watch(apiClientProvider)));
 final glucoseRepositoryProvider = Provider<GlucoseRepository>((ref) => ApiGlucoseRepository(ref.watch(apiClientProvider)));
 final foodRepositoryProvider = Provider<FoodRepository>((ref) => ApiFoodRepository(ref.watch(apiClientProvider)));
 final lifestyleRepositoryProvider = Provider<LifestyleRepository>((ref) => ApiLifestyleRepository(ref.watch(apiClientProvider)));

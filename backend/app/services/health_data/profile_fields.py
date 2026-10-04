@@ -99,6 +99,16 @@ FIELDS: tuple[ProfileField, ...] = (
     ProfileField("polydipsia", SYMPTOMS, "Unusual or constant thirst", "yes_no", fresh_days=90),
     ProfileField("unexplained_weight_loss", SYMPTOMS, "Losing weight without trying", "yes_no", fresh_days=90),
     ProfileField("polyphagia", SYMPTOMS, "Unusually strong or constant hunger", "yes_no", fresh_days=90),
+    # Heart-disease screening history (reused by the heart risk assessment; see
+    # services/heart_risk/features.py). Deliberately separate from cardiovascular_disease
+    # above: that field is a combined "heart or blood-vessel disease" concept, but the heart
+    # model keeps family history, a prior heart-disease diagnosis, a prior heart attack and a
+    # prior stroke as distinct questions, so none of them is inferred from the combined one.
+    ProfileField("family_history_heart_disease", FAMILY, "A parent, brother or sister has had heart disease", "yes_no"),
+    ProfileField("previous_heart_disease", MEDICAL, "A doctor has diagnosed you with heart disease", "yes_no"),
+    ProfileField("previous_heart_attack", MEDICAL, "You have had a heart attack", "yes_no"),
+    ProfileField("kidney_disease", MEDICAL, "Kidney disease diagnosed by a doctor", "yes_no"),
+    ProfileField("stroke_history", MEDICAL, "You have had a stroke", "yes_no"),
     ProfileField("allergies", MEDICAL, "Known allergies (medication, food or other)", "list",
                  help="Documented allergies are treated as authoritative and must never be contradicted by AI-generated suggestions."),
     ProfileField("doctor_restrictions", MEDICAL, "Doctor-documented restrictions", "list",

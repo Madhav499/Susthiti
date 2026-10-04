@@ -76,6 +76,6 @@ void main() {
 
     await tester.tap(find.text('Appendectomy'));
     await tester.pumpAndSettle();
-    expect(find.text('PATIENT pat3 tab=8'), findsOneWidget);
+    expect(find.text('PATIENT pat3 tab=9'), findsOneWidget);
   });
 }

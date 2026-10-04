@@ -1,6 +1,7 @@
 import '../../core/utils/formatters.dart';
 import 'care.dart';
 import 'diabetes_risk.dart';
+import 'heart_risk.dart';
 import 'report.dart';
 import 'tracking.dart';
 
@@ -58,6 +59,9 @@ class PatientDashboard {
     this.risk,
     this.riskStale = false,
     this.riskStaleReasons = const [],
+    this.heartRisk,
+    this.heartRiskStale = false,
+    this.heartRiskStaleReasons = const [],
     this.insightHeadline,
     this.insightGeneratedAt,
     this.nextAppointment,
@@ -74,6 +78,11 @@ class PatientDashboard {
   final RiskBrief? risk;
   final bool riskStale;
   final List<String> riskStaleReasons;
+  /// Latest heart disease risk screening, and whether health data changed since. Independent
+  /// of [risk]: a patient may have one, both or neither -- never a fallback between them.
+  final HeartRiskBrief? heartRisk;
+  final bool heartRiskStale;
+  final List<String> heartRiskStaleReasons;
   final GlucoseOverview glucose;
   final Map<LifestyleMetricType, MetricOverview> metrics;
   final List<MedicalReport> recentReports;
@@ -93,6 +102,7 @@ class PatientDashboard {
 
   factory PatientDashboard.fromJson(Map<String, dynamic> j) {
     final risk = j['diabetes_risk'] as Map<String, dynamic>?;
+    final heartRisk = j['heart_risk'] as Map<String, dynamic>?;
     final insight = j['lifestyle_insight'] as Map<String, dynamic>?;
     final p = j['patient'] as Map<String, dynamic>;
     return PatientDashboard(
@@ -102,6 +112,9 @@ class PatientDashboard {
       risk: RiskBrief.maybe(risk?['latest']),
       riskStale: risk?['stale'] as bool? ?? false,
       riskStaleReasons: [for (final r in risk?['stale_reasons'] as List? ?? const []) r as String],
+      heartRisk: HeartRiskBrief.maybe(heartRisk?['latest']),
+      heartRiskStale: heartRisk?['stale'] as bool? ?? false,
+      heartRiskStaleReasons: [for (final r in heartRisk?['stale_reasons'] as List? ?? const []) r as String],
       glucose: GlucoseOverview.fromJson(j['glucose'] as Map<String, dynamic>),
       metrics: {
         for (final e in (j['metrics'] as Map<String, dynamic>).entries) LifestyleMetricType.parse(e.key): MetricOverview.fromJson(e.value as Map<String, dynamic>),

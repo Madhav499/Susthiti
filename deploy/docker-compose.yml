@@ -18,6 +18,16 @@ services:
       start_period: 60s
       retries: 3
 
+  heart-model:
+    build: ../heart_risk_api  # SUSTHITI Heart Disease Risk API (model susthiti-heart-v3, synthetic data)
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).status == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+
   backend:
     build: ../backend
     restart: unless-stopped
@@ -27,6 +37,7 @@ services:
       DATABASE_URL: sqlite:////data/susthiti.db
       STORAGE_DIR: /data/storage
       ML_SERVICE_URL: http://model:8000
+      HEART_MODEL_SERVICE_URL: http://heart-model:8000
       CORS_ORIGINS: https://${DOMAIN:?Set DOMAIN in deploy/.env}
       ENABLE_DEMO_WEARABLE: "false"
       DEV_EXPOSE_RESET_TOKEN: "false"
@@ -35,6 +46,8 @@ services:
       - susthiti-data:/data
     depends_on:
       model:
+        condition: service_healthy
+      heart-model:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).status == 200 else 1)"]

@@ -9,6 +9,7 @@ import '../../data/providers.dart';
 import 'ai_summary_section.dart';
 
 final patientSummaryProvider = FutureProvider.autoDispose.family<AISummary?, String>((ref, pid) => ref.watch(aiRepositoryProvider).patient.latest(pid));
+final patientFriendlySummaryProvider = FutureProvider.autoDispose.family<AISummary?, String>((ref, pid) => ref.watch(aiRepositoryProvider).patient.latestFriendly(pid));
 final lifestyleInsightProvider = FutureProvider.autoDispose.family<AISummary?, String>((ref, pid) => ref.watch(aiRepositoryProvider).lifestyle.latestInsight(pid));
 
 /// AI Patient Summary: a longitudinal overview of the authorized record. Separate from the
@@ -47,6 +48,38 @@ class PatientSummaryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => AppPage(title: 'AI Patient Summary', body: PatientSummaryView(patientId: patientId));
+}
+
+/// "Your Health Summary": the patient-facing counterpart to AI Patient Summary. A separate
+/// AI generation (see PatientFriendlySummaryService), written in plain language, with no
+/// clinical "view details" layer -- this is the whole thing, kept short.
+class YourHealthSummaryScreen extends ConsumerWidget {
+  const YourHealthSummaryScreen({super.key, required this.patientId});
+  final String patientId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return AppPage(
+      title: 'Your Health Summary',
+      body: PageBody(
+        maxWidth: 820,
+        onRefresh: () async => ref.invalidate(patientFriendlySummaryProvider(patientId)),
+        children: [
+          AiSummarySection(
+            title: 'Your Health Summary',
+            value: ref.watch(patientFriendlySummaryProvider(patientId)),
+            onGenerate: () => ref.read(aiRepositoryProvider).patient.generateFriendly(patientId),
+            onGenerated: () => ref.invalidate(patientFriendlySummaryProvider(patientId)),
+            loadingMessage: 'Looking at your recorded health information...',
+            emptyMessage: 'Get a short summary of your recorded health information, in plain language.',
+            generateLabel: 'Generate Summary',
+            failureReassurance: 'Your original records are unchanged and still available.',
+          ),
+          const Disclaimer(),
+        ],
+      ),
+    );
+  }
 }
 
 /// Lifestyle AI: suggestions from recorded activity, sleep, food and glucose. Never prescribes.

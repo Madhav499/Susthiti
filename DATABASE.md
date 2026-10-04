@@ -41,7 +41,9 @@ Before the first production schema change, add Alembic migrations (`alembic init
 | `access_requests` | Doctor ↔ patient access | `status` (pending, approved, rejected, revoked), `responded_at`, `revoked_at`, `revoked_by_user_id` |
 | `reports` | Uploaded medical reports | `category`, `report_date`, `uploaded_at`, uploader fields, `storage_ref`, `original_filename`, `file_type`, `file_size`, `sha256` |
 | `ai_summaries` | Stored AI outputs | `kind`, `subject_id`, `source_ids`, `source_fingerprint` (staleness), `content` (JSON), `provider`, `model`, generator |
-| `diabetes_assessments` | Model results | `inputs` (the 16 values), `prediction`, `classification_probability`, `model_version`, `lifestyle_snapshot`, performer |
+| `diabetes_assessments` | Earlier symptom-model results (superseded, read-only history) | `inputs` (the 16 values), `prediction`, `classification_probability`, `model_version`, `lifestyle_snapshot`, performer |
+| `diabetes_risk_assessments` | Future diabetes risk estimates (current model, immutable history) | `risk_percent`, `risk_category`, `prediction`, `input_features`/`provenance`/`missing_features` (JSON), `input_fingerprint`, `model_version`, performer |
+| `heart_risk_assessments` | Heart disease risk screenings (synthetic-data model `susthiti-heart-v3`, immutable history) | `probability_percent`, `risk_level`, `prediction`, `input_features`/`provenance`/`missing_features` (JSON), `input_fingerprint`, `model_version`, performer |
 | `glucose_readings` | Glucose values | `value`, `unit`, `reading_type`, `measured_at`, `context`, `source` |
 | `food_entries` | Food log with revisions | `food_name`, `quantity`, `meal_type`, `eaten_at`, `previous_id`, `superseded_at` |
 | `lifestyle_metrics` | Steps, heart rate, sleep, activity, blood pressure, SpO2, calories | `metric_type`, `value`, `value2` (diastolic), `unit`, `recorded_at`, `source`, `wearable_connection_id` |

@@ -66,7 +66,7 @@ class _DoctorPatientsScreenState extends ConsumerState<DoctorPatientsScreen> {
     return AppPage(
       title: 'Patients',
       large: true,
-      actions: const [NotificationBell()],
+      actions: [IconButton(tooltip: 'Scan Patient QR', onPressed: () => context.push('/d/scan'), icon: const Icon(Icons.qr_code_scanner_outlined)), const NotificationBell()],
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/d/patients/add'),
         icon: const Icon(Icons.person_add_alt_outlined),
@@ -186,6 +186,7 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
     final t = Theme.of(context).textTheme;
     return AppPage(
       title: 'Add Patient',
+      actions: [IconButton(tooltip: 'Scan Patient QR', onPressed: () => context.push('/d/scan'), icon: const Icon(Icons.qr_code_scanner_outlined))],
       body: PageBody(maxWidth: 560, children: [
         if (_sent != null)
           AppCard(
@@ -228,7 +229,15 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
                 ),
               ),
               AppTextField(label: 'Message to patient', controller: _message, optional: true, maxLines: 3, textCapitalization: TextCapitalization.sentences),
-              BusyButton(label: 'Send access request', onPressed: _submit, expand: true),
+              BusyButton(label: 'Request Access', onPressed: _submit, expand: true),
+              const SizedBox(height: AppSpacing.md),
+              Center(
+                child: TextButton.icon(
+                  onPressed: () => context.push('/d/scan'),
+                  icon: const Icon(Icons.qr_code_scanner_outlined, size: 18),
+                  label: const Text('Or scan the patient\'s QR code instead'),
+                ),
+              ),
             ]),
           ),
       ]),

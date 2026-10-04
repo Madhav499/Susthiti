@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 
 from .config import get_settings
 from .db import SessionLocal, init_db
-from .routers import access, admin, admin_profiles, ai, auth, care, diabetes, diabetes_risk, follow_ups, health_data, notifications, patients, reports, surgeries, tracking
+from .routers import access, admin, admin_profiles, ai, auth, care, diabetes, diabetes_risk, follow_ups, health_data, heart_risk, notifications, patients, reports, surgeries, tracking
 from .services.reminders import reminder_loop
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -73,12 +73,13 @@ async def unhandled(request: Request, exc: Exception):
 
 @app.get("/health")
 def health():
-    """Liveness plus whether the diabetes model service is reachable, so a missing model service is
-    visible here instead of only as a failed assessment."""
+    """Liveness plus whether the diabetes and heart model services are reachable, so a missing
+    model service is visible here instead of only as a failed assessment."""
     import httpx
 
     from .services.diabetes_risk.client import version_major
     from .services.diabetes_risk.features import SUPPORTED_MAJOR
+    from .services.heart_risk.client import MODEL_VERSION as HEART_MODEL_VERSION
 
     settings = get_settings()
     model_version = None
@@ -92,8 +93,25 @@ def health():
             model_service = "not_ready"
     except (httpx.HTTPError, ValueError):
         model_service = "unreachable"
-    return {"status": "ok", "ai_configured": settings.ai_configured, "model_service": model_service, "model_version": model_version}
+
+    heart_model_version = None
+    try:
+        hm = httpx.get(f"{settings.heart_model_service_url.rstrip('/')}/health", timeout=2)
+        body = hm.json() if hm.status_code == 200 else {}
+        heart_model_version = body.get("model_version")
+        if body.get("status") == "ok":
+            heart_model_service = "ok" if heart_model_version == HEART_MODEL_VERSION else "unsupported_version"
+        else:
+            heart_model_service = "not_ready"
+    except (httpx.HTTPError, ValueError):
+        heart_model_service = "unreachable"
+
+    return {
+        "status": "ok", "ai_configured": settings.ai_configured,
+        "model_service": model_service, "model_version": model_version,
+        "heart_model_service": heart_model_service, "heart_model_version": heart_model_version,
+    }
 
 
-for module in (auth, patients, reports, diabetes, diabetes_risk, health_data, tracking, care, access, follow_ups, surgeries, notifications, admin, admin_profiles, ai):
+for module in (auth, patients, reports, diabetes, diabetes_risk, heart_risk, health_data, tracking, care, access, follow_ups, surgeries, notifications, admin, admin_profiles, ai):
     app.include_router(module.router, prefix="/api/v1")

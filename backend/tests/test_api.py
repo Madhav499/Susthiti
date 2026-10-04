@@ -437,7 +437,8 @@ def test_patient_summary_for_doctor(env):
     doctor_headers, _ = make_doctor(client, admin)
     patient_headers, patient = register_patient(client)
     grant_access(client, doctor_headers, patient_headers, patient)
-    gemini.queue_json({"patient_overview": "45-year-old male.", "items_to_discuss": ["Sleep"]})
+    upload(client, doctor_headers, patient["patient_id"])  # some data is required before a summary can generate
+    gemini.queue_json({"current_status": "45-year-old male.", "attention_items": ["Sleep"]})
     r = client.post(f"{API}/patients/{patient['patient_id']}/patient-summary", headers=doctor_headers)
     assert r.status_code == 201, r.text
     assert r.json()["summary"]["generated_by_role"] == "doctor"

@@ -16,6 +16,21 @@ import '../patient/patient_sync.dart';
 import 'diabetes_providers.dart';
 import 'risk_widgets.dart';
 
+/// Health-profile fields the diabetes model actually reads (services/diabetes_risk/features.py's
+/// FEATURE_SOURCES, health-profile-backed ones; height/weight are asked separately in the BODY
+/// group). The health profile is shared by every risk model (see profile_fields.py's docstring),
+/// so this questionnaire must filter to its own fields -- otherwise a field added for a sibling
+/// model (e.g. the heart risk screening's family/medical-history questions) would also show up
+/// here, in a flow titled "Diabetes risk assessment".
+const _diabetesProfileFields = {
+  'family_history_diabetes', 'previous_prediabetes', 'previous_gestational_diabetes', 'physical_activity_level',
+  'sedentary_hours_per_day', 'diet_quality', 'sugary_drink_frequency', 'smoking_status', 'alcohol_frequency',
+  'hypertension', 'high_cholesterol', 'pcos', 'cardiovascular_disease', 'fatty_liver_disease', 'stress_level',
+  'polyuria', 'polydipsia', 'unexplained_weight_loss', 'polyphagia', 'height_cm', 'weight_kg',
+};
+
+List<HealthProfileField> _fieldsIn(HealthProfile profile, String group) => [for (final f in profile.fieldsIn(group)) if (_diabetesProfileFields.contains(f.key)) f];
+
 /// "Run new assessment": every question again, pre-filled with the current answers. Answers are
 /// saved straight to the health profile (so the whole app uses them), then a new assessment is
 /// made. Values from reports and the phone are shown for review; they come in automatically.
@@ -50,7 +65,7 @@ class _QuestionnaireState extends ConsumerState<_Questionnaire> {
   late final ProfileAnswers _answers = ProfileAnswers(widget.profile);
   late final List<Option> _steps = [
     for (final g in widget.profile.groups)
-      if (widget.profile.fieldsIn(g.value).isNotEmpty) g,
+      if (_fieldsIn(widget.profile, g.value).isNotEmpty) g,
     const Option('review', 'Review'),
   ];
   int _step = 0;
@@ -68,7 +83,7 @@ class _QuestionnaireState extends ConsumerState<_Questionnaire> {
   void _next() {
     final group = _steps[_step].value;
     if (group != 'review') {
-      final check = _answers.changes(only: widget.profile.fieldsIn(group).map((f) => f.key));
+      final check = _answers.changes(only: _fieldsIn(widget.profile, group).map((f) => f.key));
       if (check.error != null) {
         setState(() => _error = check.error);
         return;
@@ -119,7 +134,7 @@ class _QuestionnaireState extends ConsumerState<_Questionnaire> {
         const SizedBox(height: AppSpacing.md),
         AppCard(
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            for (final (i, field) in widget.profile.fieldsIn(step.value).indexed) ...[
+            for (final (i, field) in _fieldsIn(widget.profile, step.value).indexed) ...[
               if (i > 0) const Divider(height: AppSpacing.xl),
               ProfileFieldEditor(field: field, answers: _answers, canEdit: true, onChanged: (v) => setState(() => _answers.edits[field.key] = v)),
             ],

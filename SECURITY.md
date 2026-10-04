@@ -28,6 +28,12 @@ What's actually enforced, where, and what's still on you. For the AI-specific sa
   malicious client that skips the UI and calls the API directly gets the exact same 403s.
 - A doctor requesting access must supply the patient's name **and** patient code together, so a
   doctor can't enumerate patients by code alone.
+- **Patient QR identity code.** The QR SUSTHITI shows the patient (`PatientQrCard`) encodes
+  only their name and opaque Patient ID -- nothing medical. Scanning it (`qr_scan_screen.dart`)
+  decodes those two fields **entirely on the device**; there is no server lookup-by-code
+  endpoint, so scanning adds no way to resolve a code to a name beyond what the manual form
+  already requires, and no new enumeration surface. The access-request's existing name+code
+  match check is the only authority either way.
 
 ## Rate limiting
 

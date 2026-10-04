@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../health_profile/body_card.dart';
 import '../../core/errors/failures.dart';
@@ -17,9 +18,46 @@ import '../../core/widgets/feedback.dart';
 import '../../core/widgets/form_fields.dart';
 import '../../core/widgets/labels.dart';
 import '../../data/models/patient.dart';
+import '../../data/models/patient_qr.dart';
 import '../../data/providers.dart';
 import '../authentication/auth_controller.dart';
 import '../notifications/notifications.dart';
+
+/// Shown next to the Patient ID. Contains only the opaque Patient ID and the patient's own
+/// name -- the same two things a doctor already has to enter manually to request access. No
+/// medical data is ever encoded; see data/models/patient_qr.dart.
+class PatientQrCard extends StatelessWidget {
+  const PatientQrCard({super.key, required this.patientCode, required this.fullName});
+  final String patientCode;
+  final String fullName;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    return AppCard(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+        Row(children: [
+          Icon(Icons.qr_code_2, size: 18, color: AppColors.primary),
+          const SizedBox(width: AppSpacing.sm),
+          Text('Your QR code', style: t.titleSmall),
+        ]),
+        const SizedBox(height: AppSpacing.md),
+        QrImageView(
+          data: PatientQrPayload(patientCode: patientCode, fullName: fullName).encode(),
+          size: 180,
+          backgroundColor: Colors.white,
+          semanticsLabel: 'QR code for Patient ID $patientCode',
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          'Show this to a doctor in person so they can request access. It contains no medical information.',
+          style: t.bodySmall,
+          textAlign: TextAlign.center,
+        ),
+      ]),
+    );
+  }
+}
 
 final myProfileProvider = FutureProvider.autoDispose<PatientProfile>((ref) => ref.watch(patientRepositoryProvider).myProfile());
 final patientProfileProvider = FutureProvider.autoDispose.family<PatientProfile, String>((ref, pid) => ref.watch(patientRepositoryProvider).profile(pid));
@@ -96,6 +134,8 @@ class ProfileScreen extends ConsumerWidget {
               PatientIdTile(p.patientCode),
               const SizedBox(height: AppSpacing.sm),
               Text('Share your Patient ID only with doctors you trust. They also need your name, and you approve every request.', style: t.bodySmall),
+              const SizedBox(height: AppSpacing.lg),
+              PatientQrCard(patientCode: p.patientCode, fullName: p.fullName),
               const SizedBox(height: AppSpacing.section),
               SectionHeader('Personal details', action: TextButton.icon(onPressed: () => _edit(context, ref, p), icon: const Icon(Icons.edit_outlined, size: 18), label: const Text('Edit'))),
               AppCard(

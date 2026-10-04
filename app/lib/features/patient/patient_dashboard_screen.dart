@@ -13,11 +13,13 @@ import '../../core/widgets/feedback.dart';
 import '../../core/widgets/labels.dart';
 import '../../data/models/care.dart';
 import '../../data/models/diabetes_risk.dart';
+import '../../data/models/heart_risk.dart';
 import '../../data/models/system.dart';
 import '../../data/models/tracking.dart';
 import '../../data/providers.dart';
 import '../diabetes/risk_widgets.dart';
 import '../glucose/glucose_screen.dart';
+import '../heart/heart_widgets.dart';
 import '../notifications/notifications.dart';
 import '../reports/reports_screen.dart';
 import '../wearables/health_connection.dart';
@@ -89,50 +91,7 @@ class _DashboardBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Theme.of(context).textTheme;
     final size = context.screenSize;
-    final risk = d.risk;
-    final hero = HeroPanel(
-      onTap: () => context.go('/p/diabetes'),
-      child: Row(children: [
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(RiskWording.title, style: t.labelMedium?.copyWith(color: AppColors.primaryDeep)),
-            const SizedBox(height: AppSpacing.sm),
-            if (risk == null) ...[
-              Text('No estimate yet', style: t.headlineSmall),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                'Estimate your future diabetes risk. A few questions, already filled in with what SUSTHITI knows.',
-                style: t.bodyMedium?.copyWith(color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              FilledButton(onPressed: () => context.push('/p/diabetes/assess'), child: const Text('Start assessment')),
-            ] else ...[
-              Wrap(spacing: AppSpacing.sm, crossAxisAlignment: WrapCrossAlignment.center, children: [
-                Text(risk.percentLabel, style: t.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
-                RiskCategoryPill(risk.riskCategory),
-              ]),
-              Text(RiskWording.estimateLabel, style: t.bodyMedium?.copyWith(color: AppColors.textSecondary)),
-              const SizedBox(height: AppSpacing.xs),
-              Text(risk.reportAvailable ? 'Includes medical report values' : 'Based on symptoms and risk factors only', style: t.bodySmall),
-              Text('Updated ${Fmt.relative(risk.assessedAt)}', style: t.bodySmall),
-              if (d.riskStale) ...[
-                const SizedBox(height: AppSpacing.sm),
-                Text('Updated health information is available. Refresh your assessment to include it.', style: t.bodySmall?.copyWith(color: AppColors.primaryDeep)),
-              ],
-              const SizedBox(height: AppSpacing.lg),
-              FilledButton(onPressed: () => context.go('/p/diabetes'), child: Text(d.riskStale ? 'Review and refresh' : 'View details')),
-            ],
-          ]),
-        ),
-        const SizedBox(width: AppSpacing.lg),
-        Container(
-          width: size == ScreenSize.mobile ? 72 : 96,
-          height: size == ScreenSize.mobile ? 72 : 96,
-          decoration: BoxDecoration(color: AppColors.surface, shape: BoxShape.circle, border: Border.all(color: AppColors.primaryBorder, width: 6)),
-          child: const Icon(Icons.insights_outlined, color: AppColors.primary, size: 32),
-        ),
-      ]),
-    );
+    final hero = _PredictionCarousel(d: d);
 
     final today = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       const SectionHeader("Today's Overview"),
@@ -228,7 +187,7 @@ class _DashboardBody extends ConsumerWidget {
           _RecordLink(icon: Icons.event_repeat_outlined, label: 'Follow-ups', onTap: () => context.push('/p/follow-ups')),
           _RecordLink(icon: Icons.local_hospital_outlined, label: 'Surgeries', onTap: () => context.push('/p/surgeries')),
           _RecordLink(icon: Icons.timeline_outlined, label: 'Health timeline', onTap: () => context.push('/p/timeline')),
-          _RecordLink(icon: Icons.summarize_outlined, label: 'AI Patient Summary', onTap: () => context.push('/r/$patientId/patient-summary')),
+          _RecordLink(icon: Icons.summarize_outlined, label: 'Your Health Summary', onTap: () => context.push('/p/health-summary')),
           _RecordLink(icon: Icons.verified_user_outlined, label: 'Doctor access', onTap: () => context.push('/p/access'), last: true),
         ]),
       ),
@@ -388,6 +347,170 @@ class _DashboardBody extends ConsumerWidget {
         ]),
       ),
     ]);
+  }
+}
+
+/// Diabetes and Heart prediction cards as one swipeable carousel: same card area, same
+/// dimensions, horizontal swipe between them. Each page keeps its own data and empty state --
+/// neither model's result is ever used as a fallback for the other. A fixed height (rather than
+/// sizing to whichever page is current) keeps the carousel from resizing or jumping as the user
+/// swipes.
+class _PredictionCarousel extends StatefulWidget {
+  const _PredictionCarousel({required this.d});
+  final PatientDashboard d;
+
+  @override
+  State<_PredictionCarousel> createState() => _PredictionCarouselState();
+}
+
+class _PredictionCarouselState extends State<_PredictionCarousel> {
+  final _controller = PageController();
+  int _page = 0;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final height = context.screenSize == ScreenSize.mobile ? 300.0 : 260.0;
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      SizedBox(
+        height: height,
+        child: PageView(
+          controller: _controller,
+          onPageChanged: (i) => setState(() => _page = i),
+          children: [_DiabetesHeroCard(d: widget.d), _HeartHeroCard(d: widget.d)],
+        ),
+      ),
+      const SizedBox(height: AppSpacing.sm),
+      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        for (var i = 0; i < 2; i++)
+          AnimatedContainer(
+            duration: AppDurations.fast,
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            width: i == _page ? 18 : 6,
+            height: 6,
+            decoration: BoxDecoration(color: i == _page ? AppColors.primary : AppColors.primaryBorder, borderRadius: BorderRadius.circular(3)),
+          ),
+      ]),
+    ]);
+  }
+}
+
+class _DiabetesHeroCard extends StatelessWidget {
+  const _DiabetesHeroCard({required this.d});
+  final PatientDashboard d;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    final size = context.screenSize;
+    final risk = d.risk;
+    return HeroPanel(
+      onTap: () => context.go('/p/diabetes'),
+      child: SingleChildScrollView(
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(RiskWording.title, style: t.labelMedium?.copyWith(color: AppColors.primaryDeep)),
+              const SizedBox(height: AppSpacing.sm),
+              if (risk == null) ...[
+                Text('No estimate yet', style: t.headlineSmall),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Estimate your future diabetes risk. A few questions, already filled in with what SUSTHITI knows.',
+                  style: t.bodyMedium?.copyWith(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                FilledButton(onPressed: () => context.push('/p/diabetes/assess'), child: const Text('Start assessment')),
+              ] else ...[
+                Wrap(spacing: AppSpacing.sm, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                  Text(risk.percentLabel, style: t.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
+                  RiskCategoryPill(risk.riskCategory),
+                ]),
+                Text(RiskWording.estimateLabel, style: t.bodyMedium?.copyWith(color: AppColors.textSecondary)),
+                const SizedBox(height: AppSpacing.xs),
+                Text(risk.reportAvailable ? 'Includes medical report values' : 'Based on symptoms and risk factors only', style: t.bodySmall),
+                Text('Updated ${Fmt.relative(risk.assessedAt)}', style: t.bodySmall),
+                if (d.riskStale) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Text('Updated health information is available. Refresh your assessment to include it.', style: t.bodySmall?.copyWith(color: AppColors.primaryDeep)),
+                ],
+                const SizedBox(height: AppSpacing.lg),
+                FilledButton(onPressed: () => context.go('/p/diabetes'), child: Text(d.riskStale ? 'Review and refresh' : 'View details')),
+              ],
+            ]),
+          ),
+          const SizedBox(width: AppSpacing.lg),
+          Container(
+            width: size == ScreenSize.mobile ? 72 : 96,
+            height: size == ScreenSize.mobile ? 72 : 96,
+            decoration: BoxDecoration(color: AppColors.surface, shape: BoxShape.circle, border: Border.all(color: AppColors.primaryBorder, width: 6)),
+            child: const Icon(Icons.insights_outlined, color: AppColors.primary, size: 32),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+class _HeartHeroCard extends StatelessWidget {
+  const _HeartHeroCard({required this.d});
+  final PatientDashboard d;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    final size = context.screenSize;
+    final risk = d.heartRisk;
+    return HeroPanel(
+      onTap: () => context.go('/p/heart'),
+      child: SingleChildScrollView(
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(HeartWording.title, style: t.labelMedium?.copyWith(color: AppColors.primaryDeep)),
+              const SizedBox(height: AppSpacing.sm),
+              if (risk == null) ...[
+                Text('No screening yet', style: t.headlineSmall),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Screen your heart disease risk. A short form, already filled in with what SUSTHITI knows.',
+                  style: t.bodyMedium?.copyWith(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                FilledButton(onPressed: () => context.push('/p/heart/assess'), child: const Text('Start screening')),
+              ] else ...[
+                Wrap(spacing: AppSpacing.sm, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                  Text(risk.percentLabel, style: t.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
+                  HeartRiskLevelPill(risk.riskLevel),
+                ]),
+                Text(HeartWording.estimateLabel, style: t.bodyMedium?.copyWith(color: AppColors.textSecondary)),
+                const SizedBox(height: AppSpacing.xs),
+                Text(risk.reportAvailable ? 'Includes medical report values' : 'Based on symptoms and risk factors only', style: t.bodySmall),
+                Text('Updated ${Fmt.relative(risk.assessedAt)}', style: t.bodySmall),
+                if (d.heartRiskStale) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Text('Updated health information is available. Refresh your screening to include it.', style: t.bodySmall?.copyWith(color: AppColors.primaryDeep)),
+                ],
+                const SizedBox(height: AppSpacing.lg),
+                FilledButton(onPressed: () => context.go('/p/heart'), child: Text(d.heartRiskStale ? 'Review and refresh' : 'View details')),
+              ],
+            ]),
+          ),
+          const SizedBox(width: AppSpacing.lg),
+          Container(
+            width: size == ScreenSize.mobile ? 72 : 96,
+            height: size == ScreenSize.mobile ? 72 : 96,
+            decoration: BoxDecoration(color: AppColors.surface, shape: BoxShape.circle, border: Border.all(color: AppColors.primaryBorder, width: 6)),
+            child: const Icon(Icons.favorite_border, color: AppColors.primary, size: 32),
+          ),
+        ]),
+      ),
+    );
   }
 }
 

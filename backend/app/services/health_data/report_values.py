@@ -34,6 +34,7 @@ class Analyte:
     max: float | None = None
     names: frozenset[str] = frozenset()  # exact normalised names accepted from AI summaries
     options: tuple[tuple[str, str], ...] = ()
+    precision: int = 1  # decimal places kept in the canonical value (troponin needs more than 1)
 
 
 def _names(*names: str) -> frozenset[str]:
@@ -45,6 +46,15 @@ def normalise_name(name: str) -> str:
 
 
 _GLUCOSE_UNITS = {"mgdl": 1.0, "mmoll": MG_DL_PER_MMOL_L}
+# Cholesterol-family and triglycerides have different mg/dL-per-mmol/L factors (different
+# molecular weights); creatinine and hemoglobin use their own standard SI conversions.
+MG_DL_PER_MMOL_L_CHOLESTEROL = 38.67
+MG_DL_PER_MMOL_L_TRIGLYCERIDES = 88.57
+MG_DL_PER_UMOL_L_CREATININE = 1 / 88.4
+_CHOLESTEROL_UNITS = {"mgdl": 1.0, "mmoll": MG_DL_PER_MMOL_L_CHOLESTEROL}
+_TRIGLYCERIDE_UNITS = {"mgdl": 1.0, "mmoll": MG_DL_PER_MMOL_L_TRIGLYCERIDES}
+_CREATININE_UNITS = {"mgdl": 1.0, "umoll": MG_DL_PER_UMOL_L_CREATININE}
+_HEMOGLOBIN_UNITS = {"gdl": 1.0, "gl": 0.1}
 
 ANALYTES: dict[str, Analyte] = {a.key: a for a in (
     Analyte("hba1c", "HbA1c", "number", unit="%", units={"": 1.0, "%": 1.0}, min=3, max=20,
@@ -61,10 +71,33 @@ ANALYTES: dict[str, Analyte] = {a.key: a for a in (
                          "Glucose tolerance test 2 hour", "2 hour glucose (75 g OGTT)")),
     Analyte("diabetes_classification", "Report conclusion (diabetes)", "classification",
             options=(("normal", "Normal"), ("prediabetes", "Prediabetes"), ("diabetes", "Diabetes"))),
+    # Heart-disease screening lab values (reused by the heart risk assessment; see
+    # services/heart_risk/features.py). Ranges mirror the heart model API's own accepted ranges
+    # so a confirmed value is never rejected here only to be unusable there.
+    Analyte("total_cholesterol", "Total cholesterol", "number", unit="mg/dL", units=_CHOLESTEROL_UNITS, min=50, max=1000,
+            names=_names("Total Cholesterol", "Cholesterol Total", "Cholesterol, Total", "Serum Cholesterol", "Total Chol", "Cholesterol")),
+    Analyte("ldl", "LDL cholesterol", "number", unit="mg/dL", units=_CHOLESTEROL_UNITS, min=10, max=600,
+            names=_names("LDL", "LDL Cholesterol", "LDL-C", "Low Density Lipoprotein", "LDL Cholesterol (Calculated)", "LDL Chol")),
+    Analyte("hdl", "HDL cholesterol", "number", unit="mg/dL", units=_CHOLESTEROL_UNITS, min=5, max=250,
+            names=_names("HDL", "HDL Cholesterol", "HDL-C", "High Density Lipoprotein", "HDL Chol")),
+    Analyte("triglycerides", "Triglycerides", "number", unit="mg/dL", units=_TRIGLYCERIDE_UNITS, min=20, max=2000,
+            names=_names("Triglycerides", "TG", "Serum Triglycerides", "Trig")),
+    Analyte("troponin", "Troponin", "number", unit="ng/mL", units={"ngml": 1.0}, min=0, max=100, precision=2,
+            names=_names("Troponin", "Troponin I", "Troponin T", "Cardiac Troponin", "Trop I", "Trop T", "cTnI", "cTnT", "hs-Troponin")),
+    Analyte("hemoglobin", "Hemoglobin", "number", unit="g/dL", units=_HEMOGLOBIN_UNITS, min=3, max=25,
+            names=_names("Hemoglobin", "Haemoglobin", "Hb", "Hgb")),
+    Analyte("creatinine", "Creatinine", "number", unit="mg/dL", units=_CREATININE_UNITS, min=0.1, max=20, precision=2,
+            names=_names("Creatinine", "Serum Creatinine", "Creat")),
 )}
 
-# Only values of these measures are suggested from AI summaries (the classification is never
-# inferred: it has to be read off the report by a person).
+# Only values of these measures are suggested from AI summaries, and auto-extracted (then
+# flagged "please check") straight from an uploaded report's text/photo on upload (see
+# report_extraction.py). Deliberately NOT extended to the new heart-screening lab values below:
+# unlike the diabetes measures, those have no prior auto-extraction track record in this app,
+# so -- more conservatively -- they can only enter SUSTHITI through an explicit human
+# confirmation on the report (the generic "Add or correct values" form, which lists every
+# ANALYTES entry regardless of SUGGESTIBLE). The classification is never inferred either way:
+# it has to be read off the report by a person.
 SUGGESTIBLE = ("hba1c", "fasting_glucose", "random_glucose", "ogtt_2h")
 
 
@@ -77,14 +110,23 @@ def to_canonical(analyte: Analyte, value: float, unit: str | None) -> float:
     factor = (analyte.units or {}).get(_unit_key(unit))
     if factor is None:
         raise ValueError(f"{analyte.label}: unit must be {' or '.join(u for u in _display_units(analyte))}.")
-    canonical = round(float(value) * factor, 1)
+    canonical = round(float(value) * factor, analyte.precision)
     if (analyte.min is not None and canonical < analyte.min) or (analyte.max is not None and canonical > analyte.max):
         raise ValueError(f"{analyte.label} of {value:g} {unit or analyte.unit} is outside the possible range. Please check the report.")
     return canonical
 
 
+_UNIT_DISPLAY = {"": "%", "%": "%", "mgdl": "mg/dL", "mmoll": "mmol/L", "gdl": "g/dL", "gl": "g/L", "umoll": "µmol/L", "ngml": "ng/mL"}
+
+
 def _display_units(analyte: Analyte) -> list[str]:
-    return ["%"] if analyte.unit == "%" else ["mg/dL", "mmol/L"]
+    """De-duplicated (hba1c's units dict maps both "" and "%" to the same canonical unit)."""
+    out: list[str] = []
+    for k in (analyte.units or {}):
+        label = _UNIT_DISPLAY[k]
+        if label not in out:
+            out.append(label)
+    return out
 
 
 def unit_options(analyte: Analyte) -> list[str]:
@@ -119,6 +161,47 @@ def suggestions_from_summary(content: dict) -> list[dict]:
         found[analyte.key] = {"analyte": analyte.key, "value": canonical, "unit": analyte.unit, "entered_value": float(raw),
                               "entered_unit": unit or analyte.unit, "source_name": item.get("name")}
     return [s for s in found.values() if s is not None]
+
+
+# The 4 diabetes-control analytes where "lower is better" is unambiguous in this app's domain.
+# Every other parameter the AI cites (e.g. a lipid value) has no known clinical polarity here,
+# so its direction is reported neutrally ("recent_change") rather than guessed as good or bad.
+_LOWER_IS_BETTER = {"hba1c", "fasting_glucose", "random_glucose", "ogtt_2h"}
+
+_LEADING_NUMBER = re.compile(r"[-+]?\d+(?:\.\d+)?")
+
+
+def _match_known_analyte(parameter_name: str) -> str | None:
+    name = normalise_name(parameter_name)
+    for analyte in ANALYTES.values():
+        if name in analyte.names:
+            return analyte.key
+    return None
+
+
+def classify_trend(parameter_name: str, earlier_value: str | None, latest_value: str | None) -> dict:
+    """Deterministically classifies a trend's direction from two cited values -- never from
+    the AI's wording. `direction` is purely numeric; `category` additionally applies known
+    clinical polarity (see _LOWER_IS_BETTER) where it is safe to do so."""
+    earlier_match = _LEADING_NUMBER.search(earlier_value or "")
+    latest_match = _LEADING_NUMBER.search(latest_value or "")
+    if not earlier_match or not latest_match:
+        return {"direction": "unknown", "category": "unknown"}
+    earlier = float(earlier_match.group())
+    latest = float(latest_match.group())
+    denominator = abs(earlier) if earlier else 1.0
+    relative_change = (latest - earlier) / denominator
+    if abs(relative_change) < 0.03:
+        direction = "unchanged"
+    else:
+        direction = "increased" if latest > earlier else "decreased"
+
+    analyte_key = _match_known_analyte(parameter_name)
+    if analyte_key not in _LOWER_IS_BETTER:
+        category = "stable" if direction == "unchanged" else "recent_change"
+    else:
+        category = {"unchanged": "stable", "increased": "worsening", "decreased": "improving"}[direction]
+    return {"direction": direction, "category": category}
 
 
 def latest_report_summary(db: Session, report_id: str) -> AISummary | None:

@@ -24,6 +24,7 @@ from ..models import (
     Doctor,
     FollowUp,
     GlucoseReading,
+    HeartRiskAssessment,
     Notification,
     Patient,
     Prescription,
@@ -312,6 +313,7 @@ def patient_profile(patient_id: str, current: CurrentUser = Depends(require_admi
         "last_login_at": iso(patient.user.last_login_at),
         "last_activity_at": snapshot["last_activity_at"],
         "latest_assessment": risk_brief(latest),
+        "latest_heart_assessment": snapshot["latest_heart_assessment"],
         "latest_glucose": snapshot["latest_glucose"],
         "glucose_average_7d": snapshot["glucose_average_7d"],
         "glucose_trend": snapshot["glucose_trend"],
@@ -321,6 +323,7 @@ def patient_profile(patient_id: str, current: CurrentUser = Depends(require_admi
         "doctors": [access_out(a) for a in db.scalars(select(AccessRequest).where(AccessRequest.patient_id == patient.id).order_by(AccessRequest.created_at.desc()))],
         "counts": {
             "reports": count(Report), "assessments": count(DiabetesRiskAssessment), "earlier_model_assessments": count(DiabetesAssessment),
+            "heart_assessments": count(HeartRiskAssessment),
             "glucose_readings": count(GlucoseReading),
             "prescriptions": count(Prescription), "visits": count(Visit), "side_effects": count(SideEffect),
             "appointments": count(AppointmentRecommendation), "ai_summaries": count(AISummary),

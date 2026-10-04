@@ -33,6 +33,11 @@ class PatientAIService {
   Future<AISummary?> latest(String patientId) async => _summaryOrNull(await _api.get('/patients/$patientId/patient-summary'));
 
   Future<AISummary> generate(String patientId) async => _summaryOrNull(await _api.post('/patients/$patientId/patient-summary', timeout: AppConfig.aiTimeout))!;
+
+  /// "Your Health Summary": a separate, plain-language generation for the patient themselves.
+  Future<AISummary?> latestFriendly(String patientId) async => _summaryOrNull(await _api.get('/patients/$patientId/friendly-summary'));
+
+  Future<AISummary> generateFriendly(String patientId) async => _summaryOrNull(await _api.post('/patients/$patientId/friendly-summary', timeout: AppConfig.aiTimeout))!;
 }
 
 /// Lifestyle AI: lifestyle suggestions and the forward-looking interpretation of an assessment
@@ -46,6 +51,12 @@ class LifestyleAIService {
   Future<AISummary> generateInsight(String patientId) async => _summaryOrNull(await _api.post('/patients/$patientId/lifestyle-insight', timeout: AppConfig.aiTimeout))!;
 
   Future<AISummary> interpretAssessment(String assessmentId) async => _summaryOrNull(await _api.post('/assessments/$assessmentId/interpretation', timeout: AppConfig.aiTimeout))!;
+
+  /// Same interpretation pattern, for a heart risk screening assessment (a separate,
+  /// synthetic-data model -- never a diagnosis). Parallel endpoint, not a generalization of
+  /// [interpretAssessment], so diabetes interpretation is untouched.
+  Future<AISummary> interpretHeartAssessment(String assessmentId) async =>
+      _summaryOrNull(await _api.post('/heart-risk/$assessmentId/interpretation', timeout: AppConfig.aiTimeout))!;
 }
 
 /// AIRepository groups the separate AI services for injection. It deliberately has no

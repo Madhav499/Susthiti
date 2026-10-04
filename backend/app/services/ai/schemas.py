@@ -48,6 +48,10 @@ class ObservedTrend(_Lenient):
     earlier: TrendPoint | None = None
     latest: TrendPoint | None = None
     observed_change: str
+    # Backend-computed after the AI response is parsed (see routers/ai.py); the AI never
+    # supplies these and any value it guesses is overwritten. See report_values.classify_trend().
+    direction: str = "unknown"
+    category: str = "unknown"
 
 
 class AllReportsSummaryOutput(_Lenient):
@@ -60,19 +64,35 @@ class AllReportsSummaryOutput(_Lenient):
 
 
 class PatientSummaryOutput(_Lenient):
-    patient_overview: str
+    # Quick-view fields (10-second clinical overview): kept short and prioritized.
+    current_status: str
+    key_findings: list[str] = Field(default_factory=list)
+    trends: list[str] = Field(default_factory=list)
+    attention_items: list[str] = Field(default_factory=list)
+    recent_changes: list[str] = Field(default_factory=list)
+    interpretation: str = ""
+    # Detailed, per-category fields: shown only behind "View details".
     diabetes_history: str = ""
     recent_assessments: str = ""
     medical_reports: str = ""
-    relevant_trends: str = ""
     glucose_history: str = ""
     lifestyle_trends: str = ""
     medication_history: str = ""
     side_effects: str = ""
     doctor_visits: str = ""
     recent_developments: str = ""
-    items_to_discuss: list[str] = Field(default_factory=list)
-    interpretation: str = ""
+    heart_history: str = ""
+
+
+class PatientFriendlySummaryOutput(_Lenient):
+    """Plain-language patient-facing summary. Independent generation from
+    PatientSummaryOutput: same authorized record, different audience and wording."""
+
+    overall: str
+    standouts: list[str] = Field(default_factory=list)
+    changes: list[str] = Field(default_factory=list)
+    keep_in_mind: list[str] = Field(default_factory=list)
+    discuss_with_doctor: list[str] = Field(default_factory=list)
 
 
 class LifestyleOverview(_Lenient):

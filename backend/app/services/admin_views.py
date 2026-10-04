@@ -20,6 +20,7 @@ from ..models import (
     Doctor,
     FoodEntry,
     GlucoseReading,
+    HeartRiskAssessment,
     Patient,
     Prescription,
     Report,
@@ -62,6 +63,24 @@ def risk_brief(a: DiabetesRiskAssessment | None) -> dict | None:
     }
 
 
+def latest_heart_assessment(db: Session, patient_id: str) -> HeartRiskAssessment | None:
+    """The latest heart disease risk screening result (synthetic-data model, a screening
+    signal, never a diagnosis)."""
+    return db.scalar(
+        select(HeartRiskAssessment).where(HeartRiskAssessment.patient_id == patient_id).order_by(HeartRiskAssessment.created_at.desc()).limit(1)
+    )
+
+
+def heart_brief(a: HeartRiskAssessment | None) -> dict | None:
+    if a is None:
+        return None
+    return {
+        "id": a.id, "assessment_code": a.assessment_code, "probability_percent": a.probability_percent, "risk_level": a.risk_level,
+        "prediction": a.prediction, "prediction_label": a.prediction_label, "report_available": a.report_available,
+        "assessed_at": iso(a.created_at), "model_version": a.model_version,
+    }
+
+
 def patient_last_activity(db: Session, p: Patient) -> datetime | None:
     """Most recent sign-in or record entry by anyone."""
     candidates = [
@@ -69,6 +88,7 @@ def patient_last_activity(db: Session, p: Patient) -> datetime | None:
         db.scalar(select(func.max(Report.uploaded_at)).where(Report.patient_id == p.id)),
         db.scalar(select(func.max(DiabetesAssessment.assessed_at)).where(DiabetesAssessment.patient_id == p.id)),
         db.scalar(select(func.max(DiabetesRiskAssessment.created_at)).where(DiabetesRiskAssessment.patient_id == p.id)),
+        db.scalar(select(func.max(HeartRiskAssessment.created_at)).where(HeartRiskAssessment.patient_id == p.id)),
         db.scalar(select(func.max(GlucoseReading.created_at)).where(GlucoseReading.patient_id == p.id)),
         db.scalar(select(func.max(FoodEntry.created_at)).where(FoodEntry.patient_id == p.id)),
         db.scalar(select(func.max(SideEffect.created_at)).where(SideEffect.patient_id == p.id)),
@@ -111,6 +131,7 @@ def patient_snapshot(db: Session, p: Patient, today: date | None = None) -> dict
     """Current state of one patient, from stored records only."""
     today = today or datetime.now(timezone.utc).date()
     latest = latest_assessment(db, p.id)
+    latest_heart = latest_heart_assessment(db, p.id)
     glucose = glucose_overview(db, p.id, today)
     return {
         **patient_brief(p),
@@ -118,6 +139,7 @@ def patient_snapshot(db: Session, p: Patient, today: date | None = None) -> dict
         "gender": p.gender,
         "is_demo": p.user.is_demo,
         "latest_assessment": risk_brief(latest),
+        "latest_heart_assessment": heart_brief(latest_heart),
         "latest_glucose": glucose["latest"],
         "glucose_average_7d": glucose["recent_average_7d"],
         "glucose_trend": glucose["trend_vs_previous_weeks"],
@@ -163,6 +185,7 @@ _PATIENT_OWNED = {
     "report": Report,
     "assessment": DiabetesAssessment,
     "diabetes_risk": DiabetesRiskAssessment,
+    "heart_risk": HeartRiskAssessment,
     "side_effect": SideEffect,
     "visit": Visit,
     "prescription": Prescription,

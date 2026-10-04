@@ -1,16 +1,17 @@
 # Putting SUSTHITI on the internet
 
 After this, any phone can use SUSTHITI on any Wi-Fi or mobile data — no cable, and your PC can be
-off. The backend, the diabetes model and the web app run on a small Linux server with HTTPS:
+off. The backend, the two ML model services and the web app run on a small Linux server with HTTPS:
 
 ```
 Android app (SUSTHITI.apk) ─┐
 iPhone / computer (browser) ─┼─ https://YOUR-DOMAIN ─► Caddy (HTTPS) ─► backend ─► diabetes model
-                             │                           └─► web app      └─► database + reports (volume)
+                             │                           └─► web app      ├─► heart model (synthetic data; screening only)
+                                                                           └─► database + reports (volume)
 ```
 
-Only Caddy is reachable from the internet. The backend and the model service are private to the
-server. Everything below is done once; updating later is step 8.
+Only Caddy is reachable from the internet. The backend and both model services are private to
+the server. Everything below is done once; updating later is step 8.
 
 ---
 
@@ -81,14 +82,15 @@ tar -xzf susthiti-server.tar.gz
 cd susthiti/deploy
 cp .env.example .env
 openssl rand -base64 48        # copy the output for JWT_SECRET
-nano .env                      # set DOMAIN=YOUR-DOMAIN and JWT_SECRET=...; GEMINI_API_KEY is optional
+nano .env                      # set DOMAIN=YOUR-DOMAIN and JWT_SECRET=...; OPENROUTER_API_KEY is optional
 docker compose up -d --build   # first build takes a few minutes
-docker compose ps              # all three should be "running" / "healthy"
+docker compose ps              # all four should be "running" / "healthy"
 curl https://YOUR-DOMAIN/health
 ```
 
-`/health` should answer `{"status":"ok", ..., "model_service":"ok"}`. Caddy gets the HTTPS
-certificate automatically the first time (needs step 1's ports and step 2's name to be right).
+`/health` should answer `{"status":"ok", ..., "model_service":"ok", "heart_model_service":"ok"}`.
+Caddy gets the HTTPS certificate automatically the first time (needs step 1's ports and step
+2's name to be right).
 
 ## 6. Create the first admin
 
@@ -147,6 +149,7 @@ To restore: stop the backend, extract the backup into the volume the same way (`
 | App says *Can't reach SUSTHITI's server* | Open `https://YOUR-DOMAIN/health` in the phone's browser. |
 | No HTTPS / certificate error | `docker compose logs caddy` — usually the name doesn't point at the server yet, or ports 80/443 are closed (step 1). |
 | *Assessment service unavailable* | `docker compose ps` — is `model` healthy? `docker compose logs model`. |
+| *Heart screening service unavailable* | Same, for the `heart-model` service: `docker compose logs heart-model`. |
 | Anything else | `docker compose logs -f backend` |
 
 ---

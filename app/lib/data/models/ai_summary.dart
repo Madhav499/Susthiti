@@ -4,8 +4,10 @@ enum AISummaryKind {
   individualReport('individual_report', 'Individual Report Summary'),
   allReports('all_reports', 'All Reports Summary'),
   patientSummary('patient_summary', 'AI Patient Summary'),
+  patientFriendlySummary('patient_friendly_summary', 'Your Health Summary'),
   lifestyle('lifestyle', 'Lifestyle Insight'),
-  assessmentInterpretation('assessment_interpretation', 'Assessment Interpretation');
+  assessmentInterpretation('assessment_interpretation', 'Assessment Interpretation'),
+  heartInterpretation('heart_interpretation', 'Heart Risk Screening Interpretation');
 
   const AISummaryKind(this.apiValue, this.label);
   final String apiValue;
@@ -17,8 +19,10 @@ enum AISummaryKind {
         individualReport => 'Individual_Report_Summary',
         allReports => 'All_Reports_Summary',
         patientSummary => 'Patient_Summary',
+        patientFriendlySummary => 'Your_Health_Summary',
         lifestyle => 'Lifestyle_Insight',
         assessmentInterpretation => 'Assessment_Interpretation',
+        heartInterpretation => 'Heart_Risk_Screening_Interpretation',
       };
 }
 

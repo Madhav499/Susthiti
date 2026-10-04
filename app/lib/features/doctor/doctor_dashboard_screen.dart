@@ -178,8 +178,8 @@ class _TodayScheduleState extends State<_TodaySchedule> {
   /// and surgery -> their tab on the patient's detail page.
   static String _route(ScheduleItem i) => switch (i.type) {
         ScheduleItemType.appointment => '/d/patients/${i.patientId}',
-        ScheduleItemType.followUp => '/d/patients/${i.patientId}?tab=7',
-        ScheduleItemType.surgery => '/d/patients/${i.patientId}?tab=8',
+        ScheduleItemType.followUp => '/d/patients/${i.patientId}?tab=8',
+        ScheduleItemType.surgery => '/d/patients/${i.patientId}?tab=9',
       };
 
   @override

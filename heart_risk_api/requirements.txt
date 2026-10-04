@@ -1,0 +1,14 @@
+# SUSTHITI Heart Disease Risk API v3 service. Package list as supplied by the model vendor
+# (fastapi, uvicorn, pandas, numpy, scikit-learn, joblib); versions pinned by SUSTHITI because
+# the model artifact model.joblib was saved with scikit-learn 1.8.0 and a pickled model can
+# fail or behave differently under another version.
+fastapi>=0.115,<1
+uvicorn[standard]>=0.30,<1
+pandas>=2.2,<3
+numpy>=2.0,<3
+scikit-learn==1.8.0
+joblib>=1.4,<2
+
+# Tests
+pytest>=8
+httpx>=0.27

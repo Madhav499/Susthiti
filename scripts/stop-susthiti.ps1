@@ -1,10 +1,10 @@
 <#
 .SYNOPSIS
-  Stops the SUSTHITI services started by start-susthiti (ports 8001, 8000 and 8080).
+  Stops the SUSTHITI services started by start-susthiti (ports 8002, 8001, 8000 and 8080).
   Only stops processes that are SUSTHITI's own (uvicorn / flutter); anything else is left alone.
 #>
-$ports = @{ 8001 = @('main:app'); 8000 = @('app.main:app'); 8080 = @('dart', 'flutter') }
-foreach ($port in 8080, 8000, 8001) {
+$ports = @{ 8002 = @('main:app'); 8001 = @('main:app'); 8000 = @('app.main:app'); 8080 = @('dart', 'flutter') }
+foreach ($port in 8080, 8000, 8001, 8002) {
     $conn = Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -First 1
     if (-not $conn) { Write-Host "Port ${port}: nothing running"; continue }
     $proc = Get-CimInstance Win32_Process -Filter "ProcessId=$($conn.OwningProcess)"

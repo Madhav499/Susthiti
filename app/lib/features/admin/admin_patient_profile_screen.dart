@@ -29,6 +29,7 @@ import '../diabetes/diabetes_screen.dart';
 import '../follow_ups/follow_ups_screens.dart';
 import '../food/food_screen.dart';
 import '../glucose/glucose_screen.dart';
+import '../heart/heart_screen.dart';
 import '../lifestyle/lifestyle_screen.dart';
 import '../lifestyle/trend_card.dart';
 import '../patient/profile_screen.dart';
@@ -87,6 +88,7 @@ class AdminPatientProfileScreen extends ConsumerWidget {
           tabs: [
             ProfileTab('overview', 'Overview', _OverviewTab(detail: d)),
             ProfileTab('diabetes', 'Diabetes', DiabetesView(patientId: patientId, embedded: true)),
+            ProfileTab('heart', 'Heart', HeartView(patientId: patientId, embedded: true)),
             ProfileTab('reports', 'Reports', ReportsView(patientId: patientId, uploadRoute: '/a/patients/$patientId/upload', embedded: true)),
             ProfileTab('glucose', 'Glucose', GlucoseView(patientId: patientId, embedded: true, ranges: TrendCard.clinicalRanges)),
             ProfileTab('lifestyle', 'Lifestyle', LifestyleView(patientId: patientId, embedded: true, ranges: TrendCard.clinicalRanges)),

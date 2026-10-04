@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     ml_service_url: str = "http://127.0.0.1:8001"
     ml_service_timeout_seconds: float = 15
 
+    heart_model_service_url: str = "http://127.0.0.1:8002"
+    heart_model_service_timeout_seconds: float = 15
+
     # The AI gateway for all summary/interpretation features (report, patient, lifestyle):
     # a trusted server-side call to OpenRouter. The key never leaves the backend.
     openrouter_api_key: str = ""

@@ -17,7 +17,8 @@ the original records.
 | --- | --- |
 | `app/` | Flutter app (Android, iOS, web, desktop). Riverpod, go_router, feature-based clean architecture. |
 | `backend/` | FastAPI API: auth, role-based access, records, storage, notifications, AI and PDF generation. |
-| `diabetes_risk_api/` | The supplied SUSTHITI Future Diabetes Risk API v4 (`unified_future_diabetes_model.joblib`), private behind the backend. See [docs/diabetes-api-v4-integration.md](docs/diabetes-api-v4-integration.md). |
+| `diabetes_risk_api/` | The supplied SUSTHITI Future Diabetes Risk API v4 (`unified_future_diabetes_model.joblib`), private behind the backend. See [ML_MODEL_SETUP.md](ML_MODEL_SETUP.md). |
+| `heart_risk_api/` | The supplied SUSTHITI Heart Disease Risk API (`susthiti-heart-v3`, trained on synthetic data), private behind the backend. See [ML_MODEL_SETUP.md](ML_MODEL_SETUP.md). |
 | `diabetes_api/` | Superseded 16-question model service (kept for reference; not started). |
 | `ml_service/` | Superseded placeholder (could not load the supplied artifact). Not used; safe to delete. |
 
@@ -26,9 +27,8 @@ Detailed guides:
 - [PROJECT_EXPLANATION.md](PROJECT_EXPLANATION.md): what SUSTHITI is and the one rule everything else follows
 - [ARCHITECTURE.md](ARCHITECTURE.md): how the pieces fit, security model, key decisions
 - [API_SETUP.md](API_SETUP.md): running and configuring the backend, endpoint list
-- [docs/diabetes-api-v4-integration.md](docs/diabetes-api-v4-integration.md): future diabetes risk (API v4): data sources, feature mapping, refresh policy
-- [ML_MODEL_SETUP.md](ML_MODEL_SETUP.md): installing and verifying the supplied model
-- [AI_SETUP.md](AI_SETUP.md): configuring Google AI Studio securely
+- [ML_MODEL_SETUP.md](ML_MODEL_SETUP.md): both risk models (diabetes v4 and heart `susthiti-heart-v3`): data sources, feature mapping, refresh policy
+- [AI_SETUP.md](AI_SETUP.md): configuring the AI provider securely
 - [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md): the AI pipeline, output safety validation, prompt versioning, caching, retry
 - [DATABASE.md](DATABASE.md): data model and record-keeping rules
 - [SECURITY.md](SECURITY.md): the security model end to end, and known gaps
