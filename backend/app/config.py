@@ -39,7 +39,8 @@ class Settings(BaseSettings):
     fcm_service_account_json: str = ""
 
     enable_demo_wearable: bool = True
-    # Throttles sign-in, registration and password reset per client. Required in production.
+    # Throttles sign-in, registration and password reset per client, and AI/risk-prediction
+    # calls per signed-in user (see services/rate_limit.py). Required in production.
     auth_rate_limit_enabled: bool = True
     dev_expose_reset_token: bool = False
     reminders_enabled: bool = True

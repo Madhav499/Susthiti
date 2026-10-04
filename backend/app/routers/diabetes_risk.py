@@ -12,8 +12,14 @@ from ..db import get_db
 from ..deps import CurrentUser, authorize_patient, require_clinical, require_record_reader
 from ..models import DiabetesRiskAssessment
 from ..services.diabetes_risk import coordinator, presentation
+from ..services.rate_limit import limit_by_user
 
 router = APIRouter(tags=["diabetes risk"])
+
+# 6 predictions per 10 minutes per user: a real refresh is rare (new data/reports arriving, or
+# correcting an input and resubmitting once or twice) -- generous for that, a real brake on a
+# loop against the metered ML service. See docs/rate-limiting.md.
+_PREDICT_LIMIT = Depends(limit_by_user("diabetes-risk-predict", 6, 600))
 
 
 @router.get("/patients/{patient_id}/diabetes-risk")
@@ -21,7 +27,7 @@ def risk_status(patient_id: str, current: CurrentUser = Depends(require_record_r
     return coordinator.status(db, authorize_patient(db, current, patient_id))
 
 
-@router.post("/patients/{patient_id}/diabetes-risk")
+@router.post("/patients/{patient_id}/diabetes-risk", dependencies=[_PREDICT_LIMIT])
 def refresh_risk(patient_id: str, response: Response, force: bool = Query(False), current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
     patient = authorize_patient(db, current, patient_id)
     assessment, created = coordinator.run(db, patient, current, force=force)

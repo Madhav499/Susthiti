@@ -17,8 +17,13 @@ from ..db import get_db
 from ..deps import CurrentUser, authorize_patient, require_clinical, require_record_reader
 from ..models import HeartRiskAssessment
 from ..services.heart_risk import coordinator, presentation
+from ..services.rate_limit import limit_by_user
 
 router = APIRouter(tags=["heart risk"])
+
+# Mirrors diabetes_risk.py's _PREDICT_LIMIT -- its own bucket so heavy use of one risk feature
+# never eats into the other's budget. See docs/rate-limiting.md.
+_PREDICT_LIMIT = Depends(limit_by_user("heart-risk-predict", 6, 600))
 
 
 class HeartAssessmentIn(BaseModel):
@@ -31,7 +36,7 @@ def heart_risk_status(patient_id: str, current: CurrentUser = Depends(require_re
     return coordinator.status(db, authorize_patient(db, current, patient_id))
 
 
-@router.post("/patients/{patient_id}/heart-risk")
+@router.post("/patients/{patient_id}/heart-risk", dependencies=[_PREDICT_LIMIT])
 def refresh_heart_risk(
     patient_id: str, response: Response, body: HeartAssessmentIn = HeartAssessmentIn(), force: bool = Query(False),
     current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db),

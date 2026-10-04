@@ -43,6 +43,7 @@ from ..services.health_data import latest_facts
 from ..services.health_data.report_values import classify_trend
 from ..services.lifestyle_data import food_overview, glucose_overview, lifestyle_snapshot, to_mg_dl
 from ..services.pdf import pdf_filename, render_summary_pdf
+from ..services.rate_limit import limit_by_user
 from ..services.records import audit, notify
 from ..services.storage import get_storage
 
@@ -50,6 +51,13 @@ router = APIRouter(tags=["ai"])
 
 MAX_INLINE_BYTES = 15 * 1024 * 1024
 MAX_REPORTS_PER_SUMMARY = 25
+
+# Every endpoint below that can call the AI provider shares this one per-user budget: they all
+# spend the same metered OpenRouter quota, so the thing worth capping is total AI calls per
+# user, not each endpoint independently. 10 generations per 10 minutes comfortably covers a
+# real session (reviewing several reports, a patient summary, a lifestyle insight) while
+# still being a real brake on a scripted loop. See docs/rate-limiting.md for the full rationale.
+_AI_GENERATE_LIMIT = Depends(limit_by_user("ai-generate", 10, 600))
 
 
 def _fingerprint(data) -> str:
@@ -122,7 +130,7 @@ def get_report_summary(report_id: str, current: CurrentUser = Depends(require_re
     return {"summary": summary_out(summary, stale, based_on=_report_codes(db, summary.source_ids))}
 
 
-@router.post("/reports/{report_id}/summary", status_code=201)
+@router.post("/reports/{report_id}/summary", status_code=201, dependencies=[_AI_GENERATE_LIMIT])
 def generate_report_summary(report_id: str, response: Response, force: bool = Query(False), current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
     report = db.get(Report, report_id)
     if report is None:
@@ -159,7 +167,7 @@ def get_all_reports_summary(patient_id: str, current: CurrentUser = Depends(requ
     return {"summary": summary_out(summary, stale, _report_codes(db, summary.source_ids)), "report_count": len(_all_report_ids(db, patient.id))}
 
 
-@router.post("/patients/{patient_id}/reports-summary", status_code=201)
+@router.post("/patients/{patient_id}/reports-summary", status_code=201, dependencies=[_AI_GENERATE_LIMIT])
 def generate_all_reports_summary(patient_id: str, response: Response, body: AllReportsSummaryIn | None = None, force: bool = Query(False), current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
     patient = authorize_patient(db, current, patient_id)
     ids = _all_report_ids(db, patient.id)
@@ -314,7 +322,7 @@ def get_patient_summary(patient_id: str, current: CurrentUser = Depends(require_
     return {"summary": summary_out(summary, stale, ["Full authorized patient record"])}
 
 
-@router.post("/patients/{patient_id}/patient-summary", status_code=201)
+@router.post("/patients/{patient_id}/patient-summary", status_code=201, dependencies=[_AI_GENERATE_LIMIT])
 def generate_patient_summary(patient_id: str, response: Response, force: bool = Query(False), current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
     patient = authorize_patient(db, current, patient_id)
     record_version = _record_version(db, patient.id)
@@ -346,7 +354,7 @@ def get_patient_friendly_summary(patient_id: str, current: CurrentUser = Depends
     return {"summary": summary_out(summary, stale, ["Full authorized patient record"])}
 
 
-@router.post("/patients/{patient_id}/friendly-summary", status_code=201)
+@router.post("/patients/{patient_id}/friendly-summary", status_code=201, dependencies=[_AI_GENERATE_LIMIT])
 def generate_patient_friendly_summary(patient_id: str, response: Response, force: bool = Query(False), current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
     patient = authorize_patient(db, current, patient_id)
     record_version = _record_version(db, patient.id)
@@ -409,7 +417,7 @@ def get_lifestyle_insight(patient_id: str, current: CurrentUser = Depends(requir
     return {"summary": summary_out(summary, stale, ["Lifestyle, food and glucose data (last 7-30 days)"])}
 
 
-@router.post("/patients/{patient_id}/lifestyle-insight", status_code=201)
+@router.post("/patients/{patient_id}/lifestyle-insight", status_code=201, dependencies=[_AI_GENERATE_LIMIT])
 def generate_lifestyle_insight(patient_id: str, response: Response, force: bool = Query(False), current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
     patient = authorize_patient(db, current, patient_id)
     context = _lifestyle_context(db, patient)
@@ -431,7 +439,7 @@ def generate_lifestyle_insight(patient_id: str, response: Response, force: bool 
 
 # ---------- Assessment interpretation ----------
 
-@router.post("/assessments/{assessment_id}/interpretation", status_code=201)
+@router.post("/assessments/{assessment_id}/interpretation", status_code=201, dependencies=[_AI_GENERATE_LIMIT])
 def interpret_assessment(assessment_id: str, response: Response, force: bool = Query(False), current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
     """AI interpretation that combines the stored model output with lifestyle context.
     It is NOT a new ML prediction, and the assessment record itself is never changed."""
@@ -460,7 +468,7 @@ def interpret_assessment(assessment_id: str, response: Response, force: bool = Q
     return {"created": True, "summary": summary_out(summary)}
 
 
-@router.post("/heart-risk/{assessment_id}/interpretation", status_code=201)
+@router.post("/heart-risk/{assessment_id}/interpretation", status_code=201, dependencies=[_AI_GENERATE_LIMIT])
 def interpret_heart_assessment(assessment_id: str, response: Response, force: bool = Query(False), current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
     """AI interpretation of a heart disease risk SCREENING result (synthetic-data model
     susthiti-heart-v3) combined with lifestyle context. Mirrors interpret_assessment() above as
