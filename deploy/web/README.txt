@@ -1,4 +1,16 @@
-The SUSTHITI web app goes in this folder.
+SUSTHITI public download site (Render Static Site)
 
-On your PC, scripts\build-release.bat https://YOUR-DOMAIN builds it here (and the Android APKs).
-Caddy serves it at https://YOUR-DOMAIN, so iPhones and computers can use SUSTHITI in a browser.
+Deploy settings:
+  Root Directory: deploy/web
+  Build Command: (empty)
+  Publish Directory: .
+
+Tracked files:
+  index.html       — landing / download page
+  SUSTHITI.apk     — Android release (served at ./SUSTHITI.apk)
+  favicon.png, splash/ — branding assets
+
+Flutter web build output (main.dart.js, canvaskit/, etc.) is generated locally and
+gitignored; this folder is intentionally a lightweight download page, not the full web app.
+
+To refresh the APK after a release build, copy the release APK here as SUSTHITI.apk and commit.
