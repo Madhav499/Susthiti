@@ -58,9 +58,11 @@ jobs:
           EOF
 
       - name: Install dependencies
+        working-directory: app
         run: flutter pub get
 
       - name: Build signed release APK
+        working-directory: app
         run: |
           flutter build apk --release \
             --dart-define=API_BASE_URL=https://susthiti.onrender.com
@@ -68,7 +70,7 @@ jobs:
       - name: Publish APK to download website
         shell: bash
         run: |
-          cp build/app/outputs/flutter-apk/app-release.apk deploy/web/SUSTHITI.apk
+          cp app/build/app/outputs/flutter-apk/app-release.apk deploy/web/SUSTHITI.apk
 
       - name: Commit updated APK
         shell: bash
