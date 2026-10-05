@@ -351,10 +351,11 @@ class _DashboardBody extends ConsumerWidget {
 }
 
 /// Diabetes and Heart prediction cards as one swipeable carousel: same card area, same
-/// dimensions, horizontal swipe between them. Each page keeps its own data and empty state --
-/// neither model's result is ever used as a fallback for the other. A fixed height (rather than
-/// sizing to whichever page is current) keeps the carousel from resizing or jumping as the user
-/// swipes.
+/// outer height, horizontal swipe between them. The outer height is content-driven: each slide
+/// renders at its natural (unconstrained) height via [_SizedSlide]/[OverflowBox], and that height
+/// is reported back to the parent through [_SizeReport]. The [SizedBox] wrapping the [PageView]
+/// is set to max(h_diabetes, h_heart) so both slides use an identical, compact outer height with
+/// no wasted blank space below the content.
 class _PredictionCarousel extends StatefulWidget {
   const _PredictionCarousel({required this.d});
   final PatientDashboard d;
@@ -367,11 +368,21 @@ class _PredictionCarouselState extends State<_PredictionCarousel> {
   final _controller = PageController();
   int _page = 0;
 
-  /// Tall enough for the stale-risk copy + primary CTA inside [HeroPanel] padding (no in-card
-  /// scrolling). The stale banner text is the tallest content state on either slide, so both
-  /// constants are sized to fit it at the narrowest width that breakpoint can render at (down to
-  /// a ~360dp-wide phone, and down to the narrowest desktop split at the 1024 breakpoint).
-  static double _carouselHeight(ScreenSize size) => size == ScreenSize.mobile ? 520 : 340;
+  /// Natural heights reported by each slide after its first unconstrained render.
+  final _slideHeights = <int, double>{};
+
+  /// Outer PageView height: maximum of all reported slide heights. Falls back to a safe
+  /// initial estimate on the very first frame (before any slide has reported), which avoids
+  /// a layout error while keeping the jump imperceptible.
+  double _resolvedHeight(ScreenSize screenSize) {
+    if (_slideHeights.isEmpty) return screenSize == ScreenSize.mobile ? 260 : 220;
+    return _slideHeights.values.fold(0.0, (a, b) => a > b ? a : b);
+  }
+
+  void _onSlideHeight(int index, double h) {
+    if (_slideHeights[index] == h) return;
+    setState(() => _slideHeights[index] = h);
+  }
 
   @override
   void dispose() {
@@ -381,17 +392,19 @@ class _PredictionCarouselState extends State<_PredictionCarousel> {
 
   @override
   Widget build(BuildContext context) {
-    final height = _carouselHeight(context.screenSize);
+    final height = _resolvedHeight(context.screenSize);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       SizedBox(
         height: height,
-        child: PageView(
-          controller: _controller,
-          onPageChanged: (i) => setState(() => _page = i),
-          children: [
-            SizedBox.expand(child: _DiabetesHeroCard(d: widget.d)),
-            SizedBox.expand(child: _HeartHeroCard(d: widget.d)),
-          ],
+        child: ClipRect(
+          child: PageView(
+            controller: _controller,
+            onPageChanged: (i) => setState(() => _page = i),
+            children: [
+              _SizedSlide(index: 0, onHeight: _onSlideHeight, child: _DiabetesHeroCard(d: widget.d)),
+              _SizedSlide(index: 1, onHeight: _onSlideHeight, child: _HeartHeroCard(d: widget.d)),
+            ],
+          ),
         ),
       ),
       const SizedBox(height: AppSpacing.sm),
@@ -420,10 +433,7 @@ class _DiabetesHeroCard extends StatelessWidget {
     final risk = d.risk;
     return HeroPanel(
       onTap: () => context.go('/p/diabetes'),
-      child: SizedBox(
-        width: double.infinity,
-        height: double.infinity,
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
             Text(RiskWording.title, style: t.labelMedium?.copyWith(color: AppColors.primaryDeep)),
@@ -463,7 +473,6 @@ class _DiabetesHeroCard extends StatelessWidget {
           child: const Icon(Icons.insights_outlined, color: AppColors.primary, size: 32),
         ),
       ]),
-      ),
     );
   }
 }
@@ -479,10 +488,7 @@ class _HeartHeroCard extends StatelessWidget {
     final risk = d.heartRisk;
     return HeroPanel(
       onTap: () => context.go('/p/heart'),
-      child: SizedBox(
-        width: double.infinity,
-        height: double.infinity,
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
             Text(HeartWording.title, style: t.labelMedium?.copyWith(color: AppColors.primaryDeep)),
@@ -522,8 +528,76 @@ class _HeartHeroCard extends StatelessWidget {
           child: const Icon(Icons.favorite_border, color: AppColors.primary, size: 32),
         ),
       ]),
+    );
+  }
+}
+
+/// Renders [child] inside an [OverflowBox] so it escapes the [PageView]'s tight height
+/// constraint and lays out at its natural size. [_SizeReport] then measures that natural
+/// height and forwards it via [onHeight], allowing [_PredictionCarouselState] to size the
+/// wrapping [SizedBox] to exactly the tallest slide's content height.
+class _SizedSlide extends StatelessWidget {
+  const _SizedSlide({required this.index, required this.onHeight, required this.child});
+  final int index;
+  final void Function(int index, double height) onHeight;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return OverflowBox(
+      minHeight: 0,
+      maxHeight: double.infinity,
+      alignment: Alignment.topCenter,
+      child: _SizeReport(
+        onChange: (h) => onHeight(index, h),
+        child: child,
       ),
     );
+  }
+}
+
+/// Transparent wrapper that reports its child's rendered height to [onChange] after each
+/// frame. Uses a [GlobalKey] to read the [RenderBox] size post-layout, so no rendering-layer
+/// imports are needed and there is no extra build pass.
+class _SizeReport extends StatefulWidget {
+  const _SizeReport({required this.onChange, required this.child});
+  final ValueChanged<double> onChange;
+  final Widget child;
+
+  @override
+  State<_SizeReport> createState() => _SizeReportState();
+}
+
+class _SizeReportState extends State<_SizeReport> {
+  final _key = GlobalKey();
+  double? _lastHeight;
+
+  void _measure() {
+    final box = _key.currentContext?.findRenderObject();
+    if (box is RenderBox && box.hasSize) {
+      final h = box.size.height;
+      if (h != _lastHeight) {
+        _lastHeight = h;
+        widget.onChange(h);
+      }
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
+  }
+
+  @override
+  void didUpdateWidget(_SizeReport old) {
+    super.didUpdateWidget(old);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return KeyedSubtree(key: _key, child: widget.child);
   }
 }
 
