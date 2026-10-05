@@ -153,7 +153,8 @@ def test_raw_reset_token_and_api_key_never_logged(env, fake_resend, caplog):
     code_idx = lines.index("Your password reset code is:")
     raw_token = lines[code_idx + 1]
 
-    assert len(raw_token) >= 32
+    assert len(raw_token) == 8
+    assert raw_token.isdigit()
     assert raw_token not in caplog.text
     assert "re_mock_test_key_12345" not in caplog.text
 

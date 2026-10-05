@@ -41,8 +41,8 @@ def session_expiry() -> datetime:
 
 
 def new_reset_token() -> tuple[str, str]:
-    token = secrets.token_urlsafe(32)
-    return token, hash_token(token)
+    code = f"{secrets.randbelow(100_000_000):08d}"
+    return code, hash_token(code)
 
 
 def hash_token(token: str) -> str:

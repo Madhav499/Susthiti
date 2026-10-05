@@ -146,8 +146,8 @@ class EmailService:
     <p style="font-size: 16px; margin-top: 0;">Hello {safe_name},</p>
     <p style="font-size: 15px; color: #334155;">We received a request to reset your SUSTHITI account password.</p>
     <p style="font-size: 15px; color: #334155; margin-bottom: 8px;">Your password reset code is:</p>
-    <div style="background-color: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; text-align: center; margin: 16px 0;">
-      <span style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 20px; font-weight: 700; color: #0f172a; letter-spacing: 2px; word-break: break-all;">{safe_token}</span>
+    <div style="background-color: #f0fdf4; border: 1.5px solid #0d9488; border-radius: 10px; padding: 20px; text-align: center; margin: 24px 0;">
+      <div style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size: 32px; font-weight: 700; color: #0f172a; letter-spacing: 6px; user-select: all;">{safe_token}</div>
     </div>
     <p style="font-size: 14px; color: #64748b;">This code expires after {expiry_minutes} minutes.</p>
     <p style="font-size: 14px; color: #64748b;">If you did not request this password reset, you can safely ignore this email.</p>
