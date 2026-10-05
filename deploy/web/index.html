@@ -7,21 +7,28 @@
   <meta name="description" content="AI-Powered Predictive Healthcare, Lab Report Extraction & Remote Patient Management System. Download the official SUSTHITI Android App.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="favicon.png" type="image/png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    /* Mirrors app/lib/core/theme/app_colors.dart + app_theme.dart */
     :root {
-      --primary: #0d9488;
-      --primary-hover: #0f766e;
-      --primary-light: #ccfbf1;
-      --accent: #2563eb;
-      --bg-dark: #0f172a;
-      --bg-card: #1e293b;
-      --bg-card-hover: #334155;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --border: #334155;
-      --success: #22c55e;
-      --warning: #f59e0b;
+      --primary: #2F80D8;
+      --primary-deep: #1769AA;
+      --primary-soft: #EAF4FF;
+      --primary-faint: #F3F8FD;
+      --primary-border: #CFE2F6;
+      --background: #F6F9FC;
+      --surface: #FFFFFF;
+      --surface-secondary: #F1F6FA;
+      --text-primary: #172B4D;
+      --text-secondary: #64748B;
+      --text-muted: #94A3B8;
+      --border: #DCE6F0;
+      --success: #4FAF82;
+      --radius-button: 12px;
+      --radius-card: 16px;
+      --radius-panel: 20px;
+      --shadow-card: 0 4px 12px rgba(30, 58, 95, 0.05), 0 1px 2px rgba(30, 58, 95, 0.03);
     }
 
     * {
@@ -31,18 +38,18 @@
     }
 
     body {
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      background-color: var(--bg-dark);
-      color: var(--text-main);
-      line-height: 1.6;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--background);
+      color: var(--text-primary);
+      font-size: 16px;
+      line-height: 1.5;
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Header / Navbar */
+    /* Header / Navbar — matches AppBar on AppColors.background */
     header {
       border-bottom: 1px solid var(--border);
-      background: rgba(15, 23, 42, 0.8);
-      backdrop-filter: blur(12px);
+      background: var(--background);
       position: sticky;
       top: 0;
       z-index: 100;
@@ -62,38 +69,21 @@
       align-items: center;
       gap: 12px;
       text-decoration: none;
-      color: var(--text-main);
-    }
-
-    .logo-icon {
-      width: 40px;
-      height: 40px;
-      background: linear-gradient(135deg, #0d9488, #2563eb);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 800;
-      font-size: 20px;
-      box-shadow: 0 4px 14px rgba(13, 148, 136, 0.4);
+      color: var(--text-primary);
     }
 
     .brand-title {
-      font-size: 22px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      background: linear-gradient(135deg, #ffffff, #94a3b8);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.2px;
     }
 
     .nav-badge {
-      background: rgba(13, 148, 136, 0.15);
-      border: 1px solid var(--primary);
-      color: #2dd4bf;
+      background: var(--primary-soft);
+      border: 1px solid var(--primary-border);
+      color: var(--primary-deep);
       padding: 4px 12px;
-      border-radius: 20px;
+      border-radius: 10px;
       font-size: 12px;
       font-weight: 600;
       display: inline-flex;
@@ -110,43 +100,68 @@
       box-shadow: 0 0 8px var(--success);
     }
 
-    /* Hero Section */
+    /* Hero — HeroPanel gradient (app_page.dart) */
     .hero {
-      max-width: 1200px;
+      max-width: 1240px;
       margin: 0 auto;
-      padding: 80px 24px 60px;
+      padding: 32px 16px 48px;
+    }
+
+    @media (min-width: 600px) {
+      .hero {
+        padding: 40px 32px 56px;
+      }
+    }
+
+    .hero-panel {
       text-align: center;
+      padding: 48px 24px 40px;
+      border-radius: var(--radius-panel);
+      border: 1px solid var(--primary-border);
+      background: linear-gradient(135deg, var(--primary-soft) 0%, var(--primary-faint) 100%);
+    }
+
+    @media (min-width: 600px) {
+      .hero-panel {
+        padding: 56px 40px 48px;
+      }
     }
 
     .tagline-pill {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: #1e293b;
+      background: var(--surface);
       border: 1px solid var(--border);
-      padding: 6px 16px;
-      border-radius: 30px;
+      padding: 6px 14px;
+      border-radius: 10px;
       font-size: 13px;
-      color: var(--text-muted);
+      font-weight: 500;
+      color: var(--text-secondary);
       margin-bottom: 24px;
     }
 
     .hero-title {
-      font-size: 48px;
-      font-weight: 800;
-      line-height: 1.15;
-      letter-spacing: -1px;
-      margin-bottom: 20px;
-      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      font-size: 30px;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -0.6px;
+      margin-bottom: 16px;
+      color: var(--text-primary);
+    }
+
+    @media (min-width: 768px) {
+      .hero-title {
+        font-size: 38px;
+        letter-spacing: -0.8px;
+      }
     }
 
     .hero-subtitle {
-      font-size: 18px;
-      color: var(--text-muted);
-      max-width: 760px;
-      margin: 0 auto 40px;
+      font-size: 16px;
+      color: var(--text-secondary);
+      max-width: 720px;
+      margin: 0 auto 32px;
     }
 
     /* CTA Buttons */
@@ -159,63 +174,63 @@
       margin-bottom: 40px;
     }
 
+    /* FilledButton + OutlinedButton (app_theme.dart) */
     .btn-primary {
-      background: linear-gradient(135deg, #0d9488, #0f766e);
-      color: white;
-      padding: 16px 36px;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 700;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 12px;
-      box-shadow: 0 10px 25px -5px rgba(13, 148, 136, 0.5);
-      transition: all 0.2s ease;
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 15px 30px -5px rgba(13, 148, 136, 0.7);
-      background: linear-gradient(135deg, #0f766e, #115e59);
-    }
-
-    .btn-secondary {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      color: var(--text-main);
-      padding: 16px 28px;
-      border-radius: 12px;
-      font-size: 15px;
+      background: var(--primary);
+      color: #fff;
+      padding: 14px 20px;
+      min-height: 48px;
+      border-radius: var(--radius-button);
+      font-size: 14px;
       font-weight: 600;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
       gap: 10px;
-      transition: all 0.2s ease;
+      transition: background 0.15s ease;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-deep);
+    }
+
+    .btn-secondary {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--primary);
+      padding: 14px 20px;
+      min-height: 48px;
+      border-radius: var(--radius-button);
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: background 0.15s ease;
     }
 
     .btn-secondary:hover {
-      background: var(--bg-card-hover);
-      border-color: #475569;
+      background: var(--surface-secondary);
     }
 
-    /* App Specs Strip */
     .specs-strip {
       display: inline-flex;
       flex-wrap: wrap;
-      gap: 24px;
-      background: rgba(30, 41, 59, 0.6);
+      justify-content: center;
+      gap: 16px 24px;
+      background: var(--surface);
       border: 1px solid var(--border);
-      padding: 12px 24px;
-      border-radius: 12px;
+      padding: 12px 20px;
+      border-radius: var(--radius-button);
       font-size: 13px;
-      color: var(--text-muted);
+      color: var(--text-secondary);
+      box-shadow: var(--shadow-card);
     }
 
     .spec-item span {
-      color: var(--text-main);
-      font-weight: 600;
+      color: var(--text-primary);
+      font-weight: 500;
     }
 
     /* Container Sections */
@@ -231,14 +246,15 @@
     }
 
     .section-title {
-      font-size: 32px;
-      font-weight: 700;
-      margin-bottom: 12px;
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.2px;
+      margin-bottom: 8px;
     }
 
     .section-desc {
-      color: var(--text-muted);
-      font-size: 16px;
+      color: var(--text-secondary);
+      font-size: 14px;
     }
 
     /* Feature Cards Grid */
@@ -248,50 +264,56 @@
       gap: 24px;
     }
 
+    /* AppCard — surface, border, card shadow (app_card.dart) */
     .feature-card {
-      background: var(--bg-card);
+      background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 28px;
-      transition: all 0.2s ease;
+      border-radius: var(--radius-card);
+      padding: 16px;
+      box-shadow: var(--shadow-card);
+      transition: border-color 0.15s ease;
     }
 
     .feature-card:hover {
-      border-color: var(--primary);
-      transform: translateY(-4px);
+      border-color: var(--primary-border);
     }
 
     .feature-icon {
-      width: 48px;
-      height: 48px;
-      background: rgba(13, 148, 136, 0.15);
-      color: #2dd4bf;
-      border-radius: 12px;
+      width: 44px;
+      height: 44px;
+      background: var(--primary-soft);
+      border-radius: 13px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 22px;
-      margin-bottom: 20px;
+      margin-bottom: 12px;
     }
 
     .feature-card h3 {
-      font-size: 20px;
-      font-weight: 700;
-      margin-bottom: 10px;
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 8px;
     }
 
     .feature-card p {
-      color: var(--text-muted);
+      color: var(--text-secondary);
       font-size: 14px;
-      line-height: 1.6;
+      line-height: 1.5;
     }
 
-    /* Installation Steps */
     .steps-wrapper {
-      background: var(--bg-card);
+      background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 40px;
+      border-radius: var(--radius-panel);
+      padding: 24px;
+      box-shadow: var(--shadow-card);
+    }
+
+    @media (min-width: 600px) {
+      .steps-wrapper {
+        padding: 32px;
+      }
     }
 
     .step-item {
@@ -320,22 +342,21 @@
 
     .step-text h4 {
       font-size: 17px;
-      font-weight: 700;
+      font-weight: 600;
       margin-bottom: 4px;
     }
 
     .step-text p {
-      color: var(--text-muted);
+      color: var(--text-secondary);
       font-size: 14px;
     }
 
-    /* Demo Credentials Card */
     .demo-card {
-      background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9));
-      border: 1px dashed var(--primary);
-      border-radius: 16px;
-      padding: 28px;
-      margin-top: 40px;
+      background: linear-gradient(135deg, var(--primary-soft) 0%, var(--primary-faint) 100%);
+      border: 1px solid var(--primary-border);
+      border-radius: var(--radius-card);
+      padding: 24px;
+      margin-top: 32px;
     }
 
     .demo-grid {
@@ -346,49 +367,42 @@
     }
 
     .demo-box {
-      background: rgba(15, 23, 42, 0.6);
+      background: var(--surface);
       border: 1px solid var(--border);
       padding: 16px;
       border-radius: 10px;
-      font-family: 'JetBrains Mono', monospace;
       font-size: 13px;
+      font-weight: 500;
     }
 
     .demo-box label {
-      color: var(--primary);
+      color: var(--primary-deep);
       font-size: 11px;
-      font-weight: 700;
+      font-weight: 600;
       display: block;
       margin-bottom: 6px;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 0.2px;
     }
 
-    /* Footer */
     footer {
       border-top: 1px solid var(--border);
       padding: 40px 24px;
       text-align: center;
-      color: var(--text-muted);
-      font-size: 14px;
-      margin-top: 60px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      margin-top: 32px;
+      background: var(--surface);
     }
 
     footer a {
-      color: #2dd4bf;
+      color: var(--primary);
+      font-weight: 500;
       text-decoration: none;
     }
 
-    @media (max-width: 768px) {
-      .hero-title {
-        font-size: 34px;
-      }
-      .hero {
-        padding-top: 40px;
-      }
-      .steps-wrapper {
-        padding: 24px;
-      }
+    footer a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
@@ -410,6 +424,7 @@
 
   <!-- Hero Section -->
   <section class="hero">
+    <div class="hero-panel">
     <div class="tagline-pill">
       ⚕️ B.Tech Mini-Project Showcase & Healthcare Platform
     </div>
@@ -434,6 +449,7 @@
       <div class="spec-item">Version: <span>1.0.1 (Build 2003)</span></div>
       <div class="spec-item">Requires: <span>Android 8.0+ (API 26)</span></div>
       <div class="spec-item">Size: <span>~33 MB</span></div>
+    </div>
     </div>
   </section>
 
@@ -517,7 +533,7 @@
 
       <!-- Demo Credentials -->
       <div class="demo-card">
-        <h4 style="font-size: 16px; font-weight: 700; color: #2dd4bf;">🔑 Demo Credentials for Viva / Testing</h4>
+        <h4 style="font-size: 16px; font-weight: 600; color: var(--primary-deep);">🔑 Demo Credentials for Viva / Testing</h4>
         <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">You can register a new patient account inside the app or sign in with existing demo accounts:</p>
 
         <div class="demo-grid">
