@@ -77,11 +77,11 @@ full pipeline and category list.
   generations (including safety-validation rejections, by reason code only, never the rejected
   content), PDF downloads, admin actions.
 
+## Production considerations
+- **Password-reset email delivery.** Transactional email delivery is implemented via Resend HTTP API (`backend/app/services/email.py`). In production, configure `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `RESEND_FROM_NAME`. `DEV_EXPOSE_RESET_TOKEN` is a development-only stand-in and is strictly refused in production.
+
 ## Known gaps (not yet done; tracked, not hidden)
 
-- **Password-reset email delivery.** The reset flow works end-to-end except actually sending the
-  email — no SMTP/email provider is wired up yet. `DEV_EXPOSE_RESET_TOKEN` is a development-only
-  stand-in and is refused in production.
 - **Android release signing.** `app/android/app/build.gradle.kts` currently signs release builds
   with the debug key. Fine for internal testing and sideloading; needs a real release key before
   any Play Store distribution.

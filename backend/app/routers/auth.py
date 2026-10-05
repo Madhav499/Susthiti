@@ -22,6 +22,7 @@ from ..security import (
     session_expiry,
     verify_password,
 )
+from ..services.email import get_email_service
 from ..services.rate_limit import limit
 from ..services.records import audit
 
@@ -102,15 +103,25 @@ def forgot_password(body: ForgotPasswordIn, db: Session = Depends(get_db)):
     user = db.scalar(select(User).where(User.email == body.email.lower()))
     if user and user.is_active:
         token, token_hash = new_reset_token()
-        db.add(PasswordResetToken(user_id=user.id, token_hash=token_hash, expires_at=datetime.now(timezone.utc) + timedelta(minutes=30)))
+        expiry_minutes = settings.password_reset_expiry_minutes
+        db.add(PasswordResetToken(user_id=user.id, token_hash=token_hash, expires_at=datetime.now(timezone.utc) + timedelta(minutes=expiry_minutes)))
         audit(db, None, "password_reset_requested", "user", user.id)
         db.commit()
-        # No email provider is configured in this build. In development only, the token is
-        # returned so the recovery flow can be completed. See API_SETUP.md.
+
+        email_service = get_email_service()
+        email_result = email_service.send_password_reset_email(
+            to_email=user.email,
+            user_name=user.full_name,
+            reset_token=token,
+            expiry_minutes=expiry_minutes,
+        )
+        if not email_result.success:
+            log.warning("Password reset email delivery not completed: %s", email_result.error)
+
+        # In development only, the token is returned so the recovery flow can be completed
+        # without real email delivery. In production, DEV_EXPOSE_RESET_TOKEN must be false.
         if settings.dev_expose_reset_token:
             response["dev_reset_token"] = token
-        else:
-            log.info("password reset requested; configure an email provider to deliver it")
     return response
 
 

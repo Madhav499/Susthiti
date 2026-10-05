@@ -48,7 +48,10 @@ Admins then create doctor accounts in the app (Admin → Doctors → Add Doctor)
 | `GEMINI_MODEL` | `gemini-2.5-flash` | |
 | `AI_TIMEOUT_SECONDS` | `90` | |
 | `ENABLE_DEMO_WEARABLE` | `true` in example | Development-only DEMO device. Set `false` in production |
-| `DEV_EXPOSE_RESET_TOKEN` | `true` in example | Returns the reset token in the response because no email provider is configured. Production refuses `true` |
+| `DEV_EXPOSE_RESET_TOKEN` | `true` in example | Returns the reset token in the response in development. Production refuses `true` |
+| `RESEND_API_KEY` | empty | Resend API key for password reset email delivery (server-side only) |
+| `RESEND_FROM_EMAIL` | empty | Verified sender email for Resend (e.g. `noreply@yourclinic.org` or `onboarding@resend.dev`) |
+| `RESEND_FROM_NAME` | `SUSTHITI` | Sender display name in reset emails |
 | `REMINDERS_ENABLED`, `REMINDER_INTERVAL_MINUTES` | `true`, `60` | In-process reminder loop |
 
 Never commit `.env`. In production, set these as environment variables or secrets in your hosting platform.
@@ -58,7 +61,7 @@ Never commit `.env`. In production, set these as environment variables or secret
 - `SUSTHITI_ENV=production`, strong `JWT_SECRET`, `DEV_EXPOSE_RESET_TOKEN=false`, `ENABLE_DEMO_WEARABLE=false`.
 - Serve over HTTPS behind a reverse proxy. Keep `STORAGE_DIR` on a private, backed-up volume.
 - Use PostgreSQL and add migrations (DATABASE.md).
-- Connect an email provider for password resets (the reset flow is in place; only delivery is missing).
+- Configure `RESEND_API_KEY`, `RESEND_FROM_EMAIL` and `RESEND_FROM_NAME` in production environment variables for password reset delivery.
 - Restrict `CORS_ORIGINS` to the deployed web app origin.
 
 ## Flutter app configuration

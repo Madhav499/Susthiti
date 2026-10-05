@@ -48,6 +48,14 @@ class Settings(BaseSettings):
     # Where patients are: "today" for birthdays and appointment reminders.
     local_timezone: str = "Asia/Kolkata"
 
+    # Resend email delivery (https://resend.com): server-side only, never shipped to Flutter.
+    # Leave empty to log a safe warning without sending real email.
+    resend_api_key: str = ""
+    resend_from_email: str = ""
+    resend_from_name: str = "SUSTHITI"
+    resend_timeout_seconds: float = 10.0
+    password_reset_expiry_minutes: int = 30
+
     @property
     def is_production(self) -> bool:
         return self.susthiti_env.lower() == "production"
@@ -63,6 +71,10 @@ class Settings(BaseSettings):
     @property
     def fcm_configured(self) -> bool:
         return bool(self.fcm_service_account_json)
+
+    @property
+    def resend_configured(self) -> bool:
+        return bool(self.resend_api_key and self.resend_from_email)
 
 
 @lru_cache
