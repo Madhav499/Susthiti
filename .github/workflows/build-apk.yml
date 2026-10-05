@@ -1,0 +1,89 @@
+name: Build and Publish SUSTHITI APK
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "app/**"
+      - "pubspec.yaml"
+      - "pubspec.lock"
+      - "scripts/build-release.bat"
+      - ".github/workflows/build-apk.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.35.7"
+          channel: stable
+          cache: true
+
+      - name: Restore Android signing keystore
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > app/android/susthiti-release.jks
+
+      - name: Create key.properties
+        shell: bash
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          cat > app/android/key.properties <<EOF
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=susthiti-release.jks
+          EOF
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build signed release APK
+        run: |
+          flutter build apk --release \
+            --dart-define=API_BASE_URL=https://susthiti.onrender.com
+
+      - name: Publish APK to download website
+        shell: bash
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk deploy/web/SUSTHITI.apk
+
+      - name: Commit updated APK
+        shell: bash
+        run: |
+          git config user.name "Madhav499"
+          git config user.email "madhavpatoliya763@gmail.com"
+
+          git add deploy/web/SUSTHITI.apk
+
+          if git diff --cached --quiet; then
+            echo "No APK changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: update SUSTHITI APK"
+
+      - name: Push updated APK
+        run: git push origin HEAD:main
