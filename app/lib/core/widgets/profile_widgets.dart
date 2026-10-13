@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
 import 'avatar.dart';
@@ -189,9 +190,9 @@ class AsyncSection<T> extends StatelessWidget {
                     const Icon(Icons.error_outline, size: 18, color: AppColors.warningText),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
-                      child: Text('Unable to load $title.', style: t.bodyMedium?.copyWith(color: AppColors.textSecondary)),
+                      child: Text(AppLocalizations.of(context).unableToLoadSection(title), style: t.bodyMedium?.copyWith(color: AppColors.textSecondary)),
                     ),
-                    TextButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh, size: 18), label: const Text('Retry')),
+                    TextButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh, size: 18), label: Text(AppLocalizations.of(context).commonRetry)),
                   ],
                 ),
                 data: builder,

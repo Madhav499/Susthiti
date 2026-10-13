@@ -32,6 +32,7 @@ from ..schemas import (
     to_utc,
     visit_out,
 )
+from ..services.i18n import response_label
 from ..services.records import audit, next_code, notify
 
 router = APIRouter(tags=["care"])
@@ -131,9 +132,11 @@ def respond_side_effect(side_effect_id: str, body: SideEffectResponseIn, current
             recommended_for=to_utc(body.appointment_for) if body.appointment_for else None,
         ))
         notify(db, patient.user_id, "appointment_recommendation", "Appointment recommended",
-               f"Dr. {current.name} recommends an appointment about your reported side effect.", "side_effect", effect.id, patient.id)
+               f"Dr. {current.name} recommends an appointment about your reported side effect.", "side_effect", effect.id, patient.id,
+               template_params={"doctor_name": current.name}, template_key="appointment_recommendation_for_side_effect")
     notify(db, patient.user_id, "doctor_response", "Doctor responded",
-           f"Dr. {current.name} responded to your side-effect report: {RESPONSE_LABELS[body.response_type]}.", "side_effect", effect.id, patient.id)
+           f"Dr. {current.name} responded to your side-effect report: {RESPONSE_LABELS[body.response_type]}.", "side_effect", effect.id, patient.id,
+           template_params={"doctor_name": current.name, "response_label": response_label(body.response_type, patient.user.preferred_locale)})
     audit(db, current, "side_effect_responded", "side_effect", effect.id, effect.side_effect_code, {"response_type": body.response_type})
     db.commit()
     return side_effect_out(effect, _events(db, effect.id))
@@ -155,7 +158,8 @@ def recommend_appointment(patient_id: str, body: AppointmentIn, current: Current
     )
     db.add(rec)
     db.flush()
-    notify(db, patient.user_id, "appointment_recommendation", "Appointment recommended", f"Dr. {current.name} recommends an appointment.", "appointment", rec.id, patient.id)
+    notify(db, patient.user_id, "appointment_recommendation", "Appointment recommended", f"Dr. {current.name} recommends an appointment.", "appointment", rec.id, patient.id,
+           template_params={"doctor_name": current.name})
     audit(db, current, "appointment_recommended", "appointment", rec.id, None, {"patient_code": patient.patient_code})
     db.commit()
     return appointment_out(rec)
@@ -178,7 +182,8 @@ def create_visit(patient_id: str, body: VisitIn, current: CurrentUser = Depends(
     db.add(visit)
     db.flush()
     audit(db, current, "visit_recorded", "visit", visit.id, visit.visit_code, {"patient_code": patient.patient_code})
-    notify(db, patient.user_id, "visit_recorded", "Visit recorded", f"Dr. {current.name} recorded your visit on {body.visit_date:%d %b %Y}.", "visit", visit.id, patient.id)
+    notify(db, patient.user_id, "visit_recorded", "Visit recorded", f"Dr. {current.name} recorded your visit on {body.visit_date:%d %b %Y}.", "visit", visit.id, patient.id,
+           template_params={"doctor_name": current.name, "visit_date": f"{body.visit_date:%d %b %Y}"})
     db.commit()
     return visit_out(visit)
 
@@ -229,7 +234,8 @@ def create_prescription(patient_id: str, body: PrescriptionIn, current: CurrentU
     db.flush()
     db.refresh(rx)
     audit(db, current, "prescription_created", "prescription", rx.id, rx.prescription_code, {"patient_code": patient.patient_code})
-    notify(db, patient.user_id, "new_prescription", "New prescription", f"Dr. {current.name} created prescription {rx.prescription_code}.", "prescription", rx.id, patient.id)
+    notify(db, patient.user_id, "new_prescription", "New prescription", f"Dr. {current.name} created prescription {rx.prescription_code}.", "prescription", rx.id, patient.id,
+           template_params={"doctor_name": current.name, "prescription_code": rx.prescription_code})
     db.commit()
     return prescription_out(rx)
 

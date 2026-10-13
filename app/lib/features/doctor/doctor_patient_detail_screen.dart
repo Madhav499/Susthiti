@@ -14,6 +14,7 @@ import '../../core/widgets/feedback.dart';
 import '../../core/widgets/form_fields.dart';
 import '../../core/widgets/labels.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../ai/ai_screens.dart';
 import '../diabetes/diabetes_screen.dart';
 import '../follow_ups/follow_ups_screens.dart';
@@ -29,7 +30,22 @@ import '../side_effects/side_effects_screens.dart';
 import '../surgery/surgery_screens.dart';
 import '../visits/visits_screens.dart';
 
-const _tabs = ['Overview', 'AI Summary', 'Diabetes', 'Heart', 'Reports', 'Glucose', 'Lifestyle', 'Prescriptions', 'Visits', 'Follow-ups', 'Surgeries', 'Side Effects'];
+const _tabCount = 12;
+
+List<String> _tabLabels(AppLocalizations l10n) => [
+      l10n.tabOverview,
+      l10n.tabAiSummary,
+      l10n.navDiabetes,
+      l10n.navHeart,
+      l10n.navReports,
+      l10n.navGlucose,
+      l10n.navLifestyle,
+      l10n.navPrescriptions,
+      l10n.tabVisits,
+      l10n.navFollowUps,
+      l10n.navSurgeries,
+      l10n.navSideEffects,
+    ];
 
 /// Everything here is read through endpoints that re-check the doctor's approved access.
 class DoctorPatientDetailScreen extends ConsumerWidget {
@@ -39,21 +55,22 @@ class DoctorPatientDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final profile = ref.watch(patientProfileProvider(patientId));
-    final name = profile.value?.fullName ?? 'Patient';
+    final name = profile.value?.fullName ?? l10n.patientFallbackName;
     final width = MediaQuery.sizeOf(context).width;
     final gutter = width >= Breakpoints.tablet ? AppSpacing.xxl : AppSpacing.lg;
     Widget tab(Widget child) => Padding(padding: EdgeInsets.symmetric(horizontal: gutter), child: child);
 
     if (profile.hasError && !profile.hasValue) {
-      return AppPage(title: 'Patient', body: ErrorState(error: profile.error!, onRetry: () => ref.invalidate(patientProfileProvider(patientId))));
+      return AppPage(title: l10n.patientFallbackName, body: ErrorState(error: profile.error!, onRetry: () => ref.invalidate(patientProfileProvider(patientId))));
     }
     return DefaultTabController(
-      length: _tabs.length,
-      initialIndex: initialTab.clamp(0, _tabs.length - 1),
+      length: _tabCount,
+      initialIndex: initialTab.clamp(0, _tabCount - 1),
       child: AppPage(
         title: name,
-        bottom: TabBar(isScrollable: true, tabAlignment: TabAlignment.start, tabs: [for (final t in _tabs) Tab(text: t)]),
+        bottom: TabBar(isScrollable: true, tabAlignment: TabAlignment.start, tabs: [for (final t in _tabLabels(l10n)) Tab(text: t)]),
         body: TabBarView(children: [
           tab(_OverviewTab(patientId: patientId)),
           tab(PatientSummaryView(patientId: patientId, embedded: true)),
@@ -80,6 +97,7 @@ class _OverviewTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return PageBody(
       maxWidth: 900,
       padding: const EdgeInsets.fromLTRB(0, AppSpacing.lg, 0, AppSpacing.xxl),
@@ -102,35 +120,35 @@ class _OverviewTab extends ConsumerWidget {
             const SizedBox(height: AppSpacing.lg),
             PatientIdTile(p.patientCode, compact: true),
             const SizedBox(height: AppSpacing.section),
-            const SectionHeader('Body measurements'),
+            SectionHeader(l10n.doctorBodyMeasurementsHeader),
             BodyMeasurementsCard(body: p.body, patientId: p.id, canEdit: true),
             const SizedBox(height: AppSpacing.section),
-            const SectionHeader('Actions'),
+            SectionHeader(l10n.commonActionsHeader),
             Wrap(spacing: AppSpacing.sm, runSpacing: AppSpacing.sm, children: [
-              FilledButton.icon(onPressed: () => context.push('/d/patients/$patientId/prescriptions/new'), icon: const Icon(Icons.medication_outlined), label: const Text('New Prescription')),
-              OutlinedButton.icon(onPressed: () => context.push('/d/patients/$patientId/visits/new'), icon: const Icon(Icons.event_note_outlined), label: const Text('Record Visit')),
-              OutlinedButton.icon(onPressed: () => context.push('/r/$patientId/reports/upload'), icon: const Icon(Icons.upload_file_outlined), label: const Text('Upload Report')),
-              OutlinedButton.icon(onPressed: () => _recommend(context, ref), icon: const Icon(Icons.event_available_outlined), label: const Text('Recommend Appointment')),
+              FilledButton.icon(onPressed: () => context.push('/d/patients/$patientId/prescriptions/new'), icon: const Icon(Icons.medication_outlined), label: Text(l10n.doctorNewPrescriptionButton)),
+              OutlinedButton.icon(onPressed: () => context.push('/d/patients/$patientId/visits/new'), icon: const Icon(Icons.event_note_outlined), label: Text(l10n.visitsRecordVisit)),
+              OutlinedButton.icon(onPressed: () => context.push('/r/$patientId/reports/upload'), icon: const Icon(Icons.upload_file_outlined), label: Text(l10n.dashUploadReport)),
+              OutlinedButton.icon(onPressed: () => _recommend(context, ref), icon: const Icon(Icons.event_available_outlined), label: Text(l10n.doctorRecommendAppointmentButton)),
             ]),
             const SizedBox(height: AppSpacing.section),
-            const SectionHeader('Contact'),
+            SectionHeader(l10n.commonContactHeader),
             AppCard(
               child: Column(children: [
-                KeyValueRow('Email', p.email),
-                KeyValueRow('Phone', p.phone ?? 'Not provided'),
-                KeyValueRow('Date of birth', p.dateOfBirth == null ? 'Not provided' : Fmt.date(p.dateOfBirth)),
-                KeyValueRow('Emergency contact', p.emergencyContact.isEmpty ? 'Not provided' : [p.emergencyContact.name, p.emergencyContact.relationship, p.emergencyContact.phone].whereType<String>().join(' · ')),
+                KeyValueRow(l10n.authEmailLabel, p.email),
+                KeyValueRow(l10n.authPhone, p.phone ?? l10n.commonNotProvided),
+                KeyValueRow(l10n.authDateOfBirth, p.dateOfBirth == null ? l10n.commonNotProvided : Fmt.date(p.dateOfBirth)),
+                KeyValueRow(l10n.doctorEmergencyContactLabel, p.emergencyContact.isEmpty ? l10n.commonNotProvided : [p.emergencyContact.name, p.emergencyContact.relationship, p.emergencyContact.phone].whereType<String>().join(' · ')),
               ]),
             ),
             const SizedBox(height: AppSpacing.section),
             AppCard(
               padding: EdgeInsets.zero,
               child: Column(children: [
-                ListTile(leading: const Icon(Icons.timeline_outlined, color: AppColors.primary), title: const Text('Health timeline'), trailing: const Icon(Icons.chevron_right), onTap: () => context.push('/d/patients/$patientId/timeline')),
+                ListTile(leading: const Icon(Icons.timeline_outlined, color: AppColors.primary), title: Text(l10n.dashHealthTimeline), trailing: const Icon(Icons.chevron_right), onTap: () => context.push('/d/patients/$patientId/timeline')),
                 const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
-                ListTile(leading: const Icon(Icons.restaurant_outlined, color: AppColors.primary), title: const Text('Food log'), trailing: const Icon(Icons.chevron_right), onTap: () => context.push('/d/patients/$patientId/food')),
+                ListTile(leading: const Icon(Icons.restaurant_outlined, color: AppColors.primary), title: Text(l10n.navFoodLog), trailing: const Icon(Icons.chevron_right), onTap: () => context.push('/d/patients/$patientId/food')),
                 const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
-                ListTile(leading: const Icon(Icons.auto_awesome_outlined, color: AppColors.primary), title: const Text('All Reports Summary'), trailing: const Icon(Icons.chevron_right), onTap: () => context.push('/r/$patientId/reports-summary')),
+                ListTile(leading: const Icon(Icons.auto_awesome_outlined, color: AppColors.primary), title: Text(l10n.doctorAllReportsSummaryLabel), trailing: const Icon(Icons.chevron_right), onTap: () => context.push('/r/$patientId/reports-summary')),
               ]),
             ),
           ]),
@@ -143,7 +161,7 @@ class _OverviewTab extends ConsumerWidget {
     final done = await showModalBottomSheet<bool>(context: context, isScrollControlled: true, builder: (_) => _RecommendSheet(patientId: patientId));
     if (done == true) {
       ref.invalidate(appointmentsProvider(patientId));
-      if (context.mounted) showToast(context, 'Appointment recommendation sent to the patient');
+      if (context.mounted) showToast(context, AppLocalizations.of(context).doctorAppointmentRecommendationSentToast);
     }
   }
 }
@@ -179,11 +197,12 @@ class _RecommendSheetState extends ConsumerState<_RecommendSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final now = DateTime.now();
-    return SheetForm(title: 'Recommend Appointment', form: _form, children: [
-      AppTextField(label: 'Reason', controller: _reason, maxLines: 3, validator: (v) => Validators.required(v, 'Reason'), textCapitalization: TextCapitalization.sentences),
-      DateTimeField(label: 'Suggested date', optional: true, value: _for, firstDate: now, lastDate: now.add(const Duration(days: 365)), onChanged: (d) => setState(() => _for = d)),
-      BusyButton(label: 'Send recommendation', onPressed: _save, expand: true),
+    return SheetForm(title: l10n.doctorRecommendAppointmentButton, form: _form, children: [
+      AppTextField(label: l10n.commonReasonLabel, controller: _reason, maxLines: 3, validator: (v) => Validators.required(l10n, v, l10n.commonReasonLabel), textCapitalization: TextCapitalization.sentences),
+      DateTimeField(label: l10n.sideEffectSuggestedDateLabel, optional: true, value: _for, firstDate: now, lastDate: now.add(const Duration(days: 365)), onChanged: (d) => setState(() => _for = d)),
+      BusyButton(label: l10n.doctorSendRecommendationButton, onPressed: _save, expand: true),
     ]);
   }
 }

@@ -47,7 +47,8 @@ def create_follow_up(patient_id: str, body: FollowUpIn, current: CurrentUser = D
     db.add(f)
     db.flush()
     notify(db, patient.user_id, "follow_up_scheduled", "Follow-up scheduled",
-           f"Dr. {current.name} scheduled a follow-up for {body.due_date:%d %b %Y}: {f.purpose}", "follow_up", f.id, patient.id)
+           f"Dr. {current.name} scheduled a follow-up for {body.due_date:%d %b %Y}: {f.purpose}", "follow_up", f.id, patient.id,
+           template_params={"doctor_name": current.name, "due_date": f"{body.due_date:%d %b %Y}", "purpose": f.purpose})
     audit(db, current, "follow_up_scheduled", "follow_up", f.id, None, {"patient_code": patient.patient_code})
     db.commit()
     return follow_up_out(f)
@@ -78,7 +79,8 @@ def cancel_follow_up(follow_up_id: str, body: FollowUpActionIn, current: Current
     f.status, f.notes, f.updated_at = "cancelled", body.notes, datetime.now(timezone.utc)
     patient = db.get(Patient, f.patient_id)
     notify(db, patient.user_id, "follow_up_cancelled", "Follow-up cancelled",
-           f"Dr. {current.name} cancelled the follow-up planned for {f.due_date:%d %b %Y}.", "follow_up", f.id, f.patient_id)
+           f"Dr. {current.name} cancelled the follow-up planned for {f.due_date:%d %b %Y}.", "follow_up", f.id, f.patient_id,
+           template_params={"doctor_name": current.name, "due_date": f"{f.due_date:%d %b %Y}"})
     audit(db, current, "follow_up_cancelled", "follow_up", f.id, None, {"patient_code": patient.patient_code})
     db.commit()
     return follow_up_out(f)
@@ -91,7 +93,8 @@ def reschedule_follow_up(follow_up_id: str, body: FollowUpRescheduleIn, current:
     f.due_date, f.updated_at = body.due_date, datetime.now(timezone.utc)
     patient = db.get(Patient, f.patient_id)
     notify(db, patient.user_id, "follow_up_rescheduled", "Follow-up rescheduled",
-           f"Dr. {current.name} moved your follow-up to {body.due_date:%d %b %Y}.", "follow_up", f.id, f.patient_id)
+           f"Dr. {current.name} moved your follow-up to {body.due_date:%d %b %Y}.", "follow_up", f.id, f.patient_id,
+           template_params={"doctor_name": current.name, "due_date": f"{body.due_date:%d %b %Y}"})
     audit(db, current, "follow_up_rescheduled", "follow_up", f.id, None, {"patient_code": patient.patient_code})
     db.commit()
     return follow_up_out(f)

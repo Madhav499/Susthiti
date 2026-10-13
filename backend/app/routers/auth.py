@@ -10,7 +10,7 @@ from ..config import get_settings
 from ..db import get_db
 from ..deps import CurrentUser, get_current_user
 from ..models import AuthSession, Patient, PasswordResetToken, User, utcnow
-from ..schemas import ChangePasswordIn, ForgotPasswordIn, LoginIn, RegisterIn, ResetPasswordIn, user_out
+from ..schemas import ChangePasswordIn, ForgotPasswordIn, LanguageIn, LoginIn, RegisterIn, ResetPasswordIn, user_out
 from ..security import (
     PASSWORD_RULES,
     create_access_token,
@@ -23,6 +23,7 @@ from ..security import (
     verify_password,
 )
 from ..services.email import get_email_service
+from ..services.i18n import normalize_locale
 from ..services.rate_limit import limit
 from ..services.records import audit
 
@@ -55,7 +56,7 @@ def register(body: RegisterIn, db: Session = Depends(get_db)):
     email = body.email.lower()
     if db.scalar(select(User.id).where(User.email == email)):
         raise errors.conflict("An account with this email already exists. Try signing in instead.")
-    user = User(email=email, password_hash=hash_password(body.password), role="patient", full_name=body.full_name.strip())
+    user = User(email=email, password_hash=hash_password(body.password), role="patient", full_name=body.full_name.strip(), preferred_locale=body.preferred_locale)
     db.add(user)
     db.flush()
     patient = Patient(user_id=user.id, patient_code=_unique_patient_code(db), date_of_birth=body.date_of_birth, gender=body.gender, phone=body.phone)
@@ -114,6 +115,7 @@ def forgot_password(body: ForgotPasswordIn, db: Session = Depends(get_db)):
             user_name=user.full_name,
             reset_token=token,
             expiry_minutes=expiry_minutes,
+            locale=normalize_locale(user.preferred_locale),
         )
         if not email_result.success:
             log.warning("Password reset email delivery not completed: %s", email_result.error)
@@ -141,6 +143,16 @@ def reset_password(body: ResetPasswordIn, db: Session = Depends(get_db)):
     audit(db, None, "password_reset_completed", "user", user.id)
     db.commit()
     return {"message": "Your password has been updated. Please sign in."}
+
+
+@router.patch("/language")
+def set_language(body: LanguageIn, current: CurrentUser = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Every role updates only their own interface language -- there is no way to target
+    another user's id here, so this can't be used to change someone else's preference."""
+    current.user.preferred_locale = body.locale
+    audit(db, current, "language_changed", "user", current.id, body.locale)
+    db.commit()
+    return user_out(current.user)
 
 
 @router.post("/change-password")

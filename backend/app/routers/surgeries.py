@@ -45,7 +45,8 @@ def create_surgery(patient_id: str, body: SurgeryIn, current: CurrentUser = Depe
     db.add(s)
     db.flush()
     when = f" on {body.scheduled_at:%d %b %Y}" if body.scheduled_at else ""
-    notify(db, patient.user_id, "surgery_scheduled", "Surgery scheduled", f"Dr. {current.name} scheduled a surgery{when}: {s.name}.", "surgery", s.id, patient.id)
+    notify(db, patient.user_id, "surgery_scheduled", "Surgery scheduled", f"Dr. {current.name} scheduled a surgery{when}: {s.name}.", "surgery", s.id, patient.id,
+           template_params={"doctor_name": current.name, "when": when, "name": s.name})
     audit(db, current, "surgery_scheduled", "surgery", s.id, None, {"patient_code": patient.patient_code})
     db.commit()
     return surgery_out(s, include_internal=True)
@@ -79,7 +80,8 @@ def reschedule_surgery(surgery_id: str, body: SurgeryRescheduleIn, current: Curr
     _require_scheduled(s)
     s.scheduled_at, s.updated_at = body.scheduled_at, datetime.now(timezone.utc)
     patient = db.get(Patient, s.patient_id)
-    notify(db, patient.user_id, "surgery_rescheduled", "Surgery rescheduled", f"Dr. {current.name} moved your surgery ({s.name}) to {body.scheduled_at:%d %b %Y, %I:%M %p}.", "surgery", s.id, s.patient_id)
+    notify(db, patient.user_id, "surgery_rescheduled", "Surgery rescheduled", f"Dr. {current.name} moved your surgery ({s.name}) to {body.scheduled_at:%d %b %Y, %I:%M %p}.", "surgery", s.id, s.patient_id,
+           template_params={"doctor_name": current.name, "name": s.name, "scheduled_at": f"{body.scheduled_at:%d %b %Y, %I:%M %p}"})
     audit(db, current, "surgery_rescheduled", "surgery", s.id, None, {"patient_code": patient.patient_code})
     db.commit()
     return surgery_out(s, include_internal=True)
@@ -102,7 +104,8 @@ def cancel_surgery(surgery_id: str, current: CurrentUser = Depends(require_docto
     _require_scheduled(s)
     s.status, s.updated_at = "cancelled", datetime.now(timezone.utc)
     patient = db.get(Patient, s.patient_id)
-    notify(db, patient.user_id, "surgery_cancelled", "Surgery cancelled", f"Dr. {current.name} cancelled the surgery planned for {s.name}.", "surgery", s.id, s.patient_id)
+    notify(db, patient.user_id, "surgery_cancelled", "Surgery cancelled", f"Dr. {current.name} cancelled the surgery planned for {s.name}.", "surgery", s.id, s.patient_id,
+           template_params={"doctor_name": current.name, "name": s.name})
     audit(db, current, "surgery_cancelled", "surgery", s.id, None, {"patient_code": patient.patient_code})
     db.commit()
     return surgery_out(s, include_internal=True)

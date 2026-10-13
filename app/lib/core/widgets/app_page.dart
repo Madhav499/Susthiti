@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
 import 'brand.dart';
@@ -74,8 +75,10 @@ class HeroPanel extends StatelessWidget {
 }
 
 class Disclaimer extends StatelessWidget {
-  const Disclaimer({super.key, this.text = 'SUSTHITI provides AI-assisted informational insights and does not replace professional medical diagnosis, treatment, or emergency care.'});
-  final String text;
+  const Disclaimer({super.key, this.text});
+
+  /// Defaults to [AppLocalizations.appDisclaimerText] when not given.
+  final String? text;
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +87,7 @@ class Disclaimer extends StatelessWidget {
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Icon(Icons.info_outline, size: 16, color: AppColors.textSecondary),
         const SizedBox(width: AppSpacing.sm),
-        Expanded(child: Text(text, style: Theme.of(context).textTheme.bodySmall)),
+        Expanded(child: Text(text ?? AppLocalizations.of(context).appDisclaimerText, style: Theme.of(context).textTheme.bodySmall)),
       ]),
     );
   }

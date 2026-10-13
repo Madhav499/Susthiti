@@ -10,6 +10,7 @@ import '../../core/widgets/feedback.dart';
 import '../../data/models/health_data.dart';
 import '../../data/models/user.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../authentication/auth_controller.dart';
 import '../diabetes/diabetes_providers.dart';
 import '../patient/patient_sync.dart';
@@ -36,7 +37,7 @@ class _ReportValuesSectionState extends ConsumerState<ReportValuesSection> {
       await ref.read(reportRepositoryProvider).saveValues(widget.reportId, values);
       ref.invalidate(reportValuesProvider(widget.reportId));
       healthDataChanged(ref, widget.patientId);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Report values saved.')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).reportValuesSavedToast)));
     } on Failure catch (e) {
       if (mounted) showFailure(context, e);
     } finally {
@@ -45,7 +46,7 @@ class _ReportValuesSectionState extends ConsumerState<ReportValuesSection> {
   }
 
   /// Reads the report file again (e.g. reports uploaded before automatic reading existed).
-  Future<void> _readAgain() async {
+  Future<void> _readAgain(AppLocalizations l10n) async {
     setState(() => _saving = true);
     try {
       final result = await ref.read(reportRepositoryProvider).readValues(widget.reportId);
@@ -53,7 +54,7 @@ class _ReportValuesSectionState extends ConsumerState<ReportValuesSection> {
       healthDataChanged(ref, widget.patientId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(result.values.isEmpty ? (result.extractionNote ?? 'No values could be read from this report.') : 'Values read from the report. Please check them.'),
+          content: Text(result.values.isEmpty ? (result.extractionNote ?? l10n.noValuesReadFromReport) : l10n.valuesReadPleaseCheck),
         ));
       }
     } on Failure catch (e) {
@@ -65,6 +66,7 @@ class _ReportValuesSectionState extends ConsumerState<ReportValuesSection> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final value = ref.watch(reportValuesProvider(widget.reportId));
     final role = ref.watch(currentUserProvider)?.role;
     final canEdit = role == UserRole.patient || role == UserRole.doctor;
@@ -75,15 +77,15 @@ class _ReportValuesSectionState extends ConsumerState<ReportValuesSection> {
         loading: const SkeletonList(count: 1, itemHeight: 48),
         onRetry: () => ref.invalidate(reportValuesProvider(widget.reportId)),
         data: (v) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Text('Values from this report', style: t.titleMedium),
-          Text('SUSTHITI reads HbA1c and glucose results from the report automatically and uses them in your health features, including your future diabetes risk estimate.', style: t.bodySmall),
+          Text(l10n.valuesFromReportHeader, style: t.titleMedium),
+          Text(l10n.reportValuesAutoReadDescription, style: t.bodySmall),
           if (v.extractionNote != null) ...[
             const SizedBox(height: AppSpacing.xs),
             Text(v.extractionNote!, style: t.bodySmall?.copyWith(color: AppColors.primaryDeep)),
           ],
           const SizedBox(height: AppSpacing.md),
           if (v.values.isEmpty)
-            Text('No values recorded from this report yet.', style: t.bodyMedium)
+            Text(l10n.noValuesRecordedYet, style: t.bodyMedium)
           else
             for (final item in v.values)
               KeyValueRow(
@@ -93,15 +95,15 @@ class _ReportValuesSectionState extends ConsumerState<ReportValuesSection> {
                     ? (canEdit
                         ? TextButton(
                             onPressed: _saving ? null : () => _save({item.analyte: {'origin': 'confirm'}}),
-                            child: const Text('Looks right'),
+                            child: Text(l10n.looksRightButton),
                           )
-                        : Text('Read automatically', style: t.bodySmall))
-                    : Text(item.confirmedByRole == 'doctor' ? 'Checked by doctor' : (item.readAutomatically ? 'Checked by you' : 'You'), style: t.bodySmall),
+                        : Text(l10n.readAutomaticallyLabel, style: t.bodySmall))
+                    : Text(item.confirmedByRole == 'doctor' ? l10n.checkedByDoctorLabel : (item.readAutomatically ? l10n.checkedByYouLabel : l10n.commonYou), style: t.bodySmall),
               ),
           if (v.values.any((i) => i.needsCheck))
             Padding(
               padding: const EdgeInsets.only(top: AppSpacing.xs),
-              child: Text('Read automatically: please check these against the report. Correct them with "Add or correct values" if needed.', style: t.bodySmall),
+              child: Text(l10n.readAutoCheckNote, style: t.bodySmall),
             ),
           if (v.suggestions.isNotEmpty && canEdit) ...[
             const SizedBox(height: AppSpacing.md),
@@ -110,7 +112,7 @@ class _ReportValuesSectionState extends ConsumerState<ReportValuesSection> {
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Found in the AI summary. Please check them against the report before confirming:', style: t.bodySmall),
+                  Text(l10n.foundInAiSummaryNote, style: t.bodySmall),
                   const SizedBox(height: AppSpacing.xs),
                   for (final s in v.suggestions) Text('• ${s.label}: ${_num(s.enteredValue)} ${s.enteredUnit}', style: t.bodyMedium),
                   const SizedBox(height: AppSpacing.sm),
@@ -118,7 +120,7 @@ class _ReportValuesSectionState extends ConsumerState<ReportValuesSection> {
                     onPressed: _saving
                         ? null
                         : () => _save({for (final s in v.suggestions) s.analyte: {'value': s.enteredValue, 'unit': s.enteredUnit, 'origin': 'ai_suggestion'}}),
-                    child: const Text('These match the report'),
+                    child: Text(l10n.theseMatchReportButton),
                   ),
                 ]),
               ),
@@ -129,9 +131,9 @@ class _ReportValuesSectionState extends ConsumerState<ReportValuesSection> {
             Wrap(spacing: AppSpacing.sm, runSpacing: AppSpacing.sm, children: [
               if (v.values.isEmpty)
                 FilledButton.tonalIcon(
-                  onPressed: _saving ? null : _readAgain,
+                  onPressed: _saving ? null : () => _readAgain(l10n),
                   icon: const Icon(Icons.document_scanner_outlined),
-                  label: const Text('Read values from this report'),
+                  label: Text(l10n.readValuesFromReportButton),
                 ),
               OutlinedButton.icon(
                 onPressed: _saving
@@ -145,7 +147,7 @@ class _ReportValuesSectionState extends ConsumerState<ReportValuesSection> {
                         if (changes != null) await _save(changes);
                       },
                 icon: const Icon(Icons.edit_note),
-                label: Text(v.values.isEmpty ? 'Add values yourself' : 'Add or correct values'),
+                label: Text(v.values.isEmpty ? l10n.addValuesYourselfButton : l10n.addOrCorrectValuesButton),
               ),
             ]),
           ],
@@ -187,7 +189,7 @@ class _ReportValuesFormState extends State<ReportValuesForm> {
     super.dispose();
   }
 
-  void _submit() {
+  void _submit(AppLocalizations l10n) {
     final changes = <String, Object?>{};
     for (final a in widget.values.analytes) {
       final existing = widget.values.valueOf(a.key);
@@ -202,7 +204,7 @@ class _ReportValuesFormState extends State<ReportValuesForm> {
       }
       final number = double.tryParse(text);
       if (number == null) {
-        setState(() => _error = 'Enter ${a.label} as a number, exactly as in the report.');
+        setState(() => _error = l10n.enterAsNumberError(a.label));
         return;
       }
       if (existing == null || existing.enteredValue != number || existing.enteredUnit != _units[a.key]) {
@@ -215,15 +217,16 @@ class _ReportValuesFormState extends State<ReportValuesForm> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
-            Text('Values from this report', style: t.titleLarge),
+            Text(l10n.valuesFromReportHeader, style: t.titleLarge),
             const SizedBox(height: AppSpacing.xs),
-            Text('Report date ${Fmt.date(widget.values.reportDate)}. Leave a value empty if the report doesn\'t show it.', style: t.bodySmall),
+            Text(l10n.reportValuesFormSubtitle(Fmt.date(widget.values.reportDate)), style: t.bodySmall),
             const SizedBox(height: AppSpacing.lg),
             for (final a in widget.values.analytes)
               if (!a.isClassification)
@@ -251,16 +254,16 @@ class _ReportValuesFormState extends State<ReportValuesForm> {
                 )
               else ...[
                 Text(a.label, style: t.titleSmall),
-                Text('Only if the report itself states it. SUSTHITI never works this out from the numbers.', style: t.bodySmall),
+                Text(l10n.classificationOnlyIfStatedNote, style: t.bodySmall),
                 const SizedBox(height: AppSpacing.sm),
                 Wrap(spacing: AppSpacing.sm, runSpacing: AppSpacing.sm, children: [
                   for (final o in a.options) ChoiceChip(label: Text(o.label), selected: _classification == o.value, onSelected: (_) => setState(() => _classification = o.value)),
-                  ChoiceChip(label: const Text('Not stated'), selected: _classification == null, onSelected: (_) => setState(() => _classification = null)),
+                  ChoiceChip(label: Text(l10n.notStatedChip), selected: _classification == null, onSelected: (_) => setState(() => _classification = null)),
                 ]),
                 const SizedBox(height: AppSpacing.md),
               ],
             if (_error != null) Padding(padding: const EdgeInsets.only(bottom: AppSpacing.sm), child: Text(_error!, style: const TextStyle(color: AppColors.error))),
-            FilledButton(onPressed: _submit, child: const Text('Save values')),
+            FilledButton(onPressed: () => _submit(l10n), child: Text(l10n.saveValuesButton)),
           ]),
         ),
       ),

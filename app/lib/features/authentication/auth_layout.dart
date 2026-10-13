@@ -7,6 +7,7 @@ import '../../core/constants/app_assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/widgets/brand.dart';
+import '../../l10n/app_localizations.dart';
 
 export '../../core/widgets/brand.dart' show BrandMark;
 
@@ -22,6 +23,7 @@ class AuthLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final wide = MediaQuery.sizeOf(context).width >= Breakpoints.desktop;
     final form = SafeArea(
       child: Center(
@@ -59,13 +61,13 @@ class AuthLayout extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.xxl),
-              Text('Understand your health. Track your journey. Stay connected with your doctor.',
+              Text(l10n.authTaglineHeadline,
                   style: t.titleMedium?.copyWith(color: AppColors.primaryDeep, height: 1.4), textAlign: TextAlign.center),
               const SizedBox(height: AppSpacing.sm),
-              Text('Diabetes-focused longitudinal health monitoring for patients and doctors.',
+              Text(l10n.authTaglineSubtitle,
                   style: t.bodyMedium?.copyWith(color: AppColors.textSecondary), textAlign: TextAlign.center),
               const Spacer(),
-              Text('SUSTHITI provides AI-assisted informational insights and does not replace professional medical diagnosis, treatment, or emergency care.', style: t.bodySmall),
+              Text(l10n.appDisclaimerText, style: t.bodySmall),
             ]),
           ),
         ),

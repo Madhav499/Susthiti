@@ -19,6 +19,7 @@ import '../../core/widgets/responsive_table.dart';
 import '../../data/models/patient.dart';
 import '../../data/models/system.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../authentication/auth_controller.dart';
 import 'admin_common.dart';
 
@@ -42,8 +43,9 @@ class AdminDashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return AppPage(
-      title: 'Admin',
+      title: l10n.adminDashboardTitle,
       large: true,
       brand: true,
       body: PageBody(onRefresh: () async => ref.invalidate(adminDashboardProvider), children: [
@@ -54,43 +56,43 @@ class AdminDashboardScreen extends ConsumerWidget {
             int m(String k) => d.metrics[k] ?? 0;
             return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               ResponsiveGrid(minItemWidth: 170, maxColumns: 5, children: [
-                MetricTile(icon: Icons.medical_services_outlined, label: 'Doctors', value: '${m('total_doctors')}', caption: '${m('active_doctors')} active', onTap: () => context.go('/a/doctors')),
-                MetricTile(icon: Icons.people_outline, label: 'Patients', value: '${m('total_patients')}', caption: 'registered', onTap: () => context.go('/a/patients')),
-                MetricTile(icon: Icons.person_pin_outlined, label: 'Active patients', value: '${m('active_patients')}', caption: 'in the last 30 days'),
-                MetricTile(icon: Icons.hourglass_empty, label: 'Pending requests', value: '${m('pending_requests')}', caption: 'doctor access', onTap: () => context.go('/a/access')),
+                MetricTile(icon: Icons.medical_services_outlined, label: l10n.navDoctors, value: '${m('total_doctors')}', caption: l10n.adminActiveCountCaption('${m('active_doctors')}'), onTap: () => context.go('/a/doctors')),
+                MetricTile(icon: Icons.people_outline, label: l10n.navPatients, value: '${m('total_patients')}', caption: l10n.adminRegisteredCaption, onTap: () => context.go('/a/patients')),
+                MetricTile(icon: Icons.person_pin_outlined, label: l10n.adminActivePatientsLabel, value: '${m('active_patients')}', caption: l10n.adminLast30DaysCaption),
+                MetricTile(icon: Icons.hourglass_empty, label: l10n.docPendingRequests, value: '${m('pending_requests')}', caption: l10n.adminDoctorAccessCaption, onTap: () => context.go('/a/access')),
               ]),
               const SizedBox(height: AppSpacing.section),
-              const SectionHeader('Operational overview', subtitle: 'Aggregate counts only — never clinical content.'),
+              SectionHeader(l10n.adminOperationalOverviewHeader, subtitle: l10n.adminOperationalOverviewSubtitle),
               ResponsiveGrid(minItemWidth: 170, maxColumns: 5, children: [
-                MetricTile(icon: Icons.event_available_outlined, label: 'Appointments', value: '${m('appointments_7d')}', caption: 'in the next 7 days'),
-                MetricTile(icon: Icons.event_repeat_outlined, label: 'Follow-ups', value: '${m('follow_ups_scheduled')}', caption: 'scheduled'),
-                MetricTile(icon: Icons.local_hospital_outlined, label: 'Surgeries', value: '${m('surgeries_scheduled')}', caption: 'scheduled'),
-                MetricTile(icon: Icons.description_outlined, label: 'Reports', value: '${m('reports_7d')}', caption: 'uploaded in the last 7 days'),
+                MetricTile(icon: Icons.event_available_outlined, label: l10n.navAppointments, value: '${m('appointments_7d')}', caption: l10n.docAppointmentsCaption),
+                MetricTile(icon: Icons.event_repeat_outlined, label: l10n.navFollowUps, value: '${m('follow_ups_scheduled')}', caption: l10n.commonScheduledCaption),
+                MetricTile(icon: Icons.local_hospital_outlined, label: l10n.navSurgeries, value: '${m('surgeries_scheduled')}', caption: l10n.commonScheduledCaption),
+                MetricTile(icon: Icons.description_outlined, label: l10n.navReports, value: '${m('reports_7d')}', caption: l10n.adminUploadedLast7Days),
                 MetricTile(
                   icon: Icons.notifications_off_outlined,
-                  label: 'Failed pushes',
+                  label: l10n.adminFailedPushesLabel,
                   value: '${m('failed_push_notifications_7d')}',
-                  caption: 'in the last 7 days',
+                  caption: l10n.docNewReportsCaption,
                   onTap: () => context.push('/a/notifications'),
                 ),
               ]),
               const SizedBox(height: AppSpacing.section),
-              const SectionHeader('Quick actions'),
+              SectionHeader(l10n.docQuickActions),
               Wrap(spacing: AppSpacing.sm, runSpacing: AppSpacing.sm, children: [
-                FilledButton.icon(onPressed: () => context.push('/a/doctors/new'), icon: const Icon(Icons.person_add_alt_outlined), label: const Text('Add Doctor')),
-                OutlinedButton.icon(onPressed: () => context.push('/a/audit'), icon: const Icon(Icons.receipt_long_outlined), label: const Text('Audit Logs')),
-                OutlinedButton.icon(onPressed: () => context.push('/a/system'), icon: const Icon(Icons.tune), label: const Text('System Settings')),
+                FilledButton.icon(onPressed: () => context.push('/a/doctors/new'), icon: const Icon(Icons.person_add_alt_outlined), label: Text(l10n.adminAddDoctorButton)),
+                OutlinedButton.icon(onPressed: () => context.push('/a/audit'), icon: const Icon(Icons.receipt_long_outlined), label: Text(l10n.adminAuditLogsTitle)),
+                OutlinedButton.icon(onPressed: () => context.push('/a/system'), icon: const Icon(Icons.tune), label: Text(l10n.adminSystemSettingsTitle)),
               ]),
               const SizedBox(height: AppSpacing.section),
-              SectionHeader('Recent activity', action: TextButton(onPressed: () => context.push('/a/audit'), child: const Text('View all'))),
+              SectionHeader(l10n.docRecentActivity, action: TextButton(onPressed: () => context.push('/a/audit'), child: Text(l10n.commonViewAll))),
               AppCard(
                 child: d.recentActivity.isEmpty
-                    ? Text('No activity yet.', style: t.bodyMedium?.copyWith(color: AppColors.textSecondary))
+                    ? Text(l10n.adminNoActivityYetDot, style: t.bodyMedium?.copyWith(color: AppColors.textSecondary))
                     : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                         for (final a in d.recentActivity)
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 6),
-                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(a.sentence, style: t.bodyMedium), Text(Fmt.relative(a.createdAt), style: t.bodySmall)]),
+                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(a.sentence, style: t.bodyMedium), Text(Fmt.relative(l10n, a.createdAt), style: t.bodySmall)]),
                           ),
                       ]),
               ),
@@ -121,68 +123,69 @@ class _AdminDoctorsScreenState extends ConsumerState<AdminDoctorsScreen> {
     super.dispose();
   }
 
-  Future<void> _toggle(DoctorProfile d) async {
+  Future<void> _toggle(DoctorProfile d, AppLocalizations l10n) async {
     if (d.isActive) {
       final ok = await confirmAction(context,
-          title: 'Deactivate Dr. ${d.fullName}?', message: 'They will be signed out and cannot sign in. Their past records remain in patient histories.', confirmLabel: 'Deactivate', destructive: true);
+          title: l10n.adminDeactivateDoctorTitle(d.fullName), message: l10n.adminDeactivateDoctorMessage, confirmLabel: l10n.commonDeactivate, destructive: true);
       if (!ok) return;
     }
     try {
       await ref.read(adminRepositoryProvider).updateDoctor(d.id, {'is_active': !d.isActive});
       ref.invalidate(adminDoctorsProvider);
       ref.invalidate(adminDoctorProvider(d.id));
-      if (mounted) showToast(context, d.isActive ? 'Doctor deactivated' : 'Doctor reactivated');
+      if (mounted) showToast(context, d.isActive ? l10n.adminDoctorDeactivatedToast : l10n.adminDoctorReactivatedToast);
     } catch (e) {
       if (mounted) showFailure(context, e);
     }
   }
 
-  void _action(DoctorProfile d, String action) => switch (action) {
+  void _action(DoctorProfile d, String action, AppLocalizations l10n) => switch (action) {
         'edit' => context.push('/a/doctors/${d.id}/edit'),
         'patients' => context.push(adminDoctorRoute(d.id, tab: 'patients')),
         'activity' => context.push(adminDoctorRoute(d.id, tab: 'activity')),
-        'toggle' => _toggle(d),
+        'toggle' => _toggle(d, l10n),
         _ => context.push(adminDoctorRoute(d.id)),
       };
 
-  Widget _menu(DoctorProfile d) => PopupMenuButton<String>(
-        tooltip: 'Actions for Dr. ${d.fullName}',
+  Widget _menu(DoctorProfile d, AppLocalizations l10n) => PopupMenuButton<String>(
+        tooltip: l10n.adminActionsForDoctorTooltip(d.fullName),
         icon: const Icon(Icons.more_vert, color: AppColors.textSecondary),
-        onSelected: (a) => _action(d, a),
+        onSelected: (a) => _action(d, a, l10n),
         itemBuilder: (_) => [
-          const PopupMenuItem(value: 'view', child: Text('View profile')),
-          const PopupMenuItem(value: 'edit', child: Text('Edit doctor')),
-          const PopupMenuItem(value: 'patients', child: Text('View patients')),
-          const PopupMenuItem(value: 'activity', child: Text('View activity')),
+          PopupMenuItem(value: 'view', child: Text(l10n.commonViewProfile)),
+          PopupMenuItem(value: 'edit', child: Text(l10n.adminEditDoctorMenuItem)),
+          PopupMenuItem(value: 'patients', child: Text(l10n.adminViewPatientsMenuItem)),
+          PopupMenuItem(value: 'activity', child: Text(l10n.commonViewActivity)),
           const PopupMenuDivider(),
-          PopupMenuItem(value: 'toggle', child: Text(d.isActive ? 'Deactivate' : 'Reactivate', style: TextStyle(color: d.isActive ? AppColors.errorText : null))),
+          PopupMenuItem(value: 'toggle', child: Text(d.isActive ? l10n.commonDeactivate : l10n.commonReactivate, style: TextStyle(color: d.isActive ? AppColors.errorText : null))),
         ],
       );
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final key = (query: _query, status: _status);
     final t = Theme.of(context).textTheme;
     final mobile = context.screenSize == ScreenSize.mobile;
-    String lastActive(DoctorProfile d) => d.lastActivityAt == null ? 'No activity yet' : 'Last active ${Fmt.relative(d.lastActivityAt)}';
+    String lastActive(DoctorProfile d) => d.lastActivityAt == null ? l10n.adminNoActivityShort : l10n.adminLastActiveLabel(Fmt.relative(l10n, d.lastActivityAt));
     return AppPage(
-      title: 'Doctors',
+      title: l10n.navDoctors,
       large: true,
       actions: [
-        if (!mobile) FilledButton.icon(onPressed: () => context.push('/a/doctors/new'), icon: const Icon(Icons.person_add_alt_outlined, size: 18), label: const Text('Add Doctor')),
+        if (!mobile) FilledButton.icon(onPressed: () => context.push('/a/doctors/new'), icon: const Icon(Icons.person_add_alt_outlined, size: 18), label: Text(l10n.adminAddDoctorButton)),
       ],
-      floatingActionButton: mobile ? FloatingActionButton.extended(onPressed: () => context.push('/a/doctors/new'), icon: const Icon(Icons.person_add_alt_outlined), label: const Text('Add Doctor')) : null,
+      floatingActionButton: mobile ? FloatingActionButton.extended(onPressed: () => context.push('/a/doctors/new'), icon: const Icon(Icons.person_add_alt_outlined), label: Text(l10n.adminAddDoctorButton)) : null,
       body: PageBody(onRefresh: () async => ref.invalidate(adminDoctorsProvider(key)), children: [
         Wrap(spacing: AppSpacing.md, runSpacing: AppSpacing.md, crossAxisAlignment: WrapCrossAlignment.center, children: [
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 420),
             child: TextField(
-              decoration: const InputDecoration(hintText: 'Search by name, email or Doctor ID', prefixIcon: Icon(Icons.search)),
+              decoration: InputDecoration(hintText: l10n.adminDoctorSearchHint, prefixIcon: const Icon(Icons.search)),
               onChanged: (v) => _debouncer(() => setState(() => _query = v.trim())),
             ),
           ),
           Wrap(spacing: AppSpacing.sm, children: [
-            for (final s in const {'all': 'All', 'active': 'Active', 'inactive': 'Inactive'}.entries)
+            for (final s in {'all': l10n.notifFilterAll, 'active': l10n.commonActive, 'inactive': l10n.commonInactive}.entries)
               ChoiceChip(label: Text(s.value), selected: _status == s.key, onSelected: (_) => setState(() => _status = s.key)),
           ]),
         ]),
@@ -192,34 +195,34 @@ class _AdminDoctorsScreenState extends ConsumerState<AdminDoctorsScreen> {
           onRetry: () => ref.invalidate(adminDoctorsProvider(key)),
           loading: const SkeletonList(count: 5),
           data: (items) => items.isEmpty
-              ? EmptyState(icon: Icons.medical_services_outlined, title: 'No doctors found.', actionLabel: 'Add Doctor', onAction: () => context.push('/a/doctors/new'))
+              ? EmptyState(icon: Icons.medical_services_outlined, title: l10n.adminNoDoctorsFound, actionLabel: l10n.adminAddDoctorButton, onAction: () => context.push('/a/doctors/new'))
               : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  Text('Doctors (${items.length})', style: t.labelMedium),
+                  Text(l10n.adminDoctorsCountHeader(items.length), style: t.labelMedium),
                   const SizedBox(height: AppSpacing.sm),
                   ResponsiveTable<DoctorProfile>(
                     rows: items,
                     onRowTap: (d) => context.push(adminDoctorRoute(d.id)),
                     columns: [
                       TableColumnSpec(
-                        'Doctor',
+                        l10n.adminColDoctor,
                         (d) => Row(children: [
                           SusthitiAvatar(d.fullName, size: 36),
                           const SizedBox(width: AppSpacing.md),
-                          Expanded(child: CellText('Dr. ${d.fullName}', secondary: d.email, bold: true)),
+                          Expanded(child: CellText(l10n.commonDrName(d.fullName), secondary: d.email, bold: true)),
                           if (d.isDemo) const DemoBadge(),
                         ]),
                         flex: 4,
                       ),
-                      TableColumnSpec('Doctor ID', (d) => CellText(d.doctorCode), flex: 3),
-                      TableColumnSpec('Specialization', (d) => CellText(d.specialization ?? '—'), flex: 3),
-                      TableColumnSpec('Contact', (d) => CellText(d.phone ?? '—'), flex: 2, tabletVisible: false),
-                      TableColumnSpec('Patients', (d) => CellText('${d.activePatients ?? 0} active'), flex: 2),
-                      TableColumnSpec('Last activity', (d) => CellText(d.lastActivityAt == null ? '—' : Fmt.relative(d.lastActivityAt)), flex: 2, tabletVisible: false),
-                      TableColumnSpec('Status', (d) => PillCell(activePill(d.isActive)), flex: 2),
+                      TableColumnSpec(l10n.adminColDoctorId, (d) => CellText(d.doctorCode), flex: 3),
+                      TableColumnSpec(l10n.commonSpecializationLabel, (d) => CellText(d.specialization ?? '—'), flex: 3),
+                      TableColumnSpec(l10n.commonContactHeader, (d) => CellText(d.phone ?? '—'), flex: 2, tabletVisible: false),
+                      TableColumnSpec(l10n.adminColPatients, (d) => CellText(l10n.adminActiveCountCaption('${d.activePatients ?? 0}')), flex: 2),
+                      TableColumnSpec(l10n.adminColLastActivity, (d) => CellText(d.lastActivityAt == null ? '—' : Fmt.relative(l10n, d.lastActivityAt)), flex: 2, tabletVisible: false),
+                      TableColumnSpec(l10n.adminColStatus, (d) => PillCell(activePill(l10n, d.isActive)), flex: 2),
                     ],
                     trailing: (d) => Row(mainAxisSize: MainAxisSize.min, children: [
-                      TextButton(onPressed: () => context.push(adminDoctorRoute(d.id)), child: const Text('View Profile')),
-                      _menu(d),
+                      TextButton(onPressed: () => context.push(adminDoctorRoute(d.id)), child: Text(l10n.commonViewProfileButton)),
+                      _menu(d, l10n),
                     ]),
                     mobileCard: (d) => AppCard(
                       onTap: () => context.push(adminDoctorRoute(d.id)),
@@ -229,14 +232,14 @@ class _AdminDoctorsScreenState extends ConsumerState<AdminDoctorsScreen> {
                         const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text('Dr. ${d.fullName}', style: t.titleSmall, overflow: TextOverflow.ellipsis),
+                            Text(l10n.commonDrName(d.fullName), style: t.titleSmall, overflow: TextOverflow.ellipsis),
                             Text([d.doctorCode, ?d.specialization].join(' · '), style: t.bodySmall, overflow: TextOverflow.ellipsis),
-                            Text('${d.activePatients ?? 0} active patients · ${lastActive(d)}', style: t.bodySmall, overflow: TextOverflow.ellipsis),
+                            Text(l10n.adminDoctorRowCaption(d.activePatients ?? 0, lastActive(d)), style: t.bodySmall, overflow: TextOverflow.ellipsis),
                             const SizedBox(height: AppSpacing.xs),
-                            activePill(d.isActive),
+                            activePill(l10n, d.isActive),
                           ]),
                         ),
-                        _menu(d),
+                        _menu(d, l10n),
                       ]),
                     ),
                   ),
@@ -278,7 +281,7 @@ class _DoctorFormScreenState extends ConsumerState<DoctorFormScreen> {
 
   String? _v(TextEditingController c) => c.text.trim().isEmpty ? null : c.text.trim();
 
-  Future<void> _save() async {
+  Future<void> _save(AppLocalizations l10n) async {
     if (!_form.currentState!.validate()) return;
     final repo = ref.read(adminRepositoryProvider);
     try {
@@ -295,18 +298,18 @@ class _DoctorFormScreenState extends ConsumerState<DoctorFormScreen> {
       ref.invalidate(adminDoctorsProvider);
       if (_editing) ref.invalidate(adminDoctorProvider(widget.doctor!.id));
       if (!mounted) return;
-      showToast(context, _editing ? 'Doctor updated' : 'Doctor account created. Share the temporary password securely.');
+      showToast(context, _editing ? l10n.adminDoctorUpdatedToast : l10n.adminDoctorCreatedToast);
       context.pop();
     } on Failure catch (e) {
       if (mounted) showFailure(context, e);
     }
   }
 
-  Future<void> _toggleActive() async {
+  Future<void> _toggleActive(AppLocalizations l10n) async {
     final next = !_active;
     if (!next) {
       final ok = await confirmAction(context,
-          title: 'Deactivate doctor?', message: 'They will be signed out and cannot sign in. Their past records remain in patient histories.', confirmLabel: 'Deactivate', destructive: true);
+          title: l10n.adminDeactivateDoctorConfirmTitle, message: l10n.adminDeactivateDoctorMessage, confirmLabel: l10n.commonDeactivate, destructive: true);
       if (!ok) return;
     }
     try {
@@ -314,7 +317,7 @@ class _DoctorFormScreenState extends ConsumerState<DoctorFormScreen> {
       ref.invalidate(adminDoctorsProvider);
       ref.invalidate(adminDoctorProvider(widget.doctor!.id));
       setState(() => _active = next);
-      if (mounted) showToast(context, next ? 'Doctor reactivated' : 'Doctor deactivated');
+      if (mounted) showToast(context, next ? l10n.adminDoctorReactivatedToast : l10n.adminDoctorDeactivatedToast);
     } catch (e) {
       if (mounted) showFailure(context, e);
     }
@@ -322,9 +325,10 @@ class _DoctorFormScreenState extends ConsumerState<DoctorFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final t = Theme.of(context).textTheme;
     return AppPage(
-      title: _editing ? 'Edit Doctor' : 'Add Doctor',
+      title: _editing ? l10n.adminEditDoctorTitle : l10n.adminAddDoctorButton,
       body: PageBody(maxWidth: 600, children: [
         if (_editing) ...[
           AppCard(
@@ -333,10 +337,10 @@ class _DoctorFormScreenState extends ConsumerState<DoctorFormScreen> {
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(widget.doctor!.doctorCode, style: t.titleSmall),
                   Text(widget.doctor!.email, style: t.bodySmall),
-                  if (widget.doctor!.createdAt != null) Text('Created ${Fmt.date(widget.doctor!.createdAt)}', style: t.bodySmall),
+                  if (widget.doctor!.createdAt != null) Text(l10n.commonCreatedOn(Fmt.date(widget.doctor!.createdAt)), style: t.bodySmall),
                 ]),
               ),
-              StatusPill(_active ? 'Active' : 'Inactive', tone: _active ? StatusTone.positive : StatusTone.inactive),
+              StatusPill(_active ? l10n.commonActive : l10n.commonInactive, tone: _active ? StatusTone.positive : StatusTone.inactive),
             ]),
           ),
           const SizedBox(height: AppSpacing.xl),
@@ -344,25 +348,25 @@ class _DoctorFormScreenState extends ConsumerState<DoctorFormScreen> {
         Form(
           key: _form,
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            AppTextField(label: 'Full name', controller: _name, validator: (v) => Validators.required(v, 'Full name'), textCapitalization: TextCapitalization.words),
+            AppTextField(label: l10n.authFullName, controller: _name, validator: (v) => Validators.required(l10n, v, l10n.authFullName), textCapitalization: TextCapitalization.words),
             if (!_editing) ...[
-              AppTextField(label: 'Email', controller: _email, keyboardType: TextInputType.emailAddress, validator: Validators.email),
-              PasswordField(controller: _password, label: 'Temporary password', newPassword: true, validator: Validators.password, helper: 'The doctor should change it after first sign-in.'),
+              AppTextField(label: l10n.authEmailLabel, controller: _email, keyboardType: TextInputType.emailAddress, validator: (v) => Validators.email(l10n, v)),
+              PasswordField(controller: _password, label: l10n.adminTemporaryPasswordLabel, newPassword: true, validator: (v) => Validators.password(l10n, v), helper: l10n.adminTempPasswordHelper),
             ],
-            AppTextField(label: 'Specialization', controller: _specialization, optional: true, hint: 'e.g. Endocrinology'),
+            AppTextField(label: l10n.commonSpecializationLabel, controller: _specialization, optional: true, hint: l10n.adminSpecializationHint),
             AppTextField(
-              label: 'License / registration number',
+              label: l10n.adminLicenseNumberLabel,
               controller: _license,
-              validator: (v) => (v ?? '').trim().length < 3 ? 'Enter the doctor\'s license or registration number.' : null,
+              validator: (v) => (v ?? '').trim().length < 3 ? l10n.adminLicenseValidation : null,
             ),
-            AppTextField(label: 'Phone', controller: _phone, optional: true, keyboardType: TextInputType.phone, validator: Validators.optionalPhone),
-            BusyButton(label: _editing ? 'Save changes' : 'Create doctor account', onPressed: _save, expand: true),
+            AppTextField(label: l10n.authPhone, controller: _phone, optional: true, keyboardType: TextInputType.phone, validator: (v) => Validators.optionalPhone(l10n, v)),
+            BusyButton(label: _editing ? l10n.commonSaveChanges : l10n.adminCreateDoctorAccountButton, onPressed: () => _save(l10n), expand: true),
             if (_editing) ...[
               const SizedBox(height: AppSpacing.md),
               OutlinedButton(
-                onPressed: _toggleActive,
+                onPressed: () => _toggleActive(l10n),
                 style: _active ? OutlinedButton.styleFrom(foregroundColor: AppColors.error, side: const BorderSide(color: AppColors.error)) : null,
-                child: Text(_active ? 'Deactivate doctor' : 'Reactivate doctor'),
+                child: Text(_active ? l10n.adminDeactivateDoctorButton : l10n.adminReactivateDoctorButton),
               ),
             ],
           ]),
@@ -393,47 +397,48 @@ class _AdminPatientsScreenState extends ConsumerState<AdminPatientsScreen> {
     super.dispose();
   }
 
-  Future<void> _toggle(AdminPatient p) async {
+  Future<void> _toggle(AdminPatient p, AppLocalizations l10n) async {
     if (p.isActive) {
-      final ok = await confirmAction(context, title: 'Deactivate ${p.fullName}?', message: 'They will be signed out and cannot sign in. Their records are kept.', confirmLabel: 'Deactivate', destructive: true);
+      final ok = await confirmAction(context, title: l10n.adminDeactivatePatientTitle(p.fullName), message: l10n.adminDeactivatePatientMessage, confirmLabel: l10n.commonDeactivate, destructive: true);
       if (!ok) return;
     }
     try {
       await ref.read(adminRepositoryProvider).setPatientActive(p.id, !p.isActive);
       ref.invalidate(adminPatientsProvider(_key));
       ref.invalidate(adminPatientProvider(p.id));
-      if (mounted) showToast(context, p.isActive ? 'Patient deactivated' : 'Patient reactivated');
+      if (mounted) showToast(context, p.isActive ? l10n.adminPatientDeactivatedToast : l10n.adminPatientReactivatedToast);
     } catch (e) {
       if (mounted) showFailure(context, e);
     }
   }
 
-  void _action(AdminPatient p, String action) => switch (action) {
+  void _action(AdminPatient p, String action, AppLocalizations l10n) => switch (action) {
         'edit' => context.push('/a/patients/${p.id}/edit'),
         'reports' || 'activity' || 'doctors' => context.push(adminPatientRoute(p.id, tab: action)),
         'upload' => context.push('/a/patients/${p.id}/upload'),
-        'toggle' => _toggle(p),
+        'toggle' => _toggle(p, l10n),
         _ => context.push(adminPatientRoute(p.id)),
       };
 
-  Widget _menu(AdminPatient p) => PopupMenuButton<String>(
-        tooltip: 'Actions for ${p.fullName}',
+  Widget _menu(AdminPatient p, AppLocalizations l10n) => PopupMenuButton<String>(
+        tooltip: l10n.adminActionsForPatientTooltip(p.fullName),
         icon: const Icon(Icons.more_vert, color: AppColors.textSecondary),
-        onSelected: (a) => _action(p, a),
+        onSelected: (a) => _action(p, a, l10n),
         itemBuilder: (_) => [
-          const PopupMenuItem(value: 'view', child: Text('View profile')),
-          const PopupMenuItem(value: 'edit', child: Text('Edit patient')),
-          const PopupMenuItem(value: 'reports', child: Text('View reports')),
-          const PopupMenuItem(value: 'activity', child: Text('View activity')),
-          const PopupMenuItem(value: 'doctors', child: Text('View doctors')),
-          const PopupMenuItem(value: 'upload', child: Text('Upload report for patient')),
+          PopupMenuItem(value: 'view', child: Text(l10n.commonViewProfile)),
+          PopupMenuItem(value: 'edit', child: Text(l10n.adminEditPatientMenuItem)),
+          PopupMenuItem(value: 'reports', child: Text(l10n.adminViewReportsMenuItem)),
+          PopupMenuItem(value: 'activity', child: Text(l10n.commonViewActivity)),
+          PopupMenuItem(value: 'doctors', child: Text(l10n.adminViewDoctorsMenuItem)),
+          PopupMenuItem(value: 'upload', child: Text(l10n.adminUploadReportForPatientMenuItem)),
           const PopupMenuDivider(),
-          PopupMenuItem(value: 'toggle', child: Text(p.isActive ? 'Deactivate account' : 'Reactivate account', style: TextStyle(color: p.isActive ? AppColors.errorText : null))),
+          PopupMenuItem(value: 'toggle', child: Text(p.isActive ? l10n.adminDeactivateAccountMenuItem : l10n.adminReactivateAccountMenuItem, style: TextStyle(color: p.isActive ? AppColors.errorText : null))),
         ],
       );
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final t = Theme.of(context).textTheme;
     String ageGender(AdminPatient p) {
       final parts = [if (p.age != null) '${p.age}', ?p.gender];
@@ -441,19 +446,19 @@ class _AdminPatientsScreenState extends ConsumerState<AdminPatientsScreen> {
     }
 
     return AppPage(
-      title: 'Patients',
+      title: l10n.navPatients,
       large: true,
       body: PageBody(onRefresh: () async => ref.invalidate(adminPatientsProvider(_key)), children: [
         Wrap(spacing: AppSpacing.md, runSpacing: AppSpacing.md, crossAxisAlignment: WrapCrossAlignment.center, children: [
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 420),
             child: TextField(
-              decoration: const InputDecoration(hintText: 'Search by name, email or Patient ID', prefixIcon: Icon(Icons.search)),
+              decoration: InputDecoration(hintText: l10n.adminPatientSearchHint, prefixIcon: const Icon(Icons.search)),
               onChanged: (v) => _debouncer(() => setState(() => _query = v.trim())),
             ),
           ),
           Wrap(spacing: AppSpacing.sm, children: [
-            for (final s in const {'all': 'All', 'active': 'Active', 'inactive': 'Inactive'}.entries)
+            for (final s in {'all': l10n.notifFilterAll, 'active': l10n.commonActive, 'inactive': l10n.commonInactive}.entries)
               ChoiceChip(label: Text(s.value), selected: _status == s.key, onSelected: (_) => setState(() => _status = s.key)),
           ]),
         ]),
@@ -463,16 +468,16 @@ class _AdminPatientsScreenState extends ConsumerState<AdminPatientsScreen> {
           onRetry: () => ref.invalidate(adminPatientsProvider(_key)),
           loading: const SkeletonList(count: 5),
           data: (r) => r.items.isEmpty
-              ? const EmptyState(icon: Icons.people_outline, title: 'No patients found.')
+              ? EmptyState(icon: Icons.people_outline, title: l10n.adminNoPatientsFound)
               : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  Text(r.total > r.items.length ? 'Patients (${r.total}) · showing the ${r.items.length} most recent. Search to find others.' : 'Patients (${r.total})', style: t.labelMedium),
+                  Text(r.total > r.items.length ? l10n.adminPatientsCountShowing(r.total, r.items.length) : l10n.adminPatientsCountHeader(r.total), style: t.labelMedium),
                   const SizedBox(height: AppSpacing.sm),
                   ResponsiveTable<AdminPatient>(
                     rows: r.items,
                     onRowTap: (p) => context.push(adminPatientRoute(p.id)),
                     columns: [
                       TableColumnSpec(
-                        'Patient',
+                        l10n.adminColPatient,
                         (p) => Row(children: [
                           SusthitiAvatar(p.fullName, size: 36),
                           const SizedBox(width: AppSpacing.md),
@@ -481,16 +486,16 @@ class _AdminPatientsScreenState extends ConsumerState<AdminPatientsScreen> {
                         ]),
                         flex: 4,
                       ),
-                      TableColumnSpec('Patient ID', (p) => CellText(p.patientCode), flex: 3),
-                      TableColumnSpec('Age / gender', (p) => CellText(ageGender(p)), flex: 2, tabletVisible: false),
-                      TableColumnSpec('Diabetes status', (p) => PillCell(diabetesStatusPill(p.latestRiskCategory)), flex: 3),
-                      TableColumnSpec('Doctors', (p) => CellText('${p.approvedDoctors}'), flex: 1, tabletVisible: false),
-                      TableColumnSpec('Last activity', (p) => CellText(p.lastActivityAt == null ? '—' : Fmt.relative(p.lastActivityAt)), flex: 2),
-                      TableColumnSpec('Status', (p) => PillCell(activePill(p.isActive)), flex: 2),
+                      TableColumnSpec(l10n.doctorPatientIdLabel, (p) => CellText(p.patientCode), flex: 3),
+                      TableColumnSpec(l10n.adminColAgeGender, (p) => CellText(ageGender(p)), flex: 2, tabletVisible: false),
+                      TableColumnSpec(l10n.adminColDiabetesStatus, (p) => PillCell(diabetesStatusPill(l10n, p.latestRiskCategory)), flex: 3),
+                      TableColumnSpec(l10n.navDoctors, (p) => CellText('${p.approvedDoctors}'), flex: 1, tabletVisible: false),
+                      TableColumnSpec(l10n.adminColLastActivity, (p) => CellText(p.lastActivityAt == null ? '—' : Fmt.relative(l10n, p.lastActivityAt)), flex: 2),
+                      TableColumnSpec(l10n.adminColStatus, (p) => PillCell(activePill(l10n, p.isActive)), flex: 2),
                     ],
                     trailing: (p) => Row(mainAxisSize: MainAxisSize.min, children: [
-                      TextButton(onPressed: () => context.push(adminPatientRoute(p.id)), child: const Text('View Profile')),
-                      _menu(p),
+                      TextButton(onPressed: () => context.push(adminPatientRoute(p.id)), child: Text(l10n.commonViewProfileButton)),
+                      _menu(p, l10n),
                     ]),
                     mobileCard: (p) => AppCard(
                       onTap: () => context.push(adminPatientRoute(p.id)),
@@ -503,15 +508,15 @@ class _AdminPatientsScreenState extends ConsumerState<AdminPatientsScreen> {
                             Text(p.fullName, style: t.titleSmall, overflow: TextOverflow.ellipsis),
                             Text([p.patientCode, if (p.age != null) '${p.age} yrs', ?p.gender].join(' · '), style: t.bodySmall, overflow: TextOverflow.ellipsis),
                             Text(
-                              '${p.approvedDoctors} doctor${p.approvedDoctors == 1 ? '' : 's'} · Last activity ${p.lastActivityAt == null ? '—' : Fmt.relative(p.lastActivityAt)}',
+                              l10n.adminPatientRowCaption(p.approvedDoctors, p.lastActivityAt == null ? '—' : Fmt.relative(l10n, p.lastActivityAt)),
                               style: t.bodySmall,
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: AppSpacing.xs),
-                            Wrap(spacing: AppSpacing.xs, runSpacing: AppSpacing.xs, children: [diabetesStatusPill(p.latestRiskCategory), activePill(p.isActive)]),
+                            Wrap(spacing: AppSpacing.xs, runSpacing: AppSpacing.xs, children: [diabetesStatusPill(l10n, p.latestRiskCategory), activePill(l10n, p.isActive)]),
                           ]),
                         ),
-                        _menu(p),
+                        _menu(p, l10n),
                       ]),
                     ),
                   ),
@@ -542,11 +547,12 @@ class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return AppPage(
-      title: 'Audit Logs',
+      title: l10n.adminAuditLogsTitle,
       body: PageBody(maxWidth: 900, onRefresh: () async => ref.invalidate(auditLogsProvider(_query)), children: [
         TextField(
-          decoration: const InputDecoration(hintText: 'Search by action, person or reference', prefixIcon: Icon(Icons.search)),
+          decoration: InputDecoration(hintText: l10n.adminAuditSearchHint, prefixIcon: const Icon(Icons.search)),
           onChanged: (v) => _debouncer(() => setState(() => _query = v.trim())),
         ),
         const SizedBox(height: AppSpacing.lg),
@@ -554,7 +560,7 @@ class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> {
           value: ref.watch(auditLogsProvider(_query)),
           onRetry: () => ref.invalidate(auditLogsProvider(_query)),
           data: (r) => r.items.isEmpty
-              ? const EmptyState(icon: Icons.receipt_long_outlined, title: 'No audit entries.')
+              ? EmptyState(icon: Icons.receipt_long_outlined, title: l10n.adminNoAuditEntries)
               : AppCard(
                   padding: EdgeInsets.zero,
                   child: Column(children: [
@@ -565,10 +571,10 @@ class _AuditLogsScreenState extends ConsumerState<AuditLogsScreen> {
                         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Expanded(
                             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Text(Fmt.titleCase(r.items[i].action), style: t.titleSmall),
+                              Text(auditActionText(l10n, r.items[i].action), style: t.titleSmall),
                               Text(
                                 [
-                                  if (r.items[i].actorName != null) '${r.items[i].actorName} (${r.items[i].actorRole ?? 'system'})',
+                                  if (r.items[i].actorName != null) '${r.items[i].actorName} (${r.items[i].actorRole ?? l10n.adminSystemRoleFallback})',
                                   ?r.items[i].entityLabel,
                                   if (r.items[i].details['patient_code'] != null) '${r.items[i].details['patient_code']}',
                                 ].join(' · '),
@@ -606,28 +612,29 @@ class _NotificationDeliveryScreenState extends ConsumerState<NotificationDeliver
         _ => StatusTone.inactive,
       };
 
-  static String _label(String? status) => switch (status) { 'sent' => 'Sent', 'failed' => 'Failed', _ => 'Not attempted' };
+  static String _label(AppLocalizations l10n, String? status) => switch (status) { 'sent' => l10n.adminPushSent, 'failed' => l10n.adminPushFailed, _ => l10n.adminPushNotAttempted };
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return AppPage(
-      title: 'Notification Delivery',
+      title: l10n.navNotificationDelivery,
       body: PageBody(maxWidth: 900, onRefresh: () async => ref.invalidate(notificationDeliveryProvider(_status)), children: [
-        Text('Push delivery status only. A notification\'s content is never shown here.', style: t.bodySmall?.copyWith(color: AppColors.textSecondary)),
+        Text(l10n.adminPushStatusOnlyNote, style: t.bodySmall?.copyWith(color: AppColors.textSecondary)),
         const SizedBox(height: AppSpacing.lg),
         Wrap(spacing: AppSpacing.sm, children: [
-          ChoiceChip(label: const Text('All'), selected: _status == null, onSelected: (_) => setState(() => _status = null)),
-          ChoiceChip(label: const Text('Sent'), selected: _status == 'sent', onSelected: (_) => setState(() => _status = 'sent')),
-          ChoiceChip(label: const Text('Failed'), selected: _status == 'failed', onSelected: (_) => setState(() => _status = 'failed')),
-          ChoiceChip(label: const Text('Not attempted'), selected: _status == 'none', onSelected: (_) => setState(() => _status = 'none')),
+          ChoiceChip(label: Text(l10n.notifFilterAll), selected: _status == null, onSelected: (_) => setState(() => _status = null)),
+          ChoiceChip(label: Text(l10n.adminPushSent), selected: _status == 'sent', onSelected: (_) => setState(() => _status = 'sent')),
+          ChoiceChip(label: Text(l10n.adminPushFailed), selected: _status == 'failed', onSelected: (_) => setState(() => _status = 'failed')),
+          ChoiceChip(label: Text(l10n.adminPushNotAttempted), selected: _status == 'none', onSelected: (_) => setState(() => _status = 'none')),
         ]),
         const SizedBox(height: AppSpacing.lg),
         AsyncBody(
           value: ref.watch(notificationDeliveryProvider(_status)),
           onRetry: () => ref.invalidate(notificationDeliveryProvider(_status)),
           data: (r) => r.items.isEmpty
-              ? const EmptyState(icon: Icons.notifications_none_outlined, title: 'No notifications match this filter.')
+              ? EmptyState(icon: Icons.notifications_none_outlined, title: l10n.adminNoNotificationsMatchFilter)
               : AppCard(
                   padding: EdgeInsets.zero,
                   child: Column(children: [
@@ -639,10 +646,10 @@ class _NotificationDeliveryScreenState extends ConsumerState<NotificationDeliver
                           Expanded(
                             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                               Text(Fmt.titleCase(r.items[i].type), style: t.titleSmall),
-                              Text(r.items[i].recipientRole ?? 'Unknown recipient', style: t.bodySmall),
+                              Text(r.items[i].recipientRole ?? l10n.adminUnknownRecipient, style: t.bodySmall),
                             ]),
                           ),
-                          StatusPill(_label(r.items[i].pushStatus), tone: _tone(r.items[i].pushStatus)),
+                          StatusPill(_label(l10n, r.items[i].pushStatus), tone: _tone(r.items[i].pushStatus)),
                           const SizedBox(width: AppSpacing.md),
                           Text(Fmt.dateTime(r.items[i].createdAt), style: t.labelSmall),
                         ]),
@@ -667,11 +674,11 @@ class _SystemSettingsScreenState extends ConsumerState<SystemSettingsScreen> {
   final _form = GlobalKey<FormState>();
   final _controllers = <String, TextEditingController>{};
 
-  static const _labels = {
-    'support_email': ('Support email', 'Shown to users who need help.'),
-    'max_upload_mb_display': ('Upload limit shown to users (MB)', 'Display only. The enforced limit is set on the server.'),
-    'maintenance_notice': ('Maintenance notice', 'Optional banner text.'),
-  };
+  static Map<String, (String, String)> _labels(AppLocalizations l10n) => {
+        'support_email': (l10n.adminSupportEmailLabel, l10n.adminSupportEmailHelper),
+        'max_upload_mb_display': (l10n.adminUploadLimitLabel, l10n.adminUploadLimitHelper),
+        'maintenance_notice': (l10n.adminMaintenanceNoticeLabel, l10n.adminMaintenanceNoticeHelper),
+      };
 
   @override
   void dispose() {
@@ -681,12 +688,12 @@ class _SystemSettingsScreenState extends ConsumerState<SystemSettingsScreen> {
     super.dispose();
   }
 
-  Future<void> _save() async {
+  Future<void> _save(AppLocalizations l10n) async {
     if (!_form.currentState!.validate()) return;
     try {
       await ref.read(adminRepositoryProvider).updateSettings({for (final e in _controllers.entries) e.key: e.value.text.trim()});
       ref.invalidate(systemSettingsProvider);
-      if (mounted) showToast(context, 'Settings saved');
+      if (mounted) showToast(context, l10n.adminSettingsSavedToast);
     } on Failure catch (e) {
       if (mounted) showFailure(context, e);
     }
@@ -695,8 +702,10 @@ class _SystemSettingsScreenState extends ConsumerState<SystemSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
+    final labels = _labels(l10n);
     return AppPage(
-      title: 'System Settings',
+      title: l10n.adminSystemSettingsTitle,
       body: PageBody(maxWidth: 700, children: [
         AsyncBody(
           value: ref.watch(systemSettingsProvider),
@@ -707,40 +716,40 @@ class _SystemSettingsScreenState extends ConsumerState<SystemSettingsScreen> {
             }
             bool on(String k) => s.status[k] == true;
             return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              const SectionHeader('Service status', subtitle: 'Secrets are configured on the server and are never shown here.'),
+              SectionHeader(l10n.adminServiceStatusHeader, subtitle: l10n.adminServiceStatusSubtitle),
               AppCard(
                 child: Column(children: [
-                  KeyValueRow('Environment', '${s.status['environment'] ?? '—'}'),
-                  KeyValueRow('AI (Google AI Studio)', on('ai_configured') ? 'Configured · ${s.status['ai_model']}' : 'Not configured',
-                      trailing: StatusPill(on('ai_configured') ? 'On' : 'Off', tone: on('ai_configured') ? StatusTone.positive : StatusTone.inactive)),
-                  KeyValueRow('Diabetes model service', on('ml_service_url_configured') ? 'URL configured' : 'Not configured',
-                      trailing: StatusPill(on('ml_service_url_configured') ? 'On' : 'Off', tone: on('ml_service_url_configured') ? StatusTone.positive : StatusTone.inactive)),
-                  KeyValueRow('Demo wearable', on('demo_wearable_enabled') ? 'Enabled (data labelled DEMO)' : 'Disabled'),
+                  KeyValueRow(l10n.adminEnvironmentLabel, '${s.status['environment'] ?? '—'}'),
+                  KeyValueRow(l10n.adminAiServiceLabel, on('ai_configured') ? l10n.adminConfiguredWithModel('${s.status['ai_model']}') : l10n.commonNotConfigured,
+                      trailing: StatusPill(on('ai_configured') ? l10n.commonOn : l10n.commonOff, tone: on('ai_configured') ? StatusTone.positive : StatusTone.inactive)),
+                  KeyValueRow(l10n.adminDiabetesModelServiceLabel, on('ml_service_url_configured') ? l10n.adminUrlConfigured : l10n.commonNotConfigured,
+                      trailing: StatusPill(on('ml_service_url_configured') ? l10n.commonOn : l10n.commonOff, tone: on('ml_service_url_configured') ? StatusTone.positive : StatusTone.inactive)),
+                  KeyValueRow(l10n.adminDemoWearableLabel, on('demo_wearable_enabled') ? l10n.adminDemoWearableEnabled : l10n.commonDisabled),
                 ]),
               ),
               const SizedBox(height: AppSpacing.section),
-              const SectionHeader('Editable settings'),
+              SectionHeader(l10n.adminEditableSettingsHeader),
               Form(
                 key: _form,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                   for (final key in _controllers.keys)
                     AppTextField(
-                      label: _labels[key]?.$1 ?? Fmt.titleCase(key),
-                      helper: _labels[key]?.$2,
+                      label: labels[key]?.$1 ?? Fmt.titleCase(key),
+                      helper: labels[key]?.$2,
                       controller: _controllers[key],
                       optional: true,
                       keyboardType: key == 'max_upload_mb_display' ? TextInputType.number : null,
                       validator: switch (key) {
-                        'support_email' => (v) => (v == null || v.trim().isEmpty) ? null : Validators.email(v),
-                        'max_upload_mb_display' => (v) => (v == null || v.trim().isEmpty) ? null : Validators.numberInRange(v, 1, 100),
+                        'support_email' => (v) => (v == null || v.trim().isEmpty) ? null : Validators.email(l10n, v),
+                        'max_upload_mb_display' => (v) => (v == null || v.trim().isEmpty) ? null : Validators.numberInRange(l10n, v, 1, 100),
                         _ => null,
                       },
                     ),
-                  BusyButton(label: 'Save settings', onPressed: _save, expand: true),
+                  BusyButton(label: l10n.adminSaveSettingsButton, onPressed: () => _save(l10n), expand: true),
                 ]),
               ),
               const SizedBox(height: AppSpacing.md),
-              Text('Changes are recorded in the audit log.', style: t.bodySmall),
+              Text(l10n.adminChangesRecordedNote, style: t.bodySmall),
             ]);
           },
         ),
@@ -757,23 +766,24 @@ class AdminMoreScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return AppPage(
-      title: 'More',
+      title: l10n.navMore,
       large: true,
       body: PageBody(maxWidth: 700, children: [
         if (user != null) ...[
           Text(user.fullName, style: t.titleMedium),
-          Text('${user.email} · Administrator', style: t.bodySmall),
+          Text(l10n.adminEmailAdministratorLine(user.email), style: t.bodySmall),
           const SizedBox(height: AppSpacing.lg),
         ],
         AppCard(
           padding: EdgeInsets.zero,
           child: Column(children: [
-            ListTile(leading: const Icon(Icons.receipt_long_outlined, color: AppColors.primary), title: const Text('Audit logs'), trailing: const Icon(Icons.chevron_right), onTap: () => context.push('/a/audit')),
+            ListTile(leading: const Icon(Icons.receipt_long_outlined, color: AppColors.primary), title: Text(l10n.adminAuditLogsTitle), trailing: const Icon(Icons.chevron_right), onTap: () => context.push('/a/audit')),
             const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
-            ListTile(leading: const Icon(Icons.tune, color: AppColors.primary), title: const Text('System settings'), trailing: const Icon(Icons.chevron_right), onTap: () => context.push('/a/system')),
+            ListTile(leading: const Icon(Icons.tune, color: AppColors.primary), title: Text(l10n.adminSystemSettingsTitle), trailing: const Icon(Icons.chevron_right), onTap: () => context.push('/a/system')),
             const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
-            ListTile(leading: const Icon(Icons.manage_accounts_outlined, color: AppColors.primary), title: const Text('Account and password'), trailing: const Icon(Icons.chevron_right), onTap: () => context.push('/a/account')),
+            ListTile(leading: const Icon(Icons.manage_accounts_outlined, color: AppColors.primary), title: Text(l10n.adminAccountAndPasswordLabel), trailing: const Icon(Icons.chevron_right), onTap: () => context.push('/a/account')),
           ]),
         ),
       ]),
@@ -788,10 +798,11 @@ class EditDoctorLoader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     return ref.watch(adminDoctorProvider(doctorId)).when(
           data: (d) => DoctorFormScreen(doctor: d.profile),
-          loading: () => const AppPage(title: 'Edit Doctor', body: Padding(padding: EdgeInsets.all(AppSpacing.xl), child: SkeletonList(count: 3))),
-          error: (e, _) => AppPage(title: 'Edit Doctor', body: ErrorState(error: e, onRetry: () => ref.invalidate(adminDoctorProvider(doctorId)))),
+          loading: () => AppPage(title: l10n.adminEditDoctorTitle, body: const Padding(padding: EdgeInsets.all(AppSpacing.xl), child: SkeletonList(count: 3))),
+          error: (e, _) => AppPage(title: l10n.adminEditDoctorTitle, body: ErrorState(error: e, onRetry: () => ref.invalidate(adminDoctorProvider(doctorId)))),
         );
   }
 }

@@ -4,7 +4,7 @@ import '../models/user.dart';
 
 abstract interface class AuthRepository {
   Future<AuthSession> login(String email, String password);
-  Future<AuthSession> register({required String fullName, required String email, required String password, required DateTime dateOfBirth, required String gender, String? phone});
+  Future<AuthSession> register({required String fullName, required String email, required String password, required DateTime dateOfBirth, required String gender, String? phone, String? preferredLocale});
   Future<AppUser?> restore();
   Future<void> logout();
 
@@ -12,6 +12,9 @@ abstract interface class AuthRepository {
   Future<String?> forgotPassword(String email);
   Future<void> resetPassword(String token, String newPassword);
   Future<void> changePassword(String current, String next);
+
+  /// Updates only the signed-in user's own interface language.
+  Future<AppUser> updateLanguage(String locale);
 }
 
 class ApiAuthRepository implements AuthRepository {
@@ -29,7 +32,7 @@ class ApiAuthRepository implements AuthRepository {
       _session(await _api.post('/auth/login', body: {'email': email.trim(), 'password': password}));
 
   @override
-  Future<AuthSession> register({required String fullName, required String email, required String password, required DateTime dateOfBirth, required String gender, String? phone}) async =>
+  Future<AuthSession> register({required String fullName, required String email, required String password, required DateTime dateOfBirth, required String gender, String? phone, String? preferredLocale}) async =>
       _session(await _api.post('/auth/register', body: {
         'full_name': fullName.trim(),
         'email': email.trim(),
@@ -37,6 +40,7 @@ class ApiAuthRepository implements AuthRepository {
         'date_of_birth': Fmt.isoDate(dateOfBirth),
         'gender': gender,
         if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
+        'preferred_locale': ?preferredLocale,
       }));
 
   @override
@@ -65,4 +69,7 @@ class ApiAuthRepository implements AuthRepository {
 
   @override
   Future<void> changePassword(String current, String next) => _api.post('/auth/change-password', body: {'current_password': current, 'new_password': next});
+
+  @override
+  Future<AppUser> updateLanguage(String locale) async => AppUser.fromJson(await _api.patch('/auth/language', body: {'locale': locale}));
 }

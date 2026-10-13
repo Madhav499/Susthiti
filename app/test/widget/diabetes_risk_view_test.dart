@@ -13,6 +13,7 @@ import 'package:susthiti/data/services/risk_cache.dart';
 import 'package:susthiti/features/diabetes/diabetes_screen.dart';
 import 'package:susthiti/features/health_profile/health_profile_screen.dart';
 import 'package:susthiti/features/reports/report_values_section.dart';
+import 'package:susthiti/l10n/app_localizations_en.dart';
 
 import '../helpers.dart';
 import '../risk_fixtures.dart';
@@ -50,15 +51,17 @@ void main() {
     ]);
   }
 
+  final l10n = AppLocalizationsEn();
+
   testWidgets('first time: explains there is no questionnaire and offers an estimate', (tester) async {
     when(() => repo.refreshRisk('pat1')).thenAnswer((_) async => RiskRefresh.fromJson({'created': true, 'assessment': assessmentJson()}));
-    await pumpView(tester, statusJson());
-    expect(find.textContaining('There is no questionnaire'), findsOneWidget);
+    await pumpView(tester, statusJson(), user: testDoctor);
+    expect(find.textContaining('Estimate your future diabetes risk'), findsOneWidget);
     expect(find.textContaining('4 of 29 health details'), findsOneWidget);
-    await tester.tap(find.text('Get my risk estimate'));
+    await tester.tap(find.text(l10n.diabetesGetRiskEstimate));
     await tester.pumpAndSettle();
     verify(() => repo.refreshRisk('pat1')).called(1);
-    expect(find.text('Your future diabetes risk estimate has been updated.'), findsOneWidget);
+    expect(find.text(l10n.diabetesEstimateUpdatedSnack), findsOneWidget);
   });
 
   testWidgets('with report values: model estimate, band, exactly which report values were used', (tester) async {
@@ -79,7 +82,7 @@ void main() {
 
   testWidgets('without report values: says so and shows the API warning, never "normal"', (tester) async {  // TEST 2, PART 46
     await pumpView(tester, statusJson(latest: assessmentJson(report: false)));
-    expect(find.text(RiskWording.noReportBasis), findsOneWidget);
+    expect(find.text(RiskWording.noReportBasis(AppLocalizationsEn())), findsOneWidget);
     expect(find.textContaining('not fully trusted'), findsOneWidget);
     expect(find.textContaining('normal', findRichText: true), findsNothing);
     expect(find.text('Add values from a report'), findsOneWidget);
@@ -88,10 +91,10 @@ void main() {
   testWidgets('new health data: marked out of date with the reasons; refresh with no changes says so', (tester) async {  // TEST 14
     when(() => repo.refreshRisk('pat1')).thenAnswer((_) async => RiskRefresh.fromJson({'created': false, 'assessment': assessmentJson()}));
     await pumpView(tester, statusJson(latest: assessmentJson(), stale: true, reasons: ['New or changed values from your medical reports']));
-    expect(find.text('Updated health information is available.'), findsOneWidget);
+    expect(find.text(l10n.riskUpdatedInfoAvailable), findsOneWidget);
     expect(find.text('• New or changed values from your medical reports'), findsOneWidget);
-    await tester.ensureVisible(find.text('Refresh assessment').first);
-    await tester.tap(find.text('Refresh assessment').first);
+    await tester.ensureVisible(find.text(l10n.riskUpdateWithLatestData).first);
+    await tester.tap(find.text(l10n.riskUpdateWithLatestData).first);
     await tester.pumpAndSettle();
     expect(find.textContaining('Nothing relevant has changed'), findsOneWidget);
   });
@@ -99,7 +102,7 @@ void main() {
   testWidgets('refresh failure keeps the last assessment and explains calmly', (tester) async {  // TEST 16
     when(() => repo.refreshRisk('pat1')).thenThrow(const ModelServiceFailure('The diabetes assessment service is unavailable right now. Please try again later.', 'model_service_unavailable'));
     await pumpView(tester, statusJson(latest: assessmentJson(), stale: true, reasons: ['Your medical history changed']));
-    await tester.tap(find.text('Refresh assessment').first);
+    await tester.tap(find.text(l10n.riskUpdateWithLatestData).first);
     await tester.pumpAndSettle();
     expect(find.textContaining('unavailable right now'), findsOneWidget);
     expect(find.text('43.2%'), findsWidgets);
@@ -175,12 +178,12 @@ void main() {
       diabetesRepositoryProvider.overrideWithValue(repo),
     ]);
     // AI suggestions are shown for checking, and only count once confirmed.
-    expect(find.textContaining('Found in the AI summary'), findsOneWidget);
-    await tester.tap(find.text('These match the report'));
+    expect(find.textContaining(l10n.foundInAiSummaryNote.substring(0, 20)), findsOneWidget);
+    await tester.tap(find.text(l10n.theseMatchReportButton));
     await tester.pumpAndSettle();
     expect(verify(() => reports.saveValues('r1', captureAny())).captured.single, {'hba1c': {'value': 6.1, 'unit': '%', 'origin': 'ai_suggestion'}});
 
-    await tester.tap(find.text('Add values from this report'));
+    await tester.tap(find.text(l10n.addValuesYourselfButton));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const ValueKey('value-fasting_glucose')), '6.2');
     await tester.tap(find.text('mg/dL'));
@@ -188,7 +191,7 @@ void main() {
     await tester.tap(find.text('mmol/L').last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Prediabetes'));
-    await tester.tap(find.text('Save values'));
+    await tester.tap(find.text(l10n.saveValuesButton));
     await tester.pumpAndSettle();
     expect(verify(() => reports.saveValues('r1', captureAny())).captured.single, {
       'fasting_glucose': {'value': 6.2, 'unit': 'mmol/L'},

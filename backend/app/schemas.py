@@ -7,6 +7,7 @@ from typing import Annotated, Literal
 from pydantic import AfterValidator, BaseModel, Field, field_validator, model_validator
 
 from . import models as m
+from .services.i18n import normalize_locale
 
 PHONE_RE = re.compile(r"^\+?[0-9 ()-]{7,20}$")
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -85,8 +86,17 @@ class RegisterIn(BaseModel):
     date_of_birth: date
     gender: Literal["Male", "Female"]
     phone: str | None = None
+    # The language chosen on the registration screen. Omitted (older clients) falls back to
+    # English; an unsupported value is also normalized rather than rejected, since this is a
+    # presentation preference, not something that should ever block account creation.
+    preferred_locale: str | None = None
 
     _phone = field_validator("phone")(_phone)
+
+    @field_validator("preferred_locale")
+    @classmethod
+    def _locale(cls, v: str | None) -> str:
+        return normalize_locale(v)
 
     @field_validator("date_of_birth")
     @classmethod
@@ -120,6 +130,7 @@ def user_out(user: m.User) -> dict:
     out = {
         "id": user.id, "email": user.email, "role": user.role, "full_name": user.full_name,
         "is_active": user.is_active, "is_demo": user.is_demo,
+        "preferred_locale": normalize_locale(user.preferred_locale),
     }
     if user.patient:
         out["patient_id"] = user.patient.id
@@ -128,6 +139,12 @@ def user_out(user: m.User) -> dict:
         out["doctor_id"] = user.doctor.id
         out["doctor_code"] = user.doctor.doctor_code
     return out
+
+
+class LanguageIn(BaseModel):
+    """Updates only the signed-in user's own preference -- see PATCH /auth/language."""
+
+    locale: Literal["en", "hi", "gu"]
 
 
 # ---------- Patient profile ----------
@@ -218,6 +235,7 @@ def summary_out(s: m.AISummary, stale: bool = False, based_on: list[str] | None 
         "id": s.id, "kind": s.kind, "subject_id": s.subject_id, "content": s.content,
         "source_ids": s.source_ids, "based_on": based_on or [], "provider": s.provider, "model": s.model,
         "generated_at": iso(s.generated_at), "generated_by_role": s.generated_by_role, "is_stale": stale,
+        "locale": normalize_locale(s.locale), "translation_fallback": bool(s.translation_fallback),
     }
 
 

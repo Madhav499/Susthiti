@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import Response
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from .. import errors
@@ -28,7 +28,7 @@ from ..models import (
     Visit,
 )
 from ..schemas import AllReportsSummaryIn, age_from, iso, summary_out
-from ..services.ai.openrouter import DISCLAIMER, AIResult
+from ..services.ai.openrouter import AIResult
 from ..services.ai.services import (
     AllReportsSummaryService,
     LifestyleAIService,
@@ -38,11 +38,13 @@ from ..services.ai.services import (
     get_ai_client,
 )
 from ..services.ai import safety
+from ..services.ai.localization import LocalizationUnavailable, localize_content, supports_localization
 from ..services.heart_risk.presentation import FEATURE_GROUP as HEART_FEATURE_GROUP
 from ..services.health_data import latest_facts
 from ..services.health_data.report_values import classify_trend
+from ..services.i18n import localized_disclaimer, normalize_locale
 from ..services.lifestyle_data import food_overview, glucose_overview, lifestyle_snapshot, to_mg_dl
-from ..services.pdf import pdf_filename, render_summary_pdf
+from ..services.pdf import localized_authorized_patient_record, pdf_filename, render_summary_pdf
 from ..services.rate_limit import limit_by_user
 from ..services.records import audit, notify
 from ..services.storage import get_storage
@@ -64,14 +66,26 @@ def _fingerprint(data) -> str:
     return hashlib.sha256(json.dumps(data, sort_keys=True, default=str).encode()).hexdigest()
 
 
-def _latest(db: Session, patient_id: str, kind: str, subject_id: str | None = None) -> AISummary | None:
-    query = select(AISummary).where(AISummary.patient_id == patient_id, AISummary.kind == kind)
+def _locale_clause(locale: str):
+    """AISummary.locale is nullable (see models.py); a null row predates per-locale storage
+    and is always English, so "en" matches both "en" and null."""
+    if locale == "en":
+        return or_(AISummary.locale == "en", AISummary.locale.is_(None))
+    return AISummary.locale == locale
+
+
+def _latest(db: Session, patient_id: str, kind: str, subject_id: str | None = None, locale: str = "en") -> AISummary | None:
+    query = select(AISummary).where(AISummary.patient_id == patient_id, AISummary.kind == kind, _locale_clause(locale))
     if subject_id:
         query = query.where(AISummary.subject_id == subject_id)
     return db.scalar(query.order_by(AISummary.generated_at.desc()).limit(1))
 
 
-def _store(db: Session, current: CurrentUser, patient: Patient, kind: str, result: AIResult, source_ids: list[str], fingerprint: str, subject_id: str | None = None, context: dict | None = None) -> AISummary:
+def _store(db: Session, current: CurrentUser, patient: Patient, kind: str, result: AIResult, source_ids: list[str], fingerprint: str, subject_id: str | None = None, context: dict | None = None, locale: str = "en", translation_fallback: bool = False) -> AISummary:
+    """Stores one English generation. Safety-checking only ever runs here, on the English
+    content the model actually produced -- `safety.py`'s patterns are English, so a
+    translated row (see _store_localized) is never re-checked with them; that would find
+    nothing either way and give a false sense of a second check."""
     violations = safety.check_output(kind, result.content, context)
     if violations:
         # Never store unsafe output. Log the reason codes only (never the generated
@@ -79,26 +93,79 @@ def _store(db: Session, current: CurrentUser, patient: Patient, kind: str, resul
         audit(db, current, "ai_safety_violation", "ai_summary", None, None, {"patient_code": patient.patient_code, "kind": kind, "reasons": violations})
         db.commit()
         raise errors.ApiError(502, "ai_invalid_response", "We couldn't read the AI response. Please try again.")
-    content = {**result.content, "disclaimer": DISCLAIMER}
+    content = {**result.content, "disclaimer": localized_disclaimer(locale)}
     summary = AISummary(
         patient_id=patient.id, kind=kind, subject_id=subject_id, source_ids=source_ids, source_fingerprint=fingerprint,
         content=content, provider=result.provider, model=result.model, prompt_version=result.prompt_version,
-        generated_by_user_id=current.id, generated_by_role=current.role,
+        generated_by_user_id=current.id, generated_by_role=current.role, locale=locale, translation_fallback=translation_fallback,
     )
     db.add(summary)
     db.flush()
-    audit(db, current, f"ai_{kind}_generated", "ai_summary", summary.id, None, {"patient_code": patient.patient_code, "model": result.model})
+    audit(db, current, f"ai_{kind}_generated", "ai_summary", summary.id, None, {"patient_code": patient.patient_code, "model": result.model, "locale": locale})
     return summary
 
 
-def _reusable(db: Session, patient: Patient, kind: str, fingerprint: str, prompt_version: str, subject_id: str | None = None) -> AISummary | None:
-    """The latest summary of this kind, if its source data and prompt version are both
-    still current -- regenerating would call the AI for a result that would come out the
+def _store_localized(db: Session, current: CurrentUser, patient: Patient, canonical: AISummary, locale: str) -> AISummary:
+    """Derives a viewer-language row from an already safety-checked English `canonical` row.
+    Never calls safety.check_output again (see _store's docstring); a translation that can't
+    preserve every number falls back to the English text field-by-field (localize_content)
+    and the whole row is flagged translation_fallback so the UI can tell the viewer."""
+    used_fallback = True
+    content = {k: v for k, v in canonical.content.items() if k != "disclaimer"}
+    if supports_localization(canonical.kind):
+        try:
+            content, used_fallback = localize_content(get_ai_client(), canonical.kind, content, locale)
+        except (LocalizationUnavailable, errors.ApiError):
+            # Translation couldn't be completed (AI call failed, timed out, or returned an
+            # unreadable response) -- show the viewer the already-safety-checked English
+            # content rather than risk a silently wrong translation. Never raises: the
+            # canonical English row this derives from already exists and is usable.
+            pass
+    content["disclaimer"] = localized_disclaimer(locale)
+    summary = AISummary(
+        patient_id=patient.id, kind=canonical.kind, subject_id=canonical.subject_id, source_ids=canonical.source_ids,
+        source_fingerprint=canonical.source_fingerprint, content=content, provider=canonical.provider, model=canonical.model,
+        prompt_version=canonical.prompt_version, generated_by_user_id=current.id, generated_by_role=current.role,
+        locale=locale, translation_fallback=used_fallback,
+    )
+    db.add(summary)
+    db.flush()
+    audit(db, current, f"ai_{canonical.kind}_localized", "ai_summary", summary.id, None, {"patient_code": patient.patient_code, "locale": locale, "fallback": used_fallback})
+    return summary
+
+
+def _reusable(db: Session, patient: Patient, kind: str, fingerprint: str, prompt_version: str, subject_id: str | None = None, locale: str = "en") -> AISummary | None:
+    """The latest summary of this kind and locale, if its source data and prompt version are
+    both still current -- regenerating would call the AI for a result that would come out the
     same. Callers skip the AI call entirely and reuse it unless the caller passed force."""
-    existing = _latest(db, patient.id, kind, subject_id)
+    existing = _latest(db, patient.id, kind, subject_id, locale=locale)
     if existing is not None and existing.source_fingerprint == fingerprint and existing.prompt_version == prompt_version:
         return existing
     return None
+
+
+def _get_or_create(
+    db: Session, current: CurrentUser, patient: Patient, kind: str, viewer_locale: str,
+    fingerprint: str, prompt_version: str, generate, source_ids: list[str],
+    subject_id: str | None = None, context: dict | None = None, force: bool = False,
+) -> tuple[AISummary, bool]:
+    """Resolves the summary row for the CURRENT VIEWER's language, generating/translating
+    only what's missing. `generate` (called at most once) produces the English AIResult.
+    English generation is cached and reused across every viewer; a non-English row is a
+    translation of that same English content, cached independently per locale -- so a
+    Gujarati-reading patient and an English-reading doctor viewing the same report each get
+    their own row, and neither one's language ever overwrites the shared English source."""
+    if not force:
+        reused = _reusable(db, patient, kind, fingerprint, prompt_version, subject_id, locale=viewer_locale)
+        if reused is not None:
+            return reused, False
+    canonical = None if force else _reusable(db, patient, kind, fingerprint, prompt_version, subject_id, locale="en")
+    if canonical is None:
+        result = generate()
+        canonical = _store(db, current, patient, kind, result, source_ids, fingerprint, subject_id, context, locale="en")
+    if viewer_locale == "en":
+        return canonical, True
+    return _store_localized(db, current, patient, canonical, viewer_locale), True
 
 
 def _report_codes(db: Session, ids: list[str]) -> list[str]:
@@ -123,7 +190,8 @@ def get_report_summary(report_id: str, current: CurrentUser = Depends(require_re
     if report is None:
         raise errors.not_found("Report")
     authorize_patient(db, current, report.patient_id)
-    summary = _latest(db, report.patient_id, "individual_report", report.id)
+    viewer_locale = normalize_locale(current.user.preferred_locale)
+    summary = _latest(db, report.patient_id, "individual_report", report.id, locale=viewer_locale)
     if summary is None:
         return {"summary": None}
     stale = summary.prompt_version != ReportSummaryService.PROMPT_VERSION
@@ -136,19 +204,24 @@ def generate_report_summary(report_id: str, response: Response, force: bool = Qu
     if report is None:
         raise errors.not_found("Report")
     patient = authorize_patient(db, current, report.patient_id)
-    if not force:
-        reused = _reusable(db, patient, "individual_report", report.sha256, ReportSummaryService.PROMPT_VERSION, subject_id=report.id)
-        if reused is not None:
-            response.status_code = 200
-            audit(db, current, "ai_individual_report_regeneration_skipped", "ai_summary", reused.id, None, {"patient_code": patient.patient_code})
-            db.commit()
-            return {"created": False, "summary": summary_out(reused, False, based_on=_report_codes(db, [report.id]))}
-    data = get_storage().read(report.storage_ref)
-    result = ReportSummaryService(get_ai_client()).summarize(_report_metadata(report), data, report.file_type)
-    summary = _store(db, current, patient, "individual_report", result, [report.id], report.sha256, subject_id=report.id)
-    notify(db, patient.user_id, "report_summary_ready", "Report summary ready", f"The AI summary for report {report.report_code} is ready.", "report", report.id, patient.id)
+    viewer_locale = normalize_locale(current.user.preferred_locale)
+
+    def generate():
+        data = get_storage().read(report.storage_ref)
+        return ReportSummaryService(get_ai_client()).summarize(_report_metadata(report), data, report.file_type)
+
+    summary, created = _get_or_create(
+        db, current, patient, "individual_report", viewer_locale, report.sha256, ReportSummaryService.PROMPT_VERSION,
+        generate, [report.id], subject_id=report.id, force=force,
+    )
+    if not created:
+        response.status_code = 200
+        audit(db, current, "ai_individual_report_regeneration_skipped", "ai_summary", summary.id, None, {"patient_code": patient.patient_code})
+    else:
+        notify(db, patient.user_id, "report_summary_ready", "Report summary ready", f"The AI summary for report {report.report_code} is ready.", "report", report.id, patient.id,
+               template_params={"report_code": report.report_code})
     db.commit()
-    return {"created": True, "summary": summary_out(summary, based_on=_report_codes(db, [report.id]))}
+    return {"created": created, "summary": summary_out(summary, False, based_on=_report_codes(db, [report.id]))}
 
 
 # ---------- All reports summary ----------
@@ -160,7 +233,8 @@ def _all_report_ids(db: Session, patient_id: str) -> list[str]:
 @router.get("/patients/{patient_id}/reports-summary")
 def get_all_reports_summary(patient_id: str, current: CurrentUser = Depends(require_record_reader), db: Session = Depends(get_db)):
     patient = authorize_patient(db, current, patient_id)
-    summary = _latest(db, patient.id, "all_reports")
+    viewer_locale = normalize_locale(current.user.preferred_locale)
+    summary = _latest(db, patient.id, "all_reports", locale=viewer_locale)
     if summary is None:
         return {"summary": None, "report_count": len(_all_report_ids(db, patient.id))}
     stale = set(_all_report_ids(db, patient.id)) != set(summary.source_ids) or summary.prompt_version != AllReportsSummaryService.PROMPT_VERSION
@@ -170,6 +244,7 @@ def get_all_reports_summary(patient_id: str, current: CurrentUser = Depends(requ
 @router.post("/patients/{patient_id}/reports-summary", status_code=201, dependencies=[_AI_GENERATE_LIMIT])
 def generate_all_reports_summary(patient_id: str, response: Response, body: AllReportsSummaryIn | None = None, force: bool = Query(False), current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
     patient = authorize_patient(db, current, patient_id)
+    viewer_locale = normalize_locale(current.user.preferred_locale)
     ids = _all_report_ids(db, patient.id)
     if body and body.report_ids:
         wanted = set(body.report_ids)
@@ -179,36 +254,41 @@ def generate_all_reports_summary(patient_id: str, response: Response, body: AllR
     if len(ids) < 2:
         raise errors.unprocessable("At least two reports are needed to summarize reports over time.")
     ids = ids[-MAX_REPORTS_PER_SUMMARY:]
-    if not force:
-        reused = _reusable(db, patient, "all_reports", _fingerprint(sorted(ids)), AllReportsSummaryService.PROMPT_VERSION)
-        if reused is not None:
-            response.status_code = 200
-            audit(db, current, "ai_all_reports_regeneration_skipped", "ai_summary", reused.id, None, {"patient_code": patient.patient_code})
-            db.commit()
-            return {"created": False, "summary": summary_out(reused, False, _report_codes(db, ids))}
-    reports = [db.get(Report, i) for i in ids]
-    payload, inline_bytes = [], 0
-    for r in reports:
-        individual = _latest(db, patient.id, "individual_report", r.id)
-        item = {"metadata": _report_metadata(r)}
-        if individual:
-            item["individual_summary"] = {k: v for k, v in individual.content.items() if k != "disclaimer"}
-        elif inline_bytes + r.file_size <= MAX_INLINE_BYTES:
-            item["file_bytes"] = get_storage().read(r.storage_ref)
-            item["mime_type"] = r.file_type
-            inline_bytes += r.file_size
-        payload.append(item)
-    result = AllReportsSummaryService(get_ai_client()).summarize(payload)
-    for trend in result.content.get("observed_trends") or []:
-        if isinstance(trend, dict):
-            earlier = (trend.get("earlier") or {}).get("value")
-            latest = (trend.get("latest") or {}).get("value")
-            trend.update(classify_trend(str(trend.get("parameter") or ""), earlier, latest))
-    summary = _store(db, current, patient, "all_reports", result, ids, _fingerprint(sorted(ids)))
-    notify(db, patient.user_id, "report_summary_ready", "Report summary ready", "Your all-reports AI summary is ready.", "ai_summary", summary.id, patient.id)
+
+    def generate():
+        reports = [db.get(Report, i) for i in ids]
+        payload, inline_bytes = [], 0
+        for r in reports:
+            individual = _latest(db, patient.id, "individual_report", r.id)
+            item = {"metadata": _report_metadata(r)}
+            if individual:
+                item["individual_summary"] = {k: v for k, v in individual.content.items() if k != "disclaimer"}
+            elif inline_bytes + r.file_size <= MAX_INLINE_BYTES:
+                item["file_bytes"] = get_storage().read(r.storage_ref)
+                item["mime_type"] = r.file_type
+                inline_bytes += r.file_size
+            payload.append(item)
+        result = AllReportsSummaryService(get_ai_client()).summarize(payload)
+        for trend in result.content.get("observed_trends") or []:
+            if isinstance(trend, dict):
+                earlier = (trend.get("earlier") or {}).get("value")
+                latest = (trend.get("latest") or {}).get("value")
+                trend.update(classify_trend(str(trend.get("parameter") or ""), earlier, latest))
+        return result
+
+    summary, created = _get_or_create(
+        db, current, patient, "all_reports", viewer_locale, _fingerprint(sorted(ids)), AllReportsSummaryService.PROMPT_VERSION,
+        generate, ids, force=force,
+    )
+    if not created:
+        response.status_code = 200
+        audit(db, current, "ai_all_reports_regeneration_skipped", "ai_summary", summary.id, None, {"patient_code": patient.patient_code})
+    else:
+        notify(db, patient.user_id, "report_summary_ready", "Report summary ready", "Your all-reports AI summary is ready.", "ai_summary", summary.id, patient.id,
+               template_params={}, template_key="all_reports_summary_ready")
     db.commit()
     stale = set(_all_report_ids(db, patient.id)) != set(ids)
-    return {"created": True, "summary": summary_out(summary, stale, _report_codes(db, ids))}
+    return {"created": created, "summary": summary_out(summary, stale, _report_codes(db, ids))}
 
 
 # ---------- Patient summary ----------
@@ -315,7 +395,8 @@ def _record_version(db: Session, patient_id: str) -> str:
 @router.get("/patients/{patient_id}/patient-summary")
 def get_patient_summary(patient_id: str, current: CurrentUser = Depends(require_record_reader), db: Session = Depends(get_db)):
     patient = authorize_patient(db, current, patient_id)
-    summary = _latest(db, patient.id, "patient_summary")
+    viewer_locale = normalize_locale(current.user.preferred_locale)
+    summary = _latest(db, patient.id, "patient_summary", locale=viewer_locale)
     if summary is None:
         return {"summary": None}
     stale = summary.source_fingerprint != _record_version(db, patient.id) or summary.prompt_version != PatientSummaryService.PROMPT_VERSION
@@ -325,21 +406,21 @@ def get_patient_summary(patient_id: str, current: CurrentUser = Depends(require_
 @router.post("/patients/{patient_id}/patient-summary", status_code=201, dependencies=[_AI_GENERATE_LIMIT])
 def generate_patient_summary(patient_id: str, response: Response, force: bool = Query(False), current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
     patient = authorize_patient(db, current, patient_id)
+    viewer_locale = normalize_locale(current.user.preferred_locale)
     record_version = _record_version(db, patient.id)
-    if not force:
-        reused = _reusable(db, patient, "patient_summary", record_version, PatientSummaryService.PROMPT_VERSION)
-        if reused is not None:
-            response.status_code = 200
-            audit(db, current, "ai_patient_summary_regeneration_skipped", "ai_summary", reused.id, None, {"patient_code": patient.patient_code})
-            db.commit()
-            return {"created": False, "summary": summary_out(reused, False, ["Full authorized patient record"])}
-    record = _patient_record(db, patient)
-    if not _has_sufficient_patient_data(record):
-        raise errors.unprocessable("No sufficient patient history is available to generate a meaningful summary.")
-    result = PatientSummaryService(get_ai_client()).summarize(record)
-    summary = _store(db, current, patient, "patient_summary", result, [], record_version)
+
+    def generate():
+        record = _patient_record(db, patient)
+        if not _has_sufficient_patient_data(record):
+            raise errors.unprocessable("No sufficient patient history is available to generate a meaningful summary.")
+        return PatientSummaryService(get_ai_client()).summarize(record)
+
+    summary, created = _get_or_create(db, current, patient, "patient_summary", viewer_locale, record_version, PatientSummaryService.PROMPT_VERSION, generate, [], force=force)
+    if not created:
+        response.status_code = 200
+        audit(db, current, "ai_patient_summary_regeneration_skipped", "ai_summary", summary.id, None, {"patient_code": patient.patient_code})
     db.commit()
-    return {"created": True, "summary": summary_out(summary, False, ["Full authorized patient record"])}
+    return {"created": created, "summary": summary_out(summary, False, ["Full authorized patient record"])}
 
 
 # ---------- Patient-friendly summary ----------
@@ -347,7 +428,8 @@ def generate_patient_summary(patient_id: str, response: Response, force: bool = 
 @router.get("/patients/{patient_id}/friendly-summary")
 def get_patient_friendly_summary(patient_id: str, current: CurrentUser = Depends(require_record_reader), db: Session = Depends(get_db)):
     patient = authorize_patient(db, current, patient_id)
-    summary = _latest(db, patient.id, "patient_friendly_summary")
+    viewer_locale = normalize_locale(current.user.preferred_locale)
+    summary = _latest(db, patient.id, "patient_friendly_summary", locale=viewer_locale)
     if summary is None:
         return {"summary": None}
     stale = summary.source_fingerprint != _record_version(db, patient.id) or summary.prompt_version != PatientFriendlySummaryService.PROMPT_VERSION
@@ -357,21 +439,21 @@ def get_patient_friendly_summary(patient_id: str, current: CurrentUser = Depends
 @router.post("/patients/{patient_id}/friendly-summary", status_code=201, dependencies=[_AI_GENERATE_LIMIT])
 def generate_patient_friendly_summary(patient_id: str, response: Response, force: bool = Query(False), current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
     patient = authorize_patient(db, current, patient_id)
+    viewer_locale = normalize_locale(current.user.preferred_locale)
     record_version = _record_version(db, patient.id)
-    if not force:
-        reused = _reusable(db, patient, "patient_friendly_summary", record_version, PatientFriendlySummaryService.PROMPT_VERSION)
-        if reused is not None:
-            response.status_code = 200
-            audit(db, current, "ai_patient_friendly_summary_regeneration_skipped", "ai_summary", reused.id, None, {"patient_code": patient.patient_code})
-            db.commit()
-            return {"created": False, "summary": summary_out(reused, False, ["Full authorized patient record"])}
-    record = _patient_record(db, patient)
-    if not _has_sufficient_patient_data(record):
-        raise errors.unprocessable("No sufficient patient history is available to generate a meaningful summary.")
-    result = PatientFriendlySummaryService(get_ai_client()).summarize(record)
-    summary = _store(db, current, patient, "patient_friendly_summary", result, [], record_version)
+
+    def generate():
+        record = _patient_record(db, patient)
+        if not _has_sufficient_patient_data(record):
+            raise errors.unprocessable("No sufficient patient history is available to generate a meaningful summary.")
+        return PatientFriendlySummaryService(get_ai_client()).summarize(record)
+
+    summary, created = _get_or_create(db, current, patient, "patient_friendly_summary", viewer_locale, record_version, PatientFriendlySummaryService.PROMPT_VERSION, generate, [], force=force)
+    if not created:
+        response.status_code = 200
+        audit(db, current, "ai_patient_friendly_summary_regeneration_skipped", "ai_summary", summary.id, None, {"patient_code": patient.patient_code})
     db.commit()
-    return {"created": True, "summary": summary_out(summary, False, ["Full authorized patient record"])}
+    return {"created": created, "summary": summary_out(summary, False, ["Full authorized patient record"])}
 
 
 # ---------- Lifestyle insight ----------
@@ -409,7 +491,8 @@ def _lifestyle_context(db: Session, patient: Patient) -> dict:
 @router.get("/patients/{patient_id}/lifestyle-insight")
 def get_lifestyle_insight(patient_id: str, current: CurrentUser = Depends(require_record_reader), db: Session = Depends(get_db)):
     patient = authorize_patient(db, current, patient_id)
-    summary = _latest(db, patient.id, "lifestyle")
+    viewer_locale = normalize_locale(current.user.preferred_locale)
+    summary = _latest(db, patient.id, "lifestyle", locale=viewer_locale)
     if summary is None:
         return {"summary": None}
     generated = summary.generated_at if summary.generated_at.tzinfo else summary.generated_at.replace(tzinfo=timezone.utc)
@@ -420,21 +503,21 @@ def get_lifestyle_insight(patient_id: str, current: CurrentUser = Depends(requir
 @router.post("/patients/{patient_id}/lifestyle-insight", status_code=201, dependencies=[_AI_GENERATE_LIMIT])
 def generate_lifestyle_insight(patient_id: str, response: Response, force: bool = Query(False), current: CurrentUser = Depends(require_clinical), db: Session = Depends(get_db)):
     patient = authorize_patient(db, current, patient_id)
+    viewer_locale = normalize_locale(current.user.preferred_locale)
     context = _lifestyle_context(db, patient)
     if not context["recent_lifestyle"] and not context["glucose"]["latest"] and not context["food_last_7_days"]["entries_count"]:
         raise errors.unprocessable("Add some lifestyle, food or glucose data first so there is something to analyze.")
     fingerprint = _fingerprint(context)
-    if not force:
-        reused = _reusable(db, patient, "lifestyle", fingerprint, LifestyleAIService.PROMPT_VERSION)
-        if reused is not None:
-            response.status_code = 200
-            audit(db, current, "ai_lifestyle_regeneration_skipped", "ai_summary", reused.id, None, {"patient_code": patient.patient_code})
-            db.commit()
-            return {"created": False, "summary": summary_out(reused, False, ["Lifestyle, food and glucose data (last 7-30 days)"])}
-    result = LifestyleAIService(get_ai_client()).suggest(context)
-    summary = _store(db, current, patient, "lifestyle", result, [], fingerprint, context=context)
+
+    def generate():
+        return LifestyleAIService(get_ai_client()).suggest(context)
+
+    summary, created = _get_or_create(db, current, patient, "lifestyle", viewer_locale, fingerprint, LifestyleAIService.PROMPT_VERSION, generate, [], context=context, force=force)
+    if not created:
+        response.status_code = 200
+        audit(db, current, "ai_lifestyle_regeneration_skipped", "ai_summary", summary.id, None, {"patient_code": patient.patient_code})
     db.commit()
-    return {"created": True, "summary": summary_out(summary, False, ["Lifestyle, food and glucose data (last 7-30 days)"])}
+    return {"created": created, "summary": summary_out(summary, False, ["Lifestyle, food and glucose data (last 7-30 days)"])}
 
 
 # ---------- Assessment interpretation ----------
@@ -454,18 +537,21 @@ def interpret_assessment(assessment_id: str, response: Response, force: bool = Q
         "reported_symptoms": [k for k, v in assessment.inputs.items() if v == "Yes"],
     }
     fingerprint = _fingerprint(model_output)
-    if not force:
-        reused = _reusable(db, patient, "assessment_interpretation", fingerprint, LifestyleAIService.INTERPRETATION_PROMPT_VERSION, subject_id=assessment.id)
-        if reused is not None:
-            response.status_code = 200
-            audit(db, current, "ai_assessment_interpretation_regeneration_skipped", "ai_summary", reused.id, None, {"patient_code": patient.patient_code})
-            db.commit()
-            return {"created": False, "summary": summary_out(reused)}
+    viewer_locale = normalize_locale(current.user.preferred_locale)
     lifestyle_ctx = _lifestyle_context(db, patient)
-    result = LifestyleAIService(get_ai_client()).interpret_assessment(model_output, lifestyle_ctx)
-    summary = _store(db, current, patient, "assessment_interpretation", result, [assessment.id], fingerprint, subject_id=assessment.id, context=lifestyle_ctx)
+
+    def generate():
+        return LifestyleAIService(get_ai_client()).interpret_assessment(model_output, lifestyle_ctx)
+
+    summary, created = _get_or_create(
+        db, current, patient, "assessment_interpretation", viewer_locale, fingerprint, LifestyleAIService.INTERPRETATION_PROMPT_VERSION,
+        generate, [assessment.id], subject_id=assessment.id, context=lifestyle_ctx, force=force,
+    )
+    if not created:
+        response.status_code = 200
+        audit(db, current, "ai_assessment_interpretation_regeneration_skipped", "ai_summary", summary.id, None, {"patient_code": patient.patient_code})
     db.commit()
-    return {"created": True, "summary": summary_out(summary)}
+    return {"created": created, "summary": summary_out(summary)}
 
 
 @router.post("/heart-risk/{assessment_id}/interpretation", status_code=201, dependencies=[_AI_GENERATE_LIMIT])
@@ -487,18 +573,21 @@ def interpret_heart_assessment(assessment_id: str, response: Response, force: bo
         "reported_symptoms": [k for k, v in (assessment.input_features or {}).items() if v == 1 and HEART_FEATURE_GROUP.get(k) == "symptoms"],
     }
     fingerprint = _fingerprint(model_output)
-    if not force:
-        reused = _reusable(db, patient, "heart_interpretation", fingerprint, LifestyleAIService.HEART_INTERPRETATION_PROMPT_VERSION, subject_id=assessment.id)
-        if reused is not None:
-            response.status_code = 200
-            audit(db, current, "ai_heart_interpretation_regeneration_skipped", "ai_summary", reused.id, None, {"patient_code": patient.patient_code})
-            db.commit()
-            return {"created": False, "summary": summary_out(reused)}
+    viewer_locale = normalize_locale(current.user.preferred_locale)
     lifestyle_ctx = _lifestyle_context(db, patient)
-    result = LifestyleAIService(get_ai_client()).interpret_heart_assessment(model_output, lifestyle_ctx)
-    summary = _store(db, current, patient, "heart_interpretation", result, [assessment.id], fingerprint, subject_id=assessment.id, context=lifestyle_ctx)
+
+    def generate():
+        return LifestyleAIService(get_ai_client()).interpret_heart_assessment(model_output, lifestyle_ctx)
+
+    summary, created = _get_or_create(
+        db, current, patient, "heart_interpretation", viewer_locale, fingerprint, LifestyleAIService.HEART_INTERPRETATION_PROMPT_VERSION,
+        generate, [assessment.id], subject_id=assessment.id, context=lifestyle_ctx, force=force,
+    )
+    if not created:
+        response.status_code = 200
+        audit(db, current, "ai_heart_interpretation_regeneration_skipped", "ai_summary", summary.id, None, {"patient_code": patient.patient_code})
     db.commit()
-    return {"created": True, "summary": summary_out(summary)}
+    return {"created": created, "summary": summary_out(summary)}
 
 
 # ---------- PDF ----------
@@ -509,9 +598,10 @@ def summary_pdf(summary_id: str, current: CurrentUser = Depends(require_record_r
     if summary is None:
         raise errors.not_found("Summary")
     patient = authorize_patient(db, current, summary.patient_id)
-    based_on = _report_codes(db, summary.source_ids) if summary.kind in ("individual_report", "all_reports") else ["Authorized patient record"]
+    viewer_locale = normalize_locale(current.user.preferred_locale)
+    based_on = _report_codes(db, summary.source_ids) if summary.kind in ("individual_report", "all_reports") else [localized_authorized_patient_record(viewer_locale)]
     generated = summary.generated_at if summary.generated_at.tzinfo else summary.generated_at.replace(tzinfo=timezone.utc)
-    pdf = render_summary_pdf(summary.kind, summary.content, {"name": patient.user.full_name, "code": patient.patient_code}, generated, based_on, summary.model)
+    pdf = render_summary_pdf(summary.kind, summary.content, {"name": patient.user.full_name, "code": patient.patient_code}, generated, based_on, summary.model, locale=viewer_locale)
     audit(db, current, "ai_summary_pdf_downloaded", "ai_summary", summary.id, None, {"patient_code": patient.patient_code})
     db.commit()
     return Response(pdf, media_type="application/pdf", headers={"Content-Disposition": f'attachment; filename="{pdf_filename(summary.kind, generated)}"', "Cache-Control": "private, no-store"})

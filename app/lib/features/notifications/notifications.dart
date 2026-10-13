@@ -13,6 +13,7 @@ import '../../core/widgets/feedback.dart';
 import '../../data/models/system.dart';
 import '../../data/models/user.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../authentication/auth_controller.dart';
 
 /// Unread count, refreshed every minute while visible.
@@ -71,11 +72,12 @@ class _NotificationBellState extends ConsumerState<NotificationBell> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final count = ref.watch(unreadCountProvider).value ?? 0;
     final role = ref.watch(currentUserProvider)?.role;
     final panel = context.screenSize != ScreenSize.mobile;
     final bell = IconButton(
-      tooltip: count > 0 ? 'Notifications, $count unread' : 'Notifications',
+      tooltip: count > 0 ? l10n.notifTooltipUnread(count) : l10n.navNotifications,
       onPressed: () {
         if (!panel) {
           context.push(_notificationsRoute(role));
@@ -130,6 +132,7 @@ class NotificationPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final value = ref.watch(notificationsProvider('all'));
     final unread = ref.watch(unreadCountProvider).value ?? 0;
     return SizedBox(
@@ -138,8 +141,8 @@ class NotificationPanel extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.sm, AppSpacing.sm),
           child: Row(children: [
-            Expanded(child: Text('Notifications', style: t.titleMedium)),
-            if (unread > 0) TextButton(onPressed: () => markAllNotificationsRead(context, ref), child: const Text('Mark all read')),
+            Expanded(child: Text(l10n.navNotifications, style: t.titleMedium)),
+            if (unread > 0) TextButton(onPressed: () => markAllNotificationsRead(context, ref), child: Text(l10n.notifMarkAllRead)),
           ]),
         ),
         const Divider(height: 1),
@@ -151,14 +154,14 @@ class NotificationPanel extends ConsumerWidget {
             error: (e, _) => Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Text('Notifications could not be loaded.', style: t.bodyMedium),
-                TextButton(onPressed: () => ref.invalidate(notificationsProvider('all')), child: const Text('Retry')),
+                Text(l10n.notifLoadError, style: t.bodyMedium),
+                TextButton(onPressed: () => ref.invalidate(notificationsProvider('all')), child: Text(l10n.commonTryAgain)),
               ]),
             ),
             data: (items) => items.isEmpty
                 ? Padding(
                     padding: const EdgeInsets.all(AppSpacing.xl),
-                    child: Text("You're all caught up.", textAlign: TextAlign.center, style: t.bodyMedium?.copyWith(color: AppColors.textSecondary)),
+                    child: Text(l10n.notifCaughtUp, textAlign: TextAlign.center, style: t.bodyMedium?.copyWith(color: AppColors.textSecondary)),
                   )
                 : SingleChildScrollView(
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -171,7 +174,7 @@ class NotificationPanel extends ConsumerWidget {
           ),
         ),
         const Divider(height: 1),
-        TextButton(onPressed: onViewAll, child: const Text('View all notifications')),
+        TextButton(onPressed: onViewAll, child: Text(l10n.notifViewAll)),
         const SizedBox(height: AppSpacing.xs),
       ]),
     );
@@ -236,18 +239,19 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final value = ref.watch(notificationsProvider(_status));
     return AppPage(
-      title: 'Notifications',
+      title: l10n.navNotifications,
       large: widget.embedded,
-      actions: [TextButton(onPressed: _markAll, child: const Text('Mark all read'))],
+      actions: [TextButton(onPressed: _markAll, child: Text(l10n.notifMarkAllRead))],
       body: PageBody(
         maxWidth: 760,
         onRefresh: () async => ref.invalidate(notificationsProvider(_status)),
         children: [
           SegmentedButton<String>(
             showSelectedIcon: false,
-            segments: const [ButtonSegment(value: 'all', label: Text('All')), ButtonSegment(value: 'unread', label: Text('Unread')), ButtonSegment(value: 'read', label: Text('Read'))],
+            segments: [ButtonSegment(value: 'all', label: Text(l10n.notifFilterAll)), ButtonSegment(value: 'unread', label: Text(l10n.notifFilterUnread)), ButtonSegment(value: 'read', label: Text(l10n.notifFilterRead))],
             selected: {_status},
             onSelectionChanged: (s) => setState(() => _status = s.first),
           ),
@@ -256,7 +260,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             value: value,
             onRetry: () => ref.invalidate(notificationsProvider(_status)),
             data: (items) => items.isEmpty
-                ? const EmptyState(icon: Icons.notifications_none_outlined, title: 'No notifications', message: "You're all caught up.")
+                ? EmptyState(icon: Icons.notifications_none_outlined, title: l10n.notifNoNotificationsTitle, message: l10n.notifCaughtUp)
                 : AppCard(
                     padding: EdgeInsets.zero,
                     child: Column(children: [
@@ -281,8 +285,9 @@ class _NotificationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return Semantics(
-      label: '${n.isRead ? '' : 'Unread. '}${n.title}. ${n.body}. ${Fmt.relative(n.createdAt)}',
+      label: '${n.isRead ? '' : l10n.notifUnreadPrefix}${n.title}. ${n.body}. ${Fmt.relative(l10n, n.createdAt)}',
       button: true,
       excludeSemantics: true,
       child: InkWell(
@@ -301,7 +306,7 @@ class _NotificationTile extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(n.body, style: t.bodyMedium?.copyWith(color: AppColors.textSecondary)),
                 const SizedBox(height: 6),
-                Text(Fmt.relative(n.createdAt), style: t.labelSmall),
+                Text(Fmt.relative(l10n, n.createdAt), style: t.labelSmall),
               ]),
             ),
           ]),
@@ -317,6 +322,7 @@ class NotificationPreferencesCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final prefs = ref.watch(notificationPreferencesProvider);
     final role = ref.watch(currentUserProvider)?.role;
     Future<void> set(String key, bool value) async {
@@ -336,12 +342,12 @@ class NotificationPreferencesCard extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         child: Column(children: [
           if (role == UserRole.patient) ...[
-            SwitchListTile(title: const Text('Food logging reminders'), subtitle: const Text('An evening nudge if no meals are logged'), value: p.foodReminders, onChanged: (v) => set('food_reminders', v)),
-            SwitchListTile(title: const Text('Lifestyle reminders'), subtitle: const Text('A daily nudge for any lifestyle metric or glucose reading with nothing recorded yet'), value: p.lifestyleReminders, onChanged: (v) => set('lifestyle_reminders', v)),
+            SwitchListTile(title: Text(l10n.notifFoodRemindersTitle), subtitle: Text(l10n.notifFoodRemindersSubtitle), value: p.foodReminders, onChanged: (v) => set('food_reminders', v)),
+            SwitchListTile(title: Text(l10n.notifLifestyleRemindersTitle), subtitle: Text(l10n.notifLifestyleRemindersSubtitle), value: p.lifestyleReminders, onChanged: (v) => set('lifestyle_reminders', v)),
           ],
-          SwitchListTile(title: const Text('Follow-up reminders'), value: p.followUpReminders, onChanged: (v) => set('follow_up_reminders', v)),
+          SwitchListTile(title: Text(l10n.notifFollowUpRemindersTitle), value: p.followUpReminders, onChanged: (v) => set('follow_up_reminders', v)),
           if (role == UserRole.doctor)
-            SwitchListTile(title: const Text('Patient updates'), subtitle: const Text('New reports and patient updates'), value: p.doctorNotifications, onChanged: (v) => set('doctor_notifications', v)),
+            SwitchListTile(title: Text(l10n.notifPatientUpdatesTitle), subtitle: Text(l10n.notifPatientUpdatesSubtitle), value: p.doctorNotifications, onChanged: (v) => set('doctor_notifications', v)),
         ]),
       ),
     );

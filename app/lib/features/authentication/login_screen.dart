@@ -8,6 +8,7 @@ import '../../core/theme/app_tokens.dart';
 import '../../core/validators/validators.dart';
 import '../../core/widgets/feedback.dart';
 import '../../core/widgets/form_fields.dart';
+import '../../l10n/app_localizations.dart';
 import 'auth_controller.dart';
 import 'auth_layout.dart';
 
@@ -43,31 +44,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return AuthLayout(
-      title: 'Welcome back',
-      subtitle: 'Sign in to continue to your health overview.',
+      title: l10n.authWelcomeBack,
+      subtitle: l10n.authSignInSubtitle,
       child: AutofillGroup(
         child: Form(
           key: _form,
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            AppTextField(label: 'Email', controller: _email, validator: Validators.email, keyboardType: TextInputType.emailAddress, autofillHints: const [AutofillHints.email], textInputAction: TextInputAction.next),
-            PasswordField(controller: _password, validator: (v) => Validators.required(v, 'Password'), onSubmitted: (_) => _submit()),
+            AppTextField(label: l10n.authEmailLabel, controller: _email, validator: (v) => Validators.email(l10n, v), keyboardType: TextInputType.emailAddress, autofillHints: const [AutofillHints.email], textInputAction: TextInputAction.next),
+            PasswordField(controller: _password, label: l10n.authPasswordLabel, validator: (v) => Validators.required(l10n, v, l10n.authPasswordLabel), onSubmitted: (_) => _submit()),
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.md),
                 child: Semantics(liveRegion: true, child: Text(_error!, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.error))),
               ),
-            BusyButton(label: 'Sign in', onPressed: _submit, expand: true),
+            BusyButton(label: l10n.authSignIn, onPressed: _submit, expand: true),
             const SizedBox(height: AppSpacing.sm),
-            Align(alignment: Alignment.center, child: TextButton(onPressed: () => context.push('/forgot-password'), child: const Text('Forgot password?'))),
+            Align(alignment: Alignment.center, child: TextButton(onPressed: () => context.push('/forgot-password'), child: Text(l10n.authForgotPassword))),
             const SizedBox(height: AppSpacing.lg),
             const Divider(),
             const SizedBox(height: AppSpacing.lg),
-            Text('New to SUSTHITI?', style: Theme.of(context).textTheme.bodySmall, textAlign: TextAlign.center),
+            Text(l10n.authNewToSusthiti, style: Theme.of(context).textTheme.bodySmall, textAlign: TextAlign.center),
             const SizedBox(height: AppSpacing.sm),
-            OutlinedButton(onPressed: () => context.push('/register'), child: const Text('Create a patient account')),
+            OutlinedButton(onPressed: () => context.push('/register'), child: Text(l10n.authCreatePatientAccount)),
             const SizedBox(height: AppSpacing.md),
-            Text('Doctor accounts are created by your SUSTHITI administrator.', style: Theme.of(context).textTheme.bodySmall, textAlign: TextAlign.center),
+            Text(l10n.authDoctorAccountsNote, style: Theme.of(context).textTheme.bodySmall, textAlign: TextAlign.center),
           ]),
         ),
       ),

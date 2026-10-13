@@ -59,7 +59,7 @@ void main() {
   testWidgets('an unreachable server keeps the form, says so, and sends one request per tap', (tester) async {
     final pending = Completer<AuthSession>();
     when(() => repo.register(fullName: any(named: 'fullName'), email: any(named: 'email'), password: any(named: 'password'),
-        dateOfBirth: any(named: 'dateOfBirth'), gender: any(named: 'gender'), phone: any(named: 'phone'))).thenAnswer((_) => pending.future);
+        dateOfBirth: any(named: 'dateOfBirth'), gender: any(named: 'gender'), phone: any(named: 'phone'), preferredLocale: any(named: 'preferredLocale'))).thenAnswer((_) => pending.future);
     await pump(tester);
     await fillForm(tester);
 
@@ -69,7 +69,7 @@ void main() {
     await tapCreate(tester); // a second tap while the first is still running
     await tester.pump();
     verify(() => repo.register(fullName: 'Asha Patel', email: 'asha@example.org', password: 'Password1',
-        dateOfBirth: any(named: 'dateOfBirth'), gender: 'Male', phone: '9876543210')).called(1);
+        dateOfBirth: any(named: 'dateOfBirth'), gender: 'Male', phone: '9876543210', preferredLocale: 'en')).called(1);
 
     pending.completeError(const NetworkFailure("Can't reach SUSTHITI's server. Please check your connection and try again."));
     await tester.pumpAndSettle();
@@ -82,7 +82,7 @@ void main() {
 
   testWidgets('a confirmed response signs the new patient in', (tester) async {
     when(() => repo.register(fullName: any(named: 'fullName'), email: any(named: 'email'), password: any(named: 'password'),
-            dateOfBirth: any(named: 'dateOfBirth'), gender: any(named: 'gender'), phone: any(named: 'phone')))
+            dateOfBirth: any(named: 'dateOfBirth'), gender: any(named: 'gender'), phone: any(named: 'phone'), preferredLocale: any(named: 'preferredLocale')))
         .thenAnswer((_) async => const AuthSession(token: 't', user: testPatient));
     await pump(tester);
     await fillForm(tester);

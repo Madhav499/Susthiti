@@ -6,6 +6,7 @@ import '../../core/theme/app_tokens.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_card.dart';
 import '../../data/models/patient.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Height, weight and BMI. BMI is always calculated by SUSTHITI from the latest height and weight
 /// in the health profile, so the patient, their doctor and the admin all see the same value.
@@ -18,12 +19,13 @@ class BodyMeasurementsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return AppCard(
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        KeyValueRow('Height', body.heightCm == null ? 'Not recorded' : '${_num(body.heightCm!)} cm'),
-        KeyValueRow('Weight', body.weightKg == null ? 'Not recorded' : '${_num(body.weightKg!)} kg${body.weightRecordedAt == null ? '' : ' (${Fmt.date(body.weightRecordedAt)})'}'),
-        KeyValueRow('BMI', body.bmi == null ? 'Needs height and weight' : body.bmi!.toStringAsFixed(1)),
-        Text('BMI is calculated automatically from height and weight.', style: t.bodySmall),
+        KeyValueRow(l10n.heightLabel, body.heightCm == null ? l10n.commonNotRecorded : '${_num(body.heightCm!)} cm'),
+        KeyValueRow(l10n.weightLabel, body.weightKg == null ? l10n.commonNotRecorded : '${_num(body.weightKg!)} kg${body.weightRecordedAt == null ? '' : ' (${Fmt.date(body.weightRecordedAt)})'}'),
+        KeyValueRow(l10n.bmiLabel, body.bmi == null ? l10n.needsHeightWeightLabel : body.bmi!.toStringAsFixed(1)),
+        Text(l10n.bmiAutoCalculatedNote, style: t.bodySmall),
         if (canEdit) ...[
           const SizedBox(height: AppSpacing.sm),
           Align(
@@ -31,7 +33,7 @@ class BodyMeasurementsCard extends StatelessWidget {
             child: TextButton.icon(
               onPressed: () => context.push('/r/$patientId/health-profile'),
               icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.primary),
-              label: Text(body.bmi == null ? 'Add height and weight' : 'Update height or weight'),
+              label: Text(body.bmi == null ? l10n.addHeightWeightButton : l10n.updateHeightWeightButton),
             ),
           ),
         ],

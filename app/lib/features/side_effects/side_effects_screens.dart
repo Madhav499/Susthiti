@@ -15,6 +15,7 @@ import '../../core/widgets/labels.dart';
 import '../../data/models/care.dart';
 import '../../data/models/user.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../authentication/auth_controller.dart';
 
 final sideEffectsProvider = FutureProvider.autoDispose.family<List<SideEffect>, String>((ref, pid) => ref.watch(sideEffectRepositoryProvider).list(pid));
@@ -26,14 +27,15 @@ class SideEffectsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final isPatient = ref.watch(currentUserProvider)?.role == UserRole.patient;
     return AppPage(
-      title: 'Side Effects',
+      title: l10n.sideEffectsTitle,
       floatingActionButton: isPatient
           ? FloatingActionButton.extended(
               onPressed: () => context.push('/p/side-effects/new'),
               icon: const Icon(Icons.add),
-              label: const Text('Report Side Effect'),
+              label: Text(l10n.sideEffectsReportButton),
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               elevation: 1,
@@ -52,6 +54,7 @@ class SideEffectsView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final value = ref.watch(sideEffectsProvider(patientId));
     return PageBody(
       maxWidth: 820,
@@ -64,9 +67,9 @@ class SideEffectsView extends ConsumerWidget {
           data: (items) => items.isEmpty
               ? EmptyState(
                   icon: Icons.healing_outlined,
-                  title: 'No side effects reported.',
-                  message: canReport ? 'If a medicine makes you feel unwell, report it here so your doctor can review it.' : null,
-                  actionLabel: canReport ? 'Report Side Effect' : null,
+                  title: l10n.sideEffectsEmptyTitle,
+                  message: canReport ? l10n.sideEffectsEmptyMessage : null,
+                  actionLabel: canReport ? l10n.sideEffectsReportButton : null,
                   onAction: canReport ? () => context.push('/p/side-effects/new') : null,
                 )
               : Column(children: [
@@ -89,6 +92,7 @@ class SideEffectTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final s = effect;
     return AppCard(
       onTap: onTap,
@@ -104,7 +108,7 @@ class SideEffectTile extends StatelessWidget {
             Wrap(spacing: AppSpacing.sm, runSpacing: AppSpacing.xs, children: [
               StatusPill(s.severity.label, tone: s.severity.tone),
               StatusPill(s.status.label, tone: s.status.tone),
-              if (s.priorityFlag) const StatusPill('Priority', tone: StatusTone.critical),
+              if (s.priorityFlag) StatusPill(l10n.sideEffectPriorityLabel, tone: StatusTone.critical),
             ]),
           ]),
         ),
@@ -139,7 +143,7 @@ class _ReportSideEffectScreenState extends ConsumerState<ReportSideEffectScreen>
     super.dispose();
   }
 
-  Future<void> _submit() async {
+  Future<void> _submit(AppLocalizations l10n) async {
     if (!_form.currentState!.validate()) return;
     try {
       final s = await ref.read(sideEffectRepositoryProvider).report(
@@ -152,7 +156,7 @@ class _ReportSideEffectScreenState extends ConsumerState<ReportSideEffectScreen>
           );
       ref.invalidate(sideEffectsProvider(widget.patientId));
       if (!mounted) return;
-      showToast(context, 'Side effect reported. Your doctor has been notified.');
+      showToast(context, l10n.sideEffectReportedToast);
       context.pushReplacement('/r/${widget.patientId}/side-effects/${s.id}');
     } on Failure catch (e) {
       if (mounted) showFailure(context, e);
@@ -161,22 +165,23 @@ class _ReportSideEffectScreenState extends ConsumerState<ReportSideEffectScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final t = Theme.of(context).textTheme;
     final urgent = _severity == Severity.severe || _severity == Severity.emergency;
     return AppPage(
-      title: 'Report Side Effect',
+      title: l10n.sideEffectsReportButton,
       body: PageBody(maxWidth: 640, children: [
         Form(
           key: _form,
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             AppTextField(
-              label: 'What are you experiencing?',
+              label: l10n.sideEffectDescribeLabel,
               controller: _description,
               maxLines: 4,
               textCapitalization: TextCapitalization.sentences,
-              validator: (v) => (v == null || v.trim().length < 3) ? 'Please describe what you are experiencing.' : null,
+              validator: (v) => (v == null || v.trim().length < 3) ? l10n.sideEffectDescribeValidation : null,
             ),
-            ChoiceField<Severity>(label: 'How severe is it?', options: Severity.values, value: _severity, labelOf: (s) => s.label, onChanged: (s) => setState(() => _severity = s)),
+            ChoiceField<Severity>(label: l10n.sideEffectSeverityLabel, options: Severity.values, value: _severity, labelOf: (s) => s.label, onChanged: (s) => setState(() => _severity = s), requiredMessage: l10n.choiceRequiredMessage),
             if (urgent)
               Container(
                 margin: const EdgeInsets.only(bottom: AppSpacing.lg),
@@ -187,17 +192,17 @@ class _ReportSideEffectScreenState extends ConsumerState<ReportSideEffectScreen>
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
-                      'If you feel your symptoms need urgent care, contact your local emergency services or go to the nearest hospital now. SUSTHITI is not monitored in real time.',
+                      l10n.sideEffectUrgentWarning,
                       style: t.bodySmall?.copyWith(color: AppColors.errorText),
                     ),
                   ),
                 ]),
               ),
-            AppTextField(label: 'Related medicine', controller: _medication, optional: true, hint: 'e.g. Metformin'),
-            DateTimeField(label: 'When did it start?', value: _at, includeTime: true, onChanged: (d) => setState(() => _at = d), validator: (d) => Validators.notFuture(d, 'Time')),
-            AppTextField(label: 'Notes', controller: _notes, optional: true, maxLines: 3, textCapitalization: TextCapitalization.sentences),
+            AppTextField(label: l10n.sideEffectRelatedMedicineLabel, controller: _medication, optional: true, hint: l10n.sideEffectRelatedMedicineHint),
+            DateTimeField(label: l10n.sideEffectWhenStartedLabel, value: _at, includeTime: true, onChanged: (d) => setState(() => _at = d), validator: (d) => Validators.notFuture(l10n, d, l10n.validatorDateLabel)),
+            AppTextField(label: l10n.commonNotesLabel, controller: _notes, optional: true, maxLines: 3, textCapitalization: TextCapitalization.sentences),
             const SizedBox(height: AppSpacing.sm),
-            BusyButton(label: 'Submit report', onPressed: _submit, expand: true),
+            BusyButton(label: l10n.sideEffectSubmitButton, onPressed: () => _submit(l10n), expand: true),
             const Disclaimer(),
           ]),
         ),
@@ -213,6 +218,7 @@ class SideEffectDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final value = ref.watch(sideEffectProvider(sideEffectId));
     final isDoctor = ref.watch(currentUserProvider)?.role == UserRole.doctor;
     final t = Theme.of(context).textTheme;
@@ -222,7 +228,7 @@ class SideEffectDetailScreen extends ConsumerWidget {
     }
 
     return AppPage(
-      title: 'Side Effect',
+      title: l10n.sideEffectDetailTitle,
       body: PageBody(maxWidth: 760, onRefresh: () async => refresh(), children: [
         AsyncBody(
           value: value,
@@ -233,19 +239,19 @@ class SideEffectDetailScreen extends ConsumerWidget {
                 Wrap(spacing: AppSpacing.sm, runSpacing: AppSpacing.xs, children: [
                   StatusPill(s.status.label, tone: s.status.tone),
                   StatusPill(s.severity.label, tone: s.severity.tone),
-                  if (s.priorityFlag) const StatusPill('Priority', tone: StatusTone.critical),
+                  if (s.priorityFlag) StatusPill(l10n.sideEffectPriorityLabel, tone: StatusTone.critical),
                 ]),
                 const SizedBox(height: AppSpacing.md),
                 Text(s.description, style: t.titleMedium),
                 const SizedBox(height: AppSpacing.md),
-                KeyValueRow('Reference', s.code),
-                KeyValueRow('Started', Fmt.dateTime(s.occurredAt)),
-                KeyValueRow('Related medicine', s.relatedMedication ?? 'Not specified'),
-                if (s.notes != null) KeyValueRow('Notes', s.notes!),
-                KeyValueRow('Reported', Fmt.dateTime(s.createdAt)),
+                KeyValueRow(l10n.sideEffectReferenceLabel, s.code),
+                KeyValueRow(l10n.sideEffectStartedLabel, Fmt.dateTime(s.occurredAt)),
+                KeyValueRow(l10n.sideEffectRelatedMedicineLabel, s.relatedMedication ?? l10n.sideEffectNotSpecified),
+                if (s.notes != null) KeyValueRow(l10n.commonNotesLabel, s.notes!),
+                KeyValueRow(l10n.sideEffectReportedLabel, Fmt.dateTime(s.createdAt)),
                 if (s.priorityFlag) ...[
                   const SizedBox(height: AppSpacing.sm),
-                  Text('Marked as priority because the patient selected ${s.severity.label.toLowerCase()} severity. This is not a clinical judgement.', style: t.bodySmall),
+                  Text(l10n.sideEffectPriorityExplanation(s.severity.label.toLowerCase()), style: t.bodySmall),
                 ],
               ]),
             ),
@@ -254,7 +260,7 @@ class SideEffectDetailScreen extends ConsumerWidget {
               _DoctorActions(effect: s, onChanged: refresh),
             ],
             const SizedBox(height: AppSpacing.section),
-            const SectionHeader('History'),
+            SectionHeader(l10n.navHistory),
             AppCard(
               child: Column(children: [
                 for (var i = 0; i < s.history.length; i++) _HistoryEvent(event: s.history[i], isLast: i == s.history.length - 1),
@@ -275,8 +281,9 @@ class _HistoryEvent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final e = event;
-    final who = e.actorRole == 'doctor' ? 'Dr. ${e.actorName}' : e.actorName;
+    final who = e.actorRole == 'doctor' ? l10n.commonDrName(e.actorName) : e.actorName;
     return IntrinsicHeight(
       child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Column(children: [
@@ -308,11 +315,11 @@ class _DoctorActions extends ConsumerWidget {
   final SideEffect effect;
   final VoidCallback onChanged;
 
-  Future<void> _setStatus(BuildContext context, WidgetRef ref, SideEffectStatus status) async {
+  Future<void> _setStatus(BuildContext context, WidgetRef ref, SideEffectStatus status, AppLocalizations l10n) async {
     try {
       await ref.read(sideEffectRepositoryProvider).setStatus(effect.id, status);
       onChanged();
-      if (context.mounted) showToast(context, status == SideEffectStatus.resolved ? 'Marked as resolved' : 'Marked as under review');
+      if (context.mounted) showToast(context, status == SideEffectStatus.resolved ? l10n.sideEffectMarkedResolvedToast : l10n.sideEffectMarkedUnderReviewToast);
     } catch (e) {
       if (context.mounted) showFailure(context, e);
     }
@@ -320,10 +327,11 @@ class _DoctorActions extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     return AppCard(
       tinted: true,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Doctor actions', style: Theme.of(context).textTheme.titleSmall),
+        Text(l10n.sideEffectDoctorActionsLabel, style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: AppSpacing.md),
         Wrap(spacing: AppSpacing.sm, runSpacing: AppSpacing.sm, children: [
           FilledButton.icon(
@@ -331,15 +339,15 @@ class _DoctorActions extends ConsumerWidget {
               final done = await showModalBottomSheet<bool>(context: context, isScrollControlled: true, builder: (_) => _RespondSheet(effect: effect));
               if (done == true) {
                 onChanged();
-                if (context.mounted) showToast(context, 'Response sent to the patient');
+                if (context.mounted) showToast(context, l10n.sideEffectResponseSentToast);
               }
             },
             icon: const Icon(Icons.reply_outlined),
-            label: const Text('Respond'),
+            label: Text(l10n.sideEffectRespondButton),
           ),
           if (effect.status == SideEffectStatus.newReport)
-            OutlinedButton(onPressed: () => _setStatus(context, ref, SideEffectStatus.underReview), child: const Text('Mark under review')),
-          OutlinedButton(onPressed: () => _setStatus(context, ref, SideEffectStatus.resolved), child: const Text('Mark resolved')),
+            OutlinedButton(onPressed: () => _setStatus(context, ref, SideEffectStatus.underReview, l10n), child: Text(l10n.sideEffectMarkUnderReviewButton)),
+          OutlinedButton(onPressed: () => _setStatus(context, ref, SideEffectStatus.resolved, l10n), child: Text(l10n.sideEffectMarkResolvedButton)),
         ]),
       ]),
     );
@@ -387,18 +395,19 @@ class _RespondSheetState extends ConsumerState<_RespondSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final now = DateTime.now();
     return SheetForm(
-      title: 'Respond to ${widget.effect.code}',
+      title: l10n.sideEffectRespondToTitle(widget.effect.code),
       form: _form,
       children: [
-        ChoiceField<DoctorResponse>(label: 'Response', options: DoctorResponse.values, value: _response, labelOf: (r) => r.label, onChanged: (r) => setState(() => _response = r)),
-        AppTextField(label: 'Message to patient', controller: _message, optional: _response != DoctorResponse.urgentMedicalAttention, maxLines: 3, textCapitalization: TextCapitalization.sentences,
-            validator: (v) => _response == DoctorResponse.urgentMedicalAttention && (v == null || v.trim().isEmpty) ? 'Tell the patient what to do next.' : null),
+        ChoiceField<DoctorResponse>(label: l10n.sideEffectResponseFieldLabel, options: DoctorResponse.values, value: _response, labelOf: (r) => r.label, onChanged: (r) => setState(() => _response = r), requiredMessage: l10n.choiceRequiredMessage),
+        AppTextField(label: l10n.sideEffectMessageToPatientLabel, controller: _message, optional: _response != DoctorResponse.urgentMedicalAttention, maxLines: 3, textCapitalization: TextCapitalization.sentences,
+            validator: (v) => _response == DoctorResponse.urgentMedicalAttention && (v == null || v.trim().isEmpty) ? l10n.sideEffectTellPatientValidation : null),
         if (_response == DoctorResponse.appointmentRecommended) ...[
-          AppTextField(label: 'Appointment reason', controller: _reason, validator: (v) => Validators.required(v, 'Reason'), textCapitalization: TextCapitalization.sentences),
+          AppTextField(label: l10n.sideEffectAppointmentReasonLabel, controller: _reason, validator: (v) => Validators.required(l10n, v, l10n.commonReasonLabel), textCapitalization: TextCapitalization.sentences),
           DateTimeField(
-            label: 'Suggested date',
+            label: l10n.sideEffectSuggestedDateLabel,
             optional: true,
             value: _appointmentFor,
             firstDate: now,
@@ -406,7 +415,7 @@ class _RespondSheetState extends ConsumerState<_RespondSheet> {
             onChanged: (d) => setState(() => _appointmentFor = d),
           ),
         ],
-        BusyButton(label: 'Send response', onPressed: _send, expand: true),
+        BusyButton(label: l10n.sideEffectSendResponseButton, onPressed: _send, expand: true),
       ],
     );
   }

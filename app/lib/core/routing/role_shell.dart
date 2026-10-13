@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/authentication/auth_controller.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
 import '../widgets/avatar.dart';
@@ -149,7 +150,7 @@ class _Sidebar extends StatelessWidget {
                 if (links.isNotEmpty) ...[
                   Padding(
                     padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.sm),
-                    child: Text('MORE', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.textMuted, letterSpacing: 1)),
+                    child: Text(AppLocalizations.of(context).navMore.toUpperCase(), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.textMuted, letterSpacing: 1)),
                   ),
                   for (final link in links)
                     Padding(
@@ -246,7 +247,7 @@ class _SidebarProfile extends ConsumerWidget {
                 ]),
               ),
               IconButton(
-                tooltip: 'Sign out',
+                tooltip: AppLocalizations.of(context).settingsLogOut,
                 icon: const Icon(Icons.logout, size: 18, color: AppColors.textSecondary),
                 onPressed: () => ref.read(authControllerProvider.notifier).logout(),
               ),

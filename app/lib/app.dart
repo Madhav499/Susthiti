@@ -1,13 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/constants/app_assets.dart';
 import 'core/routing/app_router.dart';
+import 'core/services/app_locale.dart';
 import 'core/theme/app_theme.dart';
 import 'data/models/user.dart';
 import 'data/providers.dart';
 import 'features/authentication/auth_controller.dart';
+import 'l10n/app_localizations.dart';
 
 class SusthitiApp extends ConsumerStatefulWidget {
   const SusthitiApp({super.key});
@@ -51,6 +54,14 @@ class _SusthitiAppState extends ConsumerState<SusthitiApp> {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       routerConfig: ref.watch(routerProvider),
+      locale: ref.watch(appLocaleProvider),
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
     );
   }
 }

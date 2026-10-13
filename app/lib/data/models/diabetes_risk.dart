@@ -1,19 +1,20 @@
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
-
+import '../../l10n/app_localizations.dart';
 
 /// Wording rules for the future diabetes risk estimate (SUSTHITI Diabetes Risk API v4).
 /// It is a model-estimated screening estimate trained on synthetic data: never a diagnosis,
-/// never a statement that someone has, will get, or will not get diabetes.
+/// never a statement that someone has, will get, or will not get diabetes. Every piece of text
+/// is localized through [AppLocalizations]; [category] itself (the API's own 'Low'/'Moderate'/
+/// 'High' value) is never translated or altered -- only its on-screen label is.
 abstract final class RiskWording {
-  static const title = 'Future Diabetes Risk';
-  static const estimateLabel = 'Model-estimated risk';
-  static const safety =
-      'This is a research and screening estimate from a machine-learning model trained on synthetic data. It is not clinically validated and is not a medical diagnosis. Talk to your doctor about your results.';
-  static const noReportBasis = 'Based on available symptoms and risk factors. No medical report values were used.';
+  static String title(AppLocalizations l10n) => l10n.riskTitle;
+  static String estimateLabel(AppLocalizations l10n) => l10n.riskEstimateLabel;
+  static String safety(AppLocalizations l10n) => l10n.riskSafetyText;
+  static String noReportBasis(AppLocalizations l10n) => l10n.riskNoReportBasis;
 
-  static String reportBasis(String? fieldsLabel) =>
-      fieldsLabel == null ? 'Includes values from your medical reports.' : 'Includes $fieldsLabel from your medical reports.';
+  static String reportBasis(AppLocalizations l10n, String? fieldsLabel) =>
+      fieldsLabel == null ? l10n.riskReportBasisGeneric : l10n.riskReportBasisWithFields(fieldsLabel);
 
   static StatusTone tone(String category) => switch (category) {
         'High' => StatusTone.critical,
@@ -21,7 +22,12 @@ abstract final class RiskWording {
         _ => StatusTone.positive,
       };
 
-  static String categoryLabel(String category) => '$category risk';
+  static String categoryLabel(AppLocalizations l10n, String category) => switch (category) {
+        'Low' => l10n.riskCategoryLowLabel,
+        'Moderate' => l10n.riskCategoryModerateLabel,
+        'High' => l10n.riskCategoryHighLabel,
+        _ => category,
+      };
 
   static String percent(double value) => '${value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1)}%';
 }
@@ -165,7 +171,7 @@ class RiskAssessment {
   final Map<String, Object?> inputFeatures;
 
   String get percentLabel => RiskWording.percent(riskPercent);
-  String get basisText => reportAvailable ? RiskWording.reportBasis(reportFieldsLabel) : RiskWording.noReportBasis;
+  String basisText(AppLocalizations l10n) => reportAvailable ? RiskWording.reportBasis(l10n, reportFieldsLabel) : RiskWording.noReportBasis(l10n);
 
   factory RiskAssessment.fromJson(Map<String, dynamic> j) {
     final risk = j['risk_percent'];

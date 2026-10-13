@@ -11,6 +11,7 @@ import '../../core/widgets/feedback.dart';
 import '../../core/widgets/labels.dart';
 import '../../data/models/care.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 
 typedef TimelineKey = ({String patientId, String type});
 
@@ -19,17 +20,19 @@ final timelineProvider = FutureProvider.autoDispose.family<({List<TimelineEvent>
 );
 final appointmentsProvider = FutureProvider.autoDispose.family<List<AppointmentRecommendation>, String>((ref, pid) => ref.watch(patientRepositoryProvider).appointments(pid));
 
-/// Filter -> label. Keys are the server's timeline filter names.
-const timelineFilters = {
-  'all': 'All',
-  'reports': 'Reports',
-  'assessments': 'Assessments',
-  'prescriptions': 'Prescriptions',
-  'visits': 'Visits',
-  'side_effects': 'Side effects',
-  'appointments': 'Appointments',
-  'ai': 'AI summaries',
-};
+/// Filter order. Keys are the server's timeline filter names.
+const timelineFilterKeys = ['all', 'reports', 'assessments', 'prescriptions', 'visits', 'side_effects', 'appointments', 'ai'];
+
+Map<String, String> timelineFilterLabels(AppLocalizations l10n) => {
+      'all': l10n.notifFilterAll,
+      'reports': l10n.navReports,
+      'assessments': l10n.timelineFilterAssessments,
+      'prescriptions': l10n.navPrescriptions,
+      'visits': l10n.tabVisits,
+      'side_effects': l10n.navSideEffects,
+      'appointments': l10n.navAppointments,
+      'ai': l10n.timelineFilterAiSummaries,
+    };
 
 /// Longitudinal history. Each event keeps its own medical date (a report is placed by its report
 /// date, not by when it was uploaded).
@@ -46,15 +49,17 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final key = (patientId: widget.patientId, type: _type);
+    final filterLabels = timelineFilterLabels(l10n);
     return AppPage(
-      title: 'Health Timeline',
+      title: l10n.dashHealthTimeline,
       body: PageBody(maxWidth: 760, onRefresh: () async => ref.invalidate(timelineProvider(key)), children: [
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(children: [
-            for (final e in timelineFilters.entries)
-              Padding(padding: const EdgeInsets.only(right: AppSpacing.sm), child: ChoiceChip(label: Text(e.value), selected: _type == e.key, onSelected: (_) => setState(() => _type = e.key))),
+            for (final k in timelineFilterKeys)
+              Padding(padding: const EdgeInsets.only(right: AppSpacing.sm), child: ChoiceChip(label: Text(filterLabels[k]!), selected: _type == k, onSelected: (_) => setState(() => _type = k))),
           ]),
         ),
         const SizedBox(height: AppSpacing.lg),
@@ -62,7 +67,7 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
           value: ref.watch(timelineProvider(key)),
           onRetry: () => ref.invalidate(timelineProvider(key)),
           data: (r) => r.items.isEmpty
-              ? const EmptyState(icon: Icons.timeline_outlined, title: 'No records yet.', message: 'Reports, assessments, prescriptions and visits will appear here in date order.')
+              ? EmptyState(icon: Icons.timeline_outlined, title: l10n.timelineNoRecordsYet, message: l10n.timelineEmptyMessage)
               : AppCard(
                   child: Column(children: [
                     for (var i = 0; i < r.items.length; i++)
@@ -167,16 +172,17 @@ class AppointmentsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return AppPage(
-      title: 'Appointment Recommendations',
+      title: l10n.adocAppointmentRecommendationsHeader,
       body: PageBody(maxWidth: 760, onRefresh: () async => ref.invalidate(appointmentsProvider(patientId)), children: [
-        Text('Recommendations from your doctor. Please contact the clinic to book a time.', style: t.bodyMedium?.copyWith(color: AppColors.textSecondary)),
+        Text(l10n.apptRecommendationsNote, style: t.bodyMedium?.copyWith(color: AppColors.textSecondary)),
         const SizedBox(height: AppSpacing.lg),
         AsyncBody(
           value: ref.watch(appointmentsProvider(patientId)),
           onRetry: () => ref.invalidate(appointmentsProvider(patientId)),
           data: (items) => items.isEmpty
-              ? const EmptyState(icon: Icons.event_available_outlined, title: 'No appointment recommendations.')
+              ? EmptyState(icon: Icons.event_available_outlined, title: l10n.adocNoAppointmentRecommendations)
               : Column(children: [
                   for (final a in _sorted(items)) ...[
                     AppCard(
@@ -188,9 +194,9 @@ class AppointmentsScreen extends ConsumerWidget {
                           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                             Row(children: [Expanded(child: Text(a.reason, style: t.titleSmall)), StatusPill(a.timing.label, tone: _tone(a.timing))]),
                             const SizedBox(height: 2),
-                            Text('Dr. ${a.doctorName} · ${Fmt.date(a.createdAt)}', style: t.bodySmall),
-                            if (a.recommendedFor != null) Text('Suggested for ${Fmt.dateTime(a.recommendedFor)}', style: t.bodySmall?.copyWith(color: AppColors.primary)),
-                            if (a.sideEffectId != null) Text('Related to a side-effect report', style: t.bodySmall),
+                            Text('${l10n.commonDrName(a.doctorName)} · ${Fmt.date(a.createdAt)}', style: t.bodySmall),
+                            if (a.recommendedFor != null) Text(l10n.adocSuggestedFor(Fmt.dateTime(a.recommendedFor)), style: t.bodySmall?.copyWith(color: AppColors.primary)),
+                            if (a.sideEffectId != null) Text(l10n.commonRelatedToSideEffect, style: t.bodySmall),
                           ]),
                         ),
                       ]),

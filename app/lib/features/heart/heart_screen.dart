@@ -9,6 +9,7 @@ import '../../core/widgets/app_page.dart';
 import '../../core/widgets/feedback.dart';
 import '../../data/models/heart_risk.dart';
 import '../../data/models/user.dart';
+import '../../l10n/app_localizations.dart';
 import '../authentication/auth_controller.dart';
 import '../diabetes/risk_widgets.dart' show DataUsedCard, MissingDataCard;
 import '../notifications/notifications.dart';
@@ -24,7 +25,7 @@ class HeartScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppPage(
-      title: 'Heart',
+      title: AppLocalizations.of(context).navHeart,
       large: true,
       actions: const [NotificationBell()],
       body: HeartView(patientId: patientId, canAssess: true),
@@ -50,15 +51,13 @@ class HeartView extends ConsumerStatefulWidget {
 class _HeartViewState extends ConsumerState<HeartView> {
   bool _refreshing = false;
 
-  Future<void> _refresh() async {
+  Future<void> _refresh(AppLocalizations l10n) async {
     setState(() => _refreshing = true);
     try {
       final result = await refreshHeartRisk(ref, widget.patientId);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(result.created
-            ? 'Your heart risk screening has been updated.'
-            : 'Nothing relevant has changed since your last screening, so it is still current.'),
+        content: Text(result.created ? l10n.heartScreeningUpdatedSnack : l10n.heartNothingChangedSnack),
       ));
     } on Failure catch (e) {
       if (mounted) showFailure(context, e);
@@ -87,6 +86,7 @@ class _HeartViewState extends ConsumerState<HeartView> {
   }
 
   Widget _content(BuildContext context, HeartRiskStatus s, UserRole? role) {
+    final l10n = AppLocalizations.of(context);
     final canRefresh = widget.canAssess;
     final latest = s.latest;
     // Patients answer the assessment form again (point-in-time symptoms and cardiac test
@@ -98,11 +98,11 @@ class _HeartViewState extends ConsumerState<HeartView> {
             ? FilledButton.icon(
                 onPressed: () => context.push('/p/heart/assess'),
                 icon: const Icon(Icons.favorite_border),
-                label: Text(latest == null ? 'Start screening' : 'Run new screening'),
+                label: Text(latest == null ? l10n.dashStartScreening : l10n.heartRunNewScreening),
               )
             : (s.stale || latest == null)
-                ? FilledButton.icon(onPressed: _refresh, icon: const Icon(Icons.refresh), label: Text(latest == null ? 'Get risk screening' : 'Refresh screening'))
-                : OutlinedButton.icon(onPressed: _refresh, icon: const Icon(Icons.refresh), label: const Text('Refresh screening'));
+                ? FilledButton.icon(onPressed: () => _refresh(l10n), icon: const Icon(Icons.refresh), label: Text(latest == null ? l10n.heartGetRiskScreening : l10n.heartRefreshScreening))
+                : OutlinedButton.icon(onPressed: () => _refresh(l10n), icon: const Icon(Icons.refresh), label: Text(l10n.heartRefreshScreening));
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (latest == null)
         _Intro(status: s, action: canRefresh ? mainAction : null)
@@ -110,32 +110,31 @@ class _HeartViewState extends ConsumerState<HeartView> {
         HeroPanel(
           child: HeartResultBlock(assessment: latest, actions: [
             if (canRefresh) mainAction,
-            TextButton(onPressed: () => context.push('/r/${widget.patientId}/heart-risk/${latest.id}'), child: const Text('View details')),
+            TextButton(onPressed: () => context.push('/r/${widget.patientId}/heart-risk/${latest.id}'), child: Text(l10n.dashViewDetails)),
           ]),
         ),
       if (s.stale) ...[
         const SizedBox(height: AppSpacing.md),
-        HeartStaleBanner(reasons: s.staleReasons, onRefresh: canRefresh && !_refreshing ? _refresh : null),
+        HeartStaleBanner(reasons: s.staleReasons, onRefresh: canRefresh && !_refreshing ? () => _refresh(l10n) : null),
       ],
       if (latest != null && latest.warnings.isNotEmpty) ...[const SizedBox(height: AppSpacing.md), HeartWarningNotes(latest.warnings)],
       const SizedBox(height: AppSpacing.section),
       if (latest != null) ...[
-        const SectionHeader('Data used for this screening', subtitle: 'Only information SUSTHITI already had, or that was answered on the assessment form.'),
+        SectionHeader(l10n.heartDataUsedHeader, subtitle: l10n.heartDataUsedSubtitle),
         DataUsedCard(data: latest.dataUsed),
       ] else ...[
-        const SectionHeader('Health information available now', subtitle: 'What a screening would use, from your SUSTHITI records.'),
+        SectionHeader(l10n.riskHealthInfoAvailableHeader, subtitle: l10n.heartHealthInfoSubtitle),
         DataUsedCard(data: s.currentData),
       ],
       if (s.currentData.missing.isNotEmpty) ...[
         const SizedBox(height: AppSpacing.section),
-        SectionHeader('Not recorded yet',
-            subtitle: 'The screening uses these when they are in your records or answered on the form. '
-                '${s.currentData.availableCount} of ${s.currentData.totalCount} available.'),
+        SectionHeader(l10n.riskNotRecordedHeader,
+            subtitle: l10n.riskNotRecordedSubtitleHeart('${s.currentData.availableCount}', '${s.currentData.totalCount}')),
         MissingDataCard(missing: s.currentData.missing, patientId: widget.patientId, role: role),
       ],
       if (s.historyTotal > 0) ...[
         const SizedBox(height: AppSpacing.section),
-        const SectionHeader('Screening history', subtitle: 'Every screening is kept exactly as it was made.'),
+        SectionHeader(l10n.heartScreeningHistoryHeader, subtitle: l10n.heartScreeningHistorySubtitle),
         _History(patientId: widget.patientId),
       ],
       const HeartSafetyNote(),
@@ -151,17 +150,17 @@ class _Intro extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return HeroPanel(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(HeartWording.title, style: t.titleLarge),
+        Text(HeartWording.title(l10n), style: t.titleLarge),
         const SizedBox(height: AppSpacing.sm),
         Text(
-          'Screen your heart disease risk. You\'ll answer a short form covering symptoms, vitals and cardiac tests; '
-          'values already in your SUSTHITI records (profile, labs, lifestyle) are filled in for you to review.',
+          l10n.heartIntroText,
           style: t.bodyMedium,
         ),
         const SizedBox(height: AppSpacing.sm),
-        Text('${status.currentData.availableCount} of ${status.currentData.totalCount} health details are available now.', style: t.bodySmall),
+        Text(l10n.riskHealthDetailsAvailableCaption('${status.currentData.availableCount}', '${status.currentData.totalCount}'), style: t.bodySmall),
         if (action != null) ...[const SizedBox(height: AppSpacing.lg), action!],
       ]),
     );

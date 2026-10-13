@@ -1,0 +1,2666 @@
+{
+  "@@locale": "en",
+  "commonCancel": "Cancel",
+  "commonTryAgain": "Try Again",
+  "commonLoading": "Loading",
+  "commonViewAll": "View all",
+  "commonNoData": "No data",
+  "errorUnableToLoad": "Unable to load this right now.",
+  "errorAccessNotAvailable": "Access not available.",
+  "errorNotFound": "Not found.",
+  "errorSomethingWrong": "Something went wrong.",
+  "authWelcomeBack": "Welcome back",
+  "authSignInSubtitle": "Sign in to continue to your health overview.",
+  "authEmailLabel": "Email",
+  "authPasswordLabel": "Password",
+  "authSignIn": "Sign in",
+  "authForgotPassword": "Forgot password?",
+  "authNewToSusthiti": "New to SUSTHITI?",
+  "authCreatePatientAccount": "Create a patient account",
+  "authDoctorAccountsNote": "Doctor accounts are created by your SUSTHITI administrator.",
+  "authCreateAccountTitle": "Create your account",
+  "authCreateAccountSubtitle": "Start building your health history. You can add more details later.",
+  "authFullName": "Full name",
+  "authDateOfBirth": "Date of birth",
+  "authGender": "Gender",
+  "genderMale": "Male",
+  "genderFemale": "Female",
+  "authPhone": "Phone",
+  "authGenderRequired": "Please choose a gender.",
+  "authConsentText": "I understand SUSTHITI provides informational insights and does not replace professional medical diagnosis, treatment, or emergency care.",
+  "authConsentError": "Please confirm you understand SUSTHITI does not replace medical care.",
+  "authCreateAccountButton": "Create account",
+  "authPasswordHelper": "At least 8 characters with a letter and a number.",
+  "authLanguageLabel": "Language",
+  "authLanguageHelper": "You can change this later in Settings.",
+  "authResetPasswordTitle": "Reset your password",
+  "authResetPasswordSubtitle": "Enter the email you use for SUSTHITI and we will send reset instructions.",
+  "authResetSentMessage": "If an account exists for this email, password reset instructions have been sent.",
+  "authDevModeTitle": "DEVELOPMENT MODE",
+  "authDevModeBody": "No email provider is configured on this server, so the 8-digit reset code is shown below. This never happens in production.",
+  "authCopyCode": "Copy code",
+  "authCodeCopied": "Reset code copied to clipboard",
+  "authEnterResetCode": "Enter reset code",
+  "authSendResetInstructions": "Send reset instructions",
+  "authChooseNewPassword": "Choose a new password",
+  "authChooseNewPasswordSubtitle": "Enter the 8-digit reset code you received and a new password.",
+  "auth8DigitCode": "8-digit reset code",
+  "authPasteFromClipboard": "Paste from clipboard",
+  "authInvalid8DigitCode": "Enter the 8-digit code from your email.",
+  "authNewPassword": "New password",
+  "authConfirmNewPassword": "Confirm new password",
+  "authPasswordsDontMatch": "Passwords do not match.",
+  "authUpdatePassword": "Update password",
+  "authPastedCode": "Pasted 8-digit code from clipboard",
+  "authPastedCodeGeneric": "Pasted code from clipboard",
+  "authClipboardEmpty": "Clipboard is empty",
+  "authPasswordUpdatedSignIn": "Your password has been updated. Please sign in.",
+  "settingsTitle": "Settings",
+  "settingsAccount": "Account",
+  "settingsDoctorIdLabel": "Doctor ID {code}",
+  "@settingsDoctorIdLabel": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsEditProfile": "Edit profile",
+  "settingsNotifications": "Notifications",
+  "settingsPrivacy": "Privacy",
+  "settingsDoctorAccess": "Doctor access",
+  "settingsDoctorAccessSubtitle": "Approve, reject or revoke doctors who can see your records",
+  "settingsConnectedDevices": "Connected devices",
+  "settingsPrivacyNote": "Your records are only visible to you and to doctors you approve. Administrators manage accounts but cannot read your medical records.",
+  "settingsSecurity": "Security",
+  "settingsChangePassword": "Change password",
+  "settingsLogOut": "Log out",
+  "settingsLogOutConfirmTitle": "Log out?",
+  "settingsLogOutConfirmMessage": "You will need to sign in again to see your records.",
+  "settingsPasswordChanged": "Password changed",
+  "settingsCurrentPassword": "Current password",
+  "settingsNewPassword": "New password",
+  "settingsConfirmNewPassword": "Confirm new password",
+  "settingsLanguageTitle": "Language",
+  "settingsLanguageSubtitle": "Choose the language SUSTHITI is shown in",
+  "settingsLanguageUpdated": "Language updated",
+  "settingsLanguageUpdateFailed": "Couldn't update your language. Please check your connection and try again.",
+  "languageEnglish": "English",
+  "languageHindi": "हिन्दी",
+  "languageGujarati": "ગુજરાતી",
+  "navHome": "Home",
+  "navReports": "Reports",
+  "navLifestyle": "Lifestyle",
+  "navDiabetes": "Diabetes",
+  "navHeart": "Heart",
+  "navProfile": "Profile",
+  "navGlucose": "Glucose",
+  "navFoodLog": "Food log",
+  "navPrescriptions": "Prescriptions",
+  "navAppointments": "Appointments",
+  "navFollowUps": "Follow-ups",
+  "navSurgeries": "Surgeries",
+  "navSideEffects": "Side effects",
+  "navHistory": "History",
+  "navNotifications": "Notifications",
+  "navSettings": "Settings",
+  "navDashboard": "Dashboard",
+  "navPatients": "Patients",
+  "navRequests": "Requests",
+  "navAccount": "Account",
+  "navAddPatient": "Add patient",
+  "navDoctors": "Doctors",
+  "navAccess": "Access",
+  "navMore": "More",
+  "navAuditLogs": "Audit logs",
+  "navNotificationDelivery": "Notification delivery",
+  "navSystemSettings": "System settings",
+  "navAddDoctor": "Add doctor",
+  "dashTodaysOverview": "Today's Overview",
+  "dashNoReadingsYet": "No readings yet",
+  "dashQuickActions": "Quick Actions",
+  "dashUploadReport": "Upload Report",
+  "dashRecordGlucose": "Record Glucose",
+  "dashLogFood": "Log Food",
+  "dashDiabetesRisk": "Diabetes Risk",
+  "dashReportSideEffect": "Report Side Effect",
+  "dashAiLifestyleInsight": "AI Lifestyle Insight",
+  "dashInsightPlaceholder": "Generate suggestions based on your activity, sleep, food and glucose.",
+  "dashGenerated": "Generated {time}",
+  "@dashGenerated": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "dashRecentReports": "Recent Reports",
+  "dashNoReportsAvailable": "No reports available.",
+  "dashMyRecords": "My Records",
+  "dashDoctorVisits": "Doctor visits",
+  "dashAppointmentRecommendations": "Appointment recommendations",
+  "dashHealthTimeline": "Health timeline",
+  "dashHealthSummary": "Your Health Summary",
+  "dashHappyBirthday": "Happy birthday",
+  "dashHappyBirthdayMessage": "Happy birthday, {name}! Wishing you a happy and healthy year ahead.",
+  "@dashHappyBirthdayMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dashUpcomingAppointment": "Upcoming Appointment",
+  "dashContactClinic": "Contact the clinic to schedule a time",
+  "dashUpcomingFollowUp": "Upcoming Follow-up",
+  "dashOverdue": "Overdue",
+  "dashScheduled": "Scheduled",
+  "dashUpcomingSurgery": "Upcoming Surgery",
+  "dashDateTbc": "Date to be confirmed",
+  "dashYourHealth": "Your Health",
+  "dashNoEstimateYet": "No estimate yet",
+  "dashEstimateFutureRisk": "Estimate your future diabetes risk. A few questions, already filled in with what SUSTHITI knows.",
+  "dashStartAssessment": "Start assessment",
+  "dashIncludesReportValues": "Includes medical report values",
+  "dashBasedOnSymptomsOnly": "Based on symptoms and risk factors only",
+  "dashUpdatedRiskInfo": "Updated health information is available. Refresh your assessment to include it.",
+  "dashReviewAndRefresh": "Review and refresh",
+  "dashViewDetails": "View details",
+  "dashNoScreeningYet": "No screening yet",
+  "dashScreenHeartRisk": "Screen your heart disease risk. A short form, already filled in with what SUSTHITI knows.",
+  "dashStartScreening": "Start screening",
+  "dashUpdatedScreeningInfo": "Updated health information is available. Refresh your screening to include it.",
+  "docPatientsLabel": "Patients",
+  "docPatientsCaption": "with approved access",
+  "docPendingRequests": "Pending requests",
+  "docPendingRequestsCaption": "awaiting patient approval",
+  "docOpenSideEffects": "Open side effects",
+  "docOpenSideEffectsCaption": "not yet resolved",
+  "docFollowUpsCaption": "in the next 7 days",
+  "docAppointmentsCaption": "in the next 7 days",
+  "docNewReports": "New reports",
+  "docNewReportsCaption": "in the last 7 days",
+  "docNeedsAttention": "Needs attention",
+  "docNeedsAttentionSubtitle": "Based on patient-reported severity, unresolved items and due follow-ups. Not a clinical triage.",
+  "docNothingNeedsAttention": "Nothing needs attention right now.",
+  "docQuickActions": "Quick actions",
+  "docAddPatient": "Add Patient",
+  "docMyPatients": "My Patients",
+  "docAccessRequests": "Access Requests",
+  "docRecentActivity": "Recent activity",
+  "docNoRecentActivity": "No recent activity.",
+  "docToday": "Today",
+  "docAll": "All",
+  "docScheduleClear": "Your schedule is clear today.",
+  "docAppointmentType": "Appointment",
+  "docFollowUpType": "Follow-up",
+  "docSurgeryType": "Surgery",
+  "docTodayAt": "Today",
+  "validatorRequiredField": "{label} is required.",
+  "@validatorRequiredField": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "validatorThisField": "This field",
+  "validatorEmailRequired": "Email is required.",
+  "validatorEmailInvalid": "Enter a valid email address.",
+  "validatorPasswordRequired": "Password is required.",
+  "validatorPasswordTooShort": "Use at least 8 characters.",
+  "validatorPasswordNeedsLetterNumber": "Include at least one letter and one number.",
+  "validatorPhoneInvalid": "Enter a valid phone number.",
+  "validatorPatientIdRequired": "Patient ID is required.",
+  "validatorPatientIdInvalid": "Patient ID should look like SUS-P-8A42F1.",
+  "validatorAgeInvalid": "Enter your age in whole years.",
+  "validatorAgeRange": "Age must be between 1 and 120.",
+  "validatorNumberRequired": "Enter a number.",
+  "validatorGlucoseRange": "Enter a value between {low} and {high} {unit}.",
+  "@validatorGlucoseRange": {
+    "placeholders": {
+      "low": {
+        "type": "String"
+      },
+      "high": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "validatorNumberRange": "{label} must be between {low} and {high}.",
+  "@validatorNumberRange": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "low": {
+        "type": "String"
+      },
+      "high": {
+        "type": "String"
+      }
+    }
+  },
+  "validatorValueLabel": "Value",
+  "validatorDateLabel": "Date",
+  "validatorDateNotFuture": "{label} can't be in the future.",
+  "@validatorDateNotFuture": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "fmtJustNow": "just now",
+  "fmtMinutesAgo": "{count, plural, =1{1 minute ago} other{{count} minutes ago}}",
+  "@fmtMinutesAgo": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "fmtHoursAgo": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
+  "@fmtHoursAgo": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "fmtDaysAgo": "{count, plural, =1{1 day ago} other{{count} days ago}}",
+  "@fmtDaysAgo": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "fmtGoodMorning": "Good morning",
+  "fmtGoodAfternoon": "Good afternoon",
+  "fmtGoodEvening": "Good evening",
+  "commonToday": "Today",
+  "commonDrName": "Dr. {name}",
+  "@commonDrName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dashLastRecorded": "Last recorded {date}",
+  "@dashLastRecorded": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "dashRiskUpdated": "Updated {time}",
+  "@dashRiskUpdated": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "dashAppointmentDoctorLine": "Dr. {doctor} · {subtitle}",
+  "@dashAppointmentDoctorLine": {
+    "placeholders": {
+      "doctor": {
+        "type": "String"
+      },
+      "subtitle": {
+        "type": "String"
+      }
+    }
+  },
+  "dashFollowUpDoctorLine": "Dr. {doctor} · Due {date}",
+  "@dashFollowUpDoctorLine": {
+    "placeholders": {
+      "doctor": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "dashSurgeryDoctorLine": "Dr. {doctor} · {when}",
+  "@dashSurgeryDoctorLine": {
+    "placeholders": {
+      "doctor": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "commonAnd": "and",
+  "docTodaySummary": "Today you have {list}.",
+  "@docTodaySummary": {
+    "placeholders": {
+      "list": {
+        "type": "String"
+      }
+    }
+  },
+  "docSummaryAppointments": "{count, plural, =1{1 appointment} other{{count} appointments}}",
+  "@docSummaryAppointments": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "docSummaryFollowUps": "{count, plural, =1{1 follow-up} other{{count} follow-ups}}",
+  "@docSummaryFollowUps": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "docSummarySurgeries": "{count, plural, =1{1 surgery} other{{count} surgeries}}",
+  "@docSummarySurgeries": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "commonEdit": "Edit",
+  "commonReschedule": "Reschedule",
+  "commonMarkCompleted": "Mark Completed",
+  "commonSaveChanges": "Save Changes",
+  "commonSaveNewDate": "Save New Date",
+  "commonPurposeLabel": "Purpose",
+  "commonDoctorLabel": "Doctor",
+  "commonReasonLabel": "Reason",
+  "commonInstructionsLabel": "Instructions",
+  "visitsPageTitle": "Doctor Visits",
+  "visitsRecordVisit": "Record Visit",
+  "visitsEmptyTitle": "No visits recorded yet.",
+  "visitsEmptyMessage": "Visits recorded by your doctor will appear here.",
+  "visitsDoctorDateCode": "Dr. {doctor} · {date} · {code}",
+  "@visitsDoctorDateCode": {
+    "placeholders": {
+      "doctor": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "visitsFollowUpOn": "Follow-up {date}",
+  "@visitsFollowUpOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "visitDetailTitle": "Visit",
+  "visitIdLabel": "Visit ID",
+  "visitDateLabel": "Visit date",
+  "visitFollowUpLabel": "Follow-up",
+  "visitClinicalNotesLabel": "Clinical notes",
+  "visitAssessmentLabel": "Assessment",
+  "visitDoctorReasoningLabel": "Doctor's reasoning",
+  "visitTreatmentDecisionLabel": "Treatment decision",
+  "visitInstructionsForPatientLabel": "Instructions for the patient",
+  "visitRecordedToast": "Visit {code} recorded",
+  "@visitRecordedToast": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "visitReasonForVisitLabel": "Reason for visit",
+  "visitFollowUpDateLabel": "Follow-up date",
+  "visitSaveButton": "Save visit",
+  "followUpsEmptyTitle": "No follow-ups scheduled.",
+  "followUpsScheduleButton": "Schedule Follow-up",
+  "followUpMarkCompletedTitle": "Mark as completed?",
+  "followUpMarkCompletedMessage": "This follow-up will be marked as done.",
+  "followUpCancelTitle": "Cancel this follow-up?",
+  "followUpCancelMessage": "The patient will be notified that it was cancelled.",
+  "followUpCancelConfirmLabel": "Cancel Follow-up",
+  "followUpMarkedCompletedToast": "Follow-up marked completed",
+  "followUpCancelledToast": "Follow-up cancelled",
+  "followUpsDueDateLabel": "Due date",
+  "followUpsRescheduleTitle": "Reschedule Follow-up",
+  "followUpsNewDueDateLabel": "New due date",
+  "surgeriesEmptyTitle": "No surgeries scheduled.",
+  "surgeriesScheduleButton": "Schedule Surgery",
+  "surgeryMarkCompletedMessage": "This surgery will be marked as done.",
+  "surgeryCancelTitle": "Cancel this surgery?",
+  "surgeryCancelConfirmLabel": "Cancel Surgery",
+  "surgeryMarkedCompletedToast": "Surgery marked completed",
+  "surgeryCancelledToast": "Surgery cancelled",
+  "surgeryNameLabel": "Surgery name",
+  "surgeryEditTitle": "Edit Surgery",
+  "surgeryScheduledDateTimeLabel": "Scheduled date and time",
+  "surgeryHospitalLabel": "Hospital / location",
+  "surgeryPatientInstructionsLabel": "Patient-visible instructions",
+  "surgeryPatientInstructionsHelper": "Shown to the patient (e.g. fasting instructions).",
+  "surgeryInternalNotesLabel": "Internal notes",
+  "surgeryInternalNotesHelper": "Never shown to the patient.",
+  "surgeryInternalNotesSectionLabel": "Internal notes (not shown to the patient)",
+  "surgeryRescheduleTitle": "Reschedule Surgery",
+  "surgeryNewDateTimeLabel": "New date and time",
+  "commonNotesLabel": "Notes",
+  "sideEffectsTitle": "Side Effects",
+  "sideEffectsReportButton": "Report Side Effect",
+  "sideEffectsEmptyTitle": "No side effects reported.",
+  "sideEffectsEmptyMessage": "If a medicine makes you feel unwell, report it here so your doctor can review it.",
+  "sideEffectPriorityLabel": "Priority",
+  "sideEffectDescribeLabel": "What are you experiencing?",
+  "sideEffectDescribeValidation": "Please describe what you are experiencing.",
+  "sideEffectSeverityLabel": "How severe is it?",
+  "sideEffectUrgentWarning": "If you feel your symptoms need urgent care, contact your local emergency services or go to the nearest hospital now. SUSTHITI is not monitored in real time.",
+  "sideEffectRelatedMedicineLabel": "Related medicine",
+  "sideEffectRelatedMedicineHint": "e.g. Metformin",
+  "sideEffectWhenStartedLabel": "When did it start?",
+  "sideEffectSubmitButton": "Submit report",
+  "sideEffectReportedToast": "Side effect reported. Your doctor has been notified.",
+  "sideEffectDetailTitle": "Side Effect",
+  "sideEffectReferenceLabel": "Reference",
+  "sideEffectStartedLabel": "Started",
+  "sideEffectNotSpecified": "Not specified",
+  "sideEffectReportedLabel": "Reported",
+  "sideEffectPriorityExplanation": "Marked as priority because the patient selected {severity} severity. This is not a clinical judgement.",
+  "@sideEffectPriorityExplanation": {
+    "placeholders": {
+      "severity": {
+        "type": "String"
+      }
+    }
+  },
+  "sideEffectDoctorActionsLabel": "Doctor actions",
+  "sideEffectRespondButton": "Respond",
+  "sideEffectMarkUnderReviewButton": "Mark under review",
+  "sideEffectMarkResolvedButton": "Mark resolved",
+  "sideEffectResponseSentToast": "Response sent to the patient",
+  "sideEffectMarkedResolvedToast": "Marked as resolved",
+  "sideEffectMarkedUnderReviewToast": "Marked as under review",
+  "sideEffectRespondToTitle": "Respond to {code}",
+  "@sideEffectRespondToTitle": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "sideEffectResponseFieldLabel": "Response",
+  "sideEffectMessageToPatientLabel": "Message to patient",
+  "sideEffectTellPatientValidation": "Tell the patient what to do next.",
+  "sideEffectAppointmentReasonLabel": "Appointment reason",
+  "sideEffectSuggestedDateLabel": "Suggested date",
+  "sideEffectSendResponseButton": "Send response",
+  "commonSave": "Save",
+  "commonEditedTag": "edited",
+  "foodLogTitle": "Food Log",
+  "foodLogButton": "Log Food",
+  "foodMealLoggedToast": "Meal logged",
+  "foodEntryUpdatedToast": "Entry updated. The earlier version is kept in history.",
+  "foodPeriodYesterday": "Yesterday",
+  "foodPeriodThisWeek": "This week",
+  "foodPeriodCustomDate": "Custom date",
+  "foodEmptyToday": "No meals recorded today.",
+  "foodEmptyPeriod": "No meals recorded for this period.",
+  "foodEntrySubtitle": "{quantity} · {meal} · {time}",
+  "@foodEntrySubtitle": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      },
+      "meal": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "foodEditEntryTitle": "Edit Entry",
+  "foodNameLabel": "Food name",
+  "foodNameHint": "e.g. Rice",
+  "foodQuantityLabel": "Quantity",
+  "foodQuantityHint": "e.g. 2 bowls",
+  "foodMealLabel": "Meal",
+  "foodTimeLabel": "Time",
+  "glucoseRecordReadingButton": "Record Reading",
+  "glucoseEmptyTitle": "No glucose readings yet.",
+  "glucoseEmptyMessageCanRecord": "Record readings to see your averages and trends here.",
+  "glucoseEmptyMessageViewOnly": "The patient has not recorded any glucose readings.",
+  "glucoseRecordFirstButton": "Record First Reading",
+  "glucoseTodaysReadingsLabel": "Today's readings",
+  "glucoseNoneRecordedToday": "None recorded today",
+  "glucoseLatestReading": "Latest {value} mg/dL",
+  "@glucoseLatestReading": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "glucoseRecentAverageLabel": "Recent average",
+  "glucoseLast7DaysCaption": "Last 7 days · {count} readings",
+  "@glucoseLast7DaysCaption": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "glucoseTrendLabel": "Trend",
+  "glucoseTrendHigher": "Higher",
+  "glucoseTrendLower": "Lower",
+  "glucoseTrendStable": "Stable",
+  "glucoseTrendNotEnoughData": "Not enough data",
+  "glucoseTrendCaption": "This week vs previous weeks",
+  "glucoseReadingRecordedToast": "Reading recorded",
+  "glucoseRecordTitle": "Record Glucose",
+  "glucoseValueLabel": "Value",
+  "glucoseReadingTypeLabel": "Reading type",
+  "glucoseDateTimeLabel": "Date and time",
+  "glucoseContextLabel": "Context",
+  "glucoseContextHelper": "For example \"after a walk\" or \"felt dizzy\".",
+  "glucoseSaveReadingButton": "Save reading",
+  "riskTitle": "Future Diabetes Risk",
+  "riskEstimateLabel": "Model-estimated risk",
+  "riskSafetyText": "This is a research and screening estimate from a machine-learning model trained on synthetic data. It is not clinically validated and is not a medical diagnosis. Talk to your doctor about your results.",
+  "riskNoReportBasis": "Based on available symptoms and risk factors. No medical report values were used.",
+  "riskReportBasisGeneric": "Includes values from your medical reports.",
+  "riskReportBasisWithFields": "Includes {fields} from your medical reports.",
+  "@riskReportBasisWithFields": {
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "riskCategoryLowLabel": "Low risk",
+  "riskCategoryModerateLabel": "Moderate risk",
+  "riskCategoryHighLabel": "High risk",
+  "riskPatternPrefix": "Risk pattern: {label}",
+  "@riskPatternPrefix": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "riskLastUpdated": "Last updated {relative} · {absolute}",
+  "@riskLastUpdated": {
+    "placeholders": {
+      "relative": {
+        "type": "String"
+      },
+      "absolute": {
+        "type": "String"
+      }
+    }
+  },
+  "riskUpdatedInfoAvailable": "Updated health information is available.",
+  "riskNewInfoOffline": "New health information is available. Connect to the internet to update your assessment.",
+  "riskRefreshToInclude": "The estimate above doesn't include it yet. Refresh your diabetes risk assessment to use your latest information.",
+  "riskUpdateWithLatestData": "Update with my latest data",
+  "riskOfflineSavedInfo": "You're offline. Showing the information saved on this device.",
+  "riskOfflineLastAssessment": "You're offline. Showing your last assessment, updated {relative}. Newer health information isn't included until you're back online.",
+  "@riskOfflineLastAssessment": {
+    "placeholders": {
+      "relative": {
+        "type": "String"
+      }
+    }
+  },
+  "riskNoDataAvailable": "No health information was available yet beyond what the model requires.",
+  "riskUpdateProfileAction": "Update profile",
+  "riskOpenHealthProfileAction": "Open health profile",
+  "riskAddReportValuesAction": "Add values from a report",
+  "riskConnectHealthDataAction": "Connect health data",
+  "riskAnswerOnHeartFormAction": "Answer on the heart assessment form",
+  "heartTitle": "Heart Disease Risk Screening",
+  "heartEstimateLabel": "Model screening result",
+  "heartSignalHigh": "Elevated risk signal",
+  "heartSignalModerate": "Moderate risk signal",
+  "heartSignalLow": "Low risk signal",
+  "heartRefreshToInclude": "The screening above doesn't include it yet. Refresh your heart risk screening to use your latest information.",
+  "commonAdd": "Add",
+  "lifestyleAlreadyUpToDateToast": "Already up to date",
+  "lifestyleSyncedJustNowToast": "Synced just now",
+  "lifestyleSyncFailedToast": "Sync didn't complete. Check your connection and try again.",
+  "lifestyleTodaySubtitle": "Recorded values only. Comparisons appear once there is enough history.",
+  "lifestyleFoodLabel": "Food",
+  "lifestyleMealsLoggedTodayCaption": "{count, plural, =1{meal logged today} other{meals logged today}}",
+  "@lifestyleMealsLoggedTodayCaption": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "lifestyleTrendsHeader": "Trends",
+  "lifestyleInsightTitle": "Lifestyle Insight",
+  "lifestyleInsightSubtitle": "AI suggestions based on your activity, sleep, food and glucose",
+  "lifestyleNotAvailableFromDevice": "Not available from connected device",
+  "lifestyleNotRecordedYet": "Not recorded yet",
+  "lifestyleChangeVsAverage": "{value}% vs your recent average",
+  "@lifestyleChangeVsAverage": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "lifestyleMeasurementAddedToast": "Measurement added",
+  "lifestyleAddMeasurementTitle": "Add measurement",
+  "lifestyleMeasurementFieldLabel": "Measurement",
+  "lifestyleStepsLabel": "Steps",
+  "lifestyleHeartRateFieldLabel": "Heart rate (bpm)",
+  "lifestyleSleepFieldLabel": "Sleep (minutes)",
+  "lifestyleActiveMinutesLabel": "Active minutes",
+  "lifestyleSystolicLabel": "Systolic (mmHg)",
+  "lifestyleSpo2FieldLabel": "SpO₂ (%)",
+  "lifestyleDiastolicLabel": "Diastolic (mmHg)",
+  "lifestyleDiastolicLowerThanSystolic": "Diastolic must be lower than systolic.",
+  "lifestyleManualEntryNote": "Recorded as a manual entry.",
+  "lifestyleOfflineNotice": "Offline. Showing the last values received",
+  "notifTooltipUnread": "Notifications, {count} unread",
+  "@notifTooltipUnread": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "notifMarkAllRead": "Mark all read",
+  "notifLoadError": "Notifications could not be loaded.",
+  "notifCaughtUp": "You're all caught up.",
+  "notifViewAll": "View all notifications",
+  "notifNoNotificationsTitle": "No notifications",
+  "notifFilterAll": "All",
+  "notifFilterUnread": "Unread",
+  "notifFilterRead": "Read",
+  "notifUnreadPrefix": "Unread. ",
+  "notifFoodRemindersTitle": "Food logging reminders",
+  "notifFoodRemindersSubtitle": "An evening nudge if no meals are logged",
+  "notifLifestyleRemindersTitle": "Lifestyle reminders",
+  "notifLifestyleRemindersSubtitle": "A daily nudge for any lifestyle metric or glucose reading with nothing recorded yet",
+  "notifFollowUpRemindersTitle": "Follow-up reminders",
+  "notifPatientUpdatesTitle": "Patient updates",
+  "notifPatientUpdatesSubtitle": "New reports and patient updates",
+  "tabOverview": "Overview",
+  "tabAiSummary": "AI Summary",
+  "tabVisits": "Visits",
+  "patientFallbackName": "Patient",
+  "doctorBodyMeasurementsHeader": "Body measurements",
+  "commonActionsHeader": "Actions",
+  "doctorNewPrescriptionButton": "New Prescription",
+  "doctorRecommendAppointmentButton": "Recommend Appointment",
+  "commonContactHeader": "Contact",
+  "commonNotProvided": "Not provided",
+  "doctorEmergencyContactLabel": "Emergency contact",
+  "doctorAllReportsSummaryLabel": "All Reports Summary",
+  "doctorAppointmentRecommendationSentToast": "Appointment recommendation sent to the patient",
+  "doctorSendRecommendationButton": "Send recommendation",
+  "doctorScanPatientQrTooltip": "Scan Patient QR",
+  "doctorFilterRecentActivity": "Recent activity",
+  "doctorFilterFollowUpDue": "Follow-up due",
+  "doctorSelectPatientTitle": "Select a patient",
+  "doctorSelectPatientMessage": "Their overview, records and lifestyle data appear here.",
+  "doctorSearchHint": "Search by name or Patient ID",
+  "doctorNoPatientsYet": "No patients yet.",
+  "doctorNoPatientsMatch": "No patients match.",
+  "doctorNoPatientsMessage": "Request access with the patient's name and Patient ID. They approve it in their app.",
+  "doctorLastActivityLabel": "Last activity {relative}",
+  "@doctorLastActivityLabel": {
+    "placeholders": {
+      "relative": {
+        "type": "String"
+      }
+    }
+  },
+  "doctorSideEffectsCountPill": "{count, plural, =1{1 side effect} other{{count} side effects}}",
+  "@doctorSideEffectsCountPill": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "doctorFollowUpShortDate": "Follow-up {date}",
+  "@doctorFollowUpShortDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "doctorRequestSentTitle": "Request sent",
+  "doctorRequestSentMessage": "{name} ({code}) will be asked to approve your request. You will be notified when they respond.",
+  "@doctorRequestSentMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "doctorViewRequestsButton": "View requests",
+  "doctorAddAnotherButton": "Add another",
+  "doctorAddPatientInstructions": "Enter the patient's full name and Patient ID exactly as shown in their SUSTHITI profile. The patient must approve before you can see any records.",
+  "doctorPatientFullNameLabel": "Patient full name",
+  "doctorPatientNameLabel": "Patient name",
+  "doctorPatientIdLabel": "Patient ID",
+  "doctorMessageToPatientLabel": "Message to patient",
+  "doctorRequestAccessButton": "Request Access",
+  "doctorScanInsteadButton": "Or scan the patient's QR code instead",
+  "profileTitle": "Profile",
+  "profileYourQrCode": "Your QR code",
+  "profileQrSemanticLabel": "QR code for Patient ID {code}",
+  "@profileQrSemanticLabel": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "profileQrHelp": "Show this to a doctor in person so they can request access. It contains no medical information.",
+  "profileChangePhotoTooltip": "Change photo",
+  "profileShareIdNote": "Share your Patient ID only with doctors you trust. They also need your name, and you approve every request.",
+  "profilePersonalDetailsHeader": "Personal details",
+  "commonNotSet": "Not set",
+  "commonAgeLabel": "Age",
+  "profileNoEmergencyContact": "No emergency contact added.",
+  "commonNameLabel": "Name",
+  "commonRelationshipLabel": "Relationship",
+  "profileHealthProfileLabel": "Health profile",
+  "profileHealthProfileSubtitle": "Height, weight, medical history, habits and symptoms",
+  "profileChoosePhotoDialogTitle": "Choose a photo",
+  "profilePhotoTooLargeError": "Photo must be 5 MB or smaller.",
+  "profilePhotoUpdatedToast": "Photo updated",
+  "profileUpdatedToast": "Profile updated",
+  "profileGenderModelInputHelper": "Used as a diabetes model input.",
+  "rxSearchHint": "Search by medicine, doctor or ID",
+  "rxClearSearchTooltip": "Clear search",
+  "rxEmptyNoneYet": "No prescriptions yet.",
+  "rxEmptyNoMatch": "No prescriptions match \"{query}\".",
+  "@rxEmptyNoMatch": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "rxEmptyMessage": "Prescriptions from your doctor will appear here.",
+  "rxDetailTitle": "Prescription",
+  "rxIdLabel": "Prescription ID",
+  "rxDateLabel": "Date",
+  "rxMedicinesHeader": "Medicines",
+  "rxDosageLabel": "Dosage",
+  "rxFrequencyLabel": "Frequency",
+  "rxDurationLabel": "Duration",
+  "rxNeverEditedNote": "Prescriptions are never edited. A change is issued as a new prescription.",
+  "rxPrescriptionDateLabel": "Prescription date",
+  "rxMedicineNLabel": "Medicine {n}",
+  "@rxMedicineNLabel": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "rxRemoveMedicineTooltip": "Remove medicine",
+  "rxMedicineLabel": "Medicine",
+  "rxDosageHint": "e.g. 500 mg",
+  "rxFrequencyHint": "e.g. Twice daily",
+  "rxDurationHint": "e.g. 30 days",
+  "rxMedicineInstructionsHint": "e.g. After meals",
+  "rxAddMedicineButton": "Add medicine",
+  "rxGeneralInstructionsLabel": "General instructions",
+  "rxCreateButton": "Create prescription",
+  "rxCreatedToast": "Prescription {code} created",
+  "@rxCreatedToast": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "rxPatientNotifiedNote": "The patient is notified. Earlier prescriptions stay unchanged.",
+  "uploadChooseReportDialogTitle": "Choose a report",
+  "uploadFileTypeError": "Choose a PDF or an image (JPEG, PNG, WebP, HEIC).",
+  "uploadFileTooLargeError": "File must be {mb} MB or smaller.",
+  "@uploadFileTooLargeError": {
+    "placeholders": {
+      "mb": {
+        "type": "String"
+      }
+    }
+  },
+  "uploadFileEmptyError": "The selected file is empty.",
+  "uploadPickerFailedToast": "Couldn't open the file picker. Please try again.",
+  "uploadChooseFileError": "Choose the report file to upload.",
+  "uploadChooseCategoryError": "Choose at least one report type.",
+  "uploadAdminAddedToast": "Report {code} added to the patient's record",
+  "@uploadAdminAddedToast": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "uploadReportUploadedToast": "Report uploaded",
+  "uploadReportTypeLabel": "What type of report is this?",
+  "uploadReportTypeHelp": "Choose every type it covers. A full body checkup, for example, can also include HbA1c.",
+  "uploadReportDateLabel": "Report date",
+  "uploadReportDateHelper": "The date on the report itself (when the test was done), not today. Older reports are welcome.",
+  "uploadReportFileLabel": "Report file",
+  "uploadChooseFilePlaceholder": "Choose file",
+  "uploadFileTypesHint": "PDF, JPEG, PNG, WebP or HEIC, up to 20 MB",
+  "commonChange": "Change",
+  "uploadFileStoredNote": "Your original file is stored securely and always stays available, even if AI features are unavailable.",
+  "commonDescriptionLabel": "Description",
+  "uploadDescriptionHelper": "For example the lab name or why the test was done.",
+  "uploadDescriptionTooLong": "Keep the description under 1000 characters.",
+  "auditLogin": "Signed in",
+  "auditLogout": "Signed out",
+  "auditPatientRegistered": "Registered as a patient",
+  "auditProfileUpdated": "Updated their profile",
+  "auditProfilePhotoUpdated": "Updated their profile photo",
+  "auditPatientUpdatedByAdmin": "Patient details updated by admin",
+  "auditPatientRecordViewed": "Patient record viewed by admin",
+  "auditPatientActivated": "Patient account reactivated",
+  "auditPatientDeactivated": "Patient account deactivated",
+  "auditDoctorCreated": "Doctor account created",
+  "auditDoctorUpdated": "Doctor details updated",
+  "auditDoctorActivated": "Doctor account reactivated",
+  "auditDoctorDeactivated": "Doctor account deactivated",
+  "auditAccessRequested": "Requested patient access",
+  "auditAccessApproved": "Patient access approved",
+  "auditAccessRejected": "Patient access rejected",
+  "auditAccessRevoked": "Patient access revoked",
+  "auditReportUploaded": "Report uploaded",
+  "auditReportFileAccessed": "Original report opened",
+  "auditDiabetesAssessmentCreated": "Diabetes assessment completed",
+  "auditPrescriptionCreated": "Prescription created",
+  "auditVisitRecorded": "Doctor visit recorded",
+  "auditAppointmentRecommended": "Appointment recommended",
+  "auditSideEffectReported": "Side effect reported",
+  "auditSideEffectResponded": "Responded to a side-effect report",
+  "auditSideEffectUnderReview": "Side-effect report marked under review",
+  "auditSideEffectResolved": "Side-effect report resolved",
+  "auditAiSummaryPdfDownloaded": "AI summary PDF downloaded",
+  "auditAiIndividualReportGenerated": "AI report summary generated",
+  "auditAiAllReportsGenerated": "AI all-reports summary generated",
+  "auditAiPatientSummaryGenerated": "AI patient summary generated",
+  "auditAiLifestyleGenerated": "AI lifestyle insight generated",
+  "auditAiAssessmentInterpretationGenerated": "AI assessment interpretation generated",
+  "auditWearableConnected": "Wearable device connected",
+  "auditWearableDisconnected": "Wearable device disconnected",
+  "auditPasswordChanged": "Password changed",
+  "auditPasswordResetRequested": "Password reset requested",
+  "auditPasswordResetCompleted": "Password reset completed",
+  "auditSettingsUpdated": "System settings updated",
+  "auditSystemActor": "System",
+  "auditAdminSuffix": "{name} (Admin)",
+  "@auditAdminSuffix": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditPatientPrefix": "Patient: {name}",
+  "@auditPatientPrefix": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "trendHigher": "Higher than previous weeks",
+  "trendLower": "Lower than previous weeks",
+  "trendStable": "Similar to previous weeks",
+  "trendInsufficientData": "Not enough readings to compare",
+  "commonActive": "Active",
+  "commonInactive": "Inactive",
+  "diabetesNotAssessed": "Not assessed",
+  "adminProgressNoOpenItems": "No open items",
+  "adminNoRecentActivity": "No recent activity",
+  "adminDashboardTitle": "Admin",
+  "adminActiveCountCaption": "{count} active",
+  "@adminActiveCountCaption": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "adminRegisteredCaption": "registered",
+  "adminActivePatientsLabel": "Active patients",
+  "adminLast30DaysCaption": "in the last 30 days",
+  "adminDoctorAccessCaption": "doctor access",
+  "adminOperationalOverviewHeader": "Operational overview",
+  "adminOperationalOverviewSubtitle": "Aggregate counts only — never clinical content.",
+  "commonScheduledCaption": "scheduled",
+  "adminUploadedLast7Days": "uploaded in the last 7 days",
+  "adminFailedPushesLabel": "Failed pushes",
+  "adminAddDoctorButton": "Add Doctor",
+  "adminAuditLogsTitle": "Audit Logs",
+  "adminSystemSettingsTitle": "System Settings",
+  "adminNoActivityYetDot": "No activity yet.",
+  "adminDeactivateDoctorTitle": "Deactivate Dr. {name}?",
+  "@adminDeactivateDoctorTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "adminDeactivateDoctorMessage": "They will be signed out and cannot sign in. Their past records remain in patient histories.",
+  "commonDeactivate": "Deactivate",
+  "commonReactivate": "Reactivate",
+  "adminDoctorDeactivatedToast": "Doctor deactivated",
+  "adminDoctorReactivatedToast": "Doctor reactivated",
+  "adminActionsForDoctorTooltip": "Actions for Dr. {name}",
+  "@adminActionsForDoctorTooltip": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "commonViewProfile": "View profile",
+  "adminEditDoctorMenuItem": "Edit doctor",
+  "adminViewPatientsMenuItem": "View patients",
+  "commonViewActivity": "View activity",
+  "adminNoActivityShort": "No activity yet",
+  "adminLastActiveLabel": "Last active {relative}",
+  "@adminLastActiveLabel": {
+    "placeholders": {
+      "relative": {
+        "type": "String"
+      }
+    }
+  },
+  "adminDoctorSearchHint": "Search by name, email or Doctor ID",
+  "adminNoDoctorsFound": "No doctors found.",
+  "adminDoctorsCountHeader": "Doctors ({count})",
+  "@adminDoctorsCountHeader": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adminColDoctor": "Doctor",
+  "adminColDoctorId": "Doctor ID",
+  "commonSpecializationLabel": "Specialization",
+  "adminColPatients": "Patients",
+  "adminColLastActivity": "Last activity",
+  "adminColStatus": "Status",
+  "commonViewProfileButton": "View Profile",
+  "adminDoctorRowCaption": "{count} active patients · {lastActive}",
+  "@adminDoctorRowCaption": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "lastActive": {
+        "type": "String"
+      }
+    }
+  },
+  "adminEditDoctorTitle": "Edit Doctor",
+  "commonCreatedOn": "Created {date}",
+  "@commonCreatedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "adminDeactivateDoctorConfirmTitle": "Deactivate doctor?",
+  "adminDoctorUpdatedToast": "Doctor updated",
+  "adminDoctorCreatedToast": "Doctor account created. Share the temporary password securely.",
+  "adminTemporaryPasswordLabel": "Temporary password",
+  "adminTempPasswordHelper": "The doctor should change it after first sign-in.",
+  "adminSpecializationHint": "e.g. Endocrinology",
+  "adminLicenseNumberLabel": "License / registration number",
+  "adminLicenseValidation": "Enter the doctor's license or registration number.",
+  "adminCreateDoctorAccountButton": "Create doctor account",
+  "adminDeactivateDoctorButton": "Deactivate doctor",
+  "adminReactivateDoctorButton": "Reactivate doctor",
+  "adminDeactivatePatientTitle": "Deactivate {name}?",
+  "@adminDeactivatePatientTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "adminDeactivatePatientMessage": "They will be signed out and cannot sign in. Their records are kept.",
+  "adminPatientDeactivatedToast": "Patient deactivated",
+  "adminPatientReactivatedToast": "Patient reactivated",
+  "adminActionsForPatientTooltip": "Actions for {name}",
+  "@adminActionsForPatientTooltip": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "adminEditPatientMenuItem": "Edit patient",
+  "adminViewReportsMenuItem": "View reports",
+  "adminViewDoctorsMenuItem": "View doctors",
+  "adminUploadReportForPatientMenuItem": "Upload report for patient",
+  "adminDeactivateAccountMenuItem": "Deactivate account",
+  "adminReactivateAccountMenuItem": "Reactivate account",
+  "adminPatientSearchHint": "Search by name, email or Patient ID",
+  "adminNoPatientsFound": "No patients found.",
+  "adminPatientsCountShowing": "Patients ({total}) · showing the {shown} most recent. Search to find others.",
+  "@adminPatientsCountShowing": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "shown": {
+        "type": "int"
+      }
+    }
+  },
+  "adminPatientsCountHeader": "Patients ({total})",
+  "@adminPatientsCountHeader": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "adminColPatient": "Patient",
+  "adminColAgeGender": "Age / gender",
+  "adminColDiabetesStatus": "Diabetes status",
+  "adminPatientRowCaption": "{count, plural, =1{1 doctor} other{{count} doctors}} · {lastActive}",
+  "@adminPatientRowCaption": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      },
+      "lastActive": {
+        "type": "String"
+      }
+    }
+  },
+  "adminAuditSearchHint": "Search by action, person or reference",
+  "adminNoAuditEntries": "No audit entries.",
+  "adminSystemRoleFallback": "system",
+  "adminPushSent": "Sent",
+  "adminPushFailed": "Failed",
+  "adminPushNotAttempted": "Not attempted",
+  "adminPushStatusOnlyNote": "Push delivery status only. A notification's content is never shown here.",
+  "adminNoNotificationsMatchFilter": "No notifications match this filter.",
+  "adminUnknownRecipient": "Unknown recipient",
+  "adminSupportEmailLabel": "Support email",
+  "adminSupportEmailHelper": "Shown to users who need help.",
+  "adminUploadLimitLabel": "Upload limit shown to users (MB)",
+  "adminUploadLimitHelper": "Display only. The enforced limit is set on the server.",
+  "adminMaintenanceNoticeLabel": "Maintenance notice",
+  "adminMaintenanceNoticeHelper": "Optional banner text.",
+  "adminSettingsSavedToast": "Settings saved",
+  "adminServiceStatusHeader": "Service status",
+  "adminServiceStatusSubtitle": "Secrets are configured on the server and are never shown here.",
+  "adminEnvironmentLabel": "Environment",
+  "adminAiServiceLabel": "AI (Google AI Studio)",
+  "adminConfiguredWithModel": "Configured · {model}",
+  "@adminConfiguredWithModel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "commonNotConfigured": "Not configured",
+  "commonOn": "On",
+  "commonOff": "Off",
+  "adminDiabetesModelServiceLabel": "Diabetes model service",
+  "adminUrlConfigured": "URL configured",
+  "adminDemoWearableLabel": "Demo wearable",
+  "adminDemoWearableEnabled": "Enabled (data labelled DEMO)",
+  "commonDisabled": "Disabled",
+  "adminEditableSettingsHeader": "Editable settings",
+  "adminSaveSettingsButton": "Save settings",
+  "adminChangesRecordedNote": "Changes are recorded in the audit log.",
+  "adminEmailAdministratorLine": "{email} · Administrator",
+  "@adminEmailAdministratorLine": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "adminAccountAndPasswordLabel": "Account and password",
+  "diabetesRunNewAssessment": "Run new assessment",
+  "diabetesGetRiskEstimate": "Get risk estimate",
+  "diabetesRefreshAssessment": "Refresh assessment",
+  "diabetesEstimateUpdatedSnack": "Your future diabetes risk estimate has been updated.",
+  "diabetesNothingChangedSnack": "Nothing relevant has changed since your last estimate, so it is still current.",
+  "diabetesHba1cTrendHeader": "HbA1c Trend",
+  "diabetesHba1cTrendSubtitle": "From confirmed values on your uploaded reports.",
+  "diabetesDataUsedHeader": "Data used for this assessment",
+  "diabetesDataUsedSubtitle": "Only information SUSTHITI already had. Nothing was guessed or filled in.",
+  "diabetesHealthInfoSubtitle": "What an estimate would use, from your SUSTHITI records.",
+  "riskHealthInfoAvailableHeader": "Health information available now",
+  "riskNotRecordedHeader": "Not recorded yet",
+  "riskNotRecordedSubtitleDiabetes": "The estimate uses these when they are in your records. Until then they are left out, not assumed. {available} of {total} available.",
+  "@riskNotRecordedSubtitleDiabetes": {
+    "placeholders": {
+      "available": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "riskNotRecordedSubtitleHeart": "The screening uses these when they are in your records or answered on the form. {available} of {total} available.",
+  "@riskNotRecordedSubtitleHeart": {
+    "placeholders": {
+      "available": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "diabetesAssessmentHistoryHeader": "Assessment history",
+  "diabetesAssessmentHistorySubtitle": "Every estimate is kept exactly as it was made.",
+  "diabetesEarlierSymptomQuestionnaire": "Earlier symptom questionnaire",
+  "diabetesEarlierModelSubtitle": "Results from a previous model, kept for your history",
+  "diabetesClassificationLabel": "Classification: {value}",
+  "@diabetesClassificationLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "diabetesIntroText": "Estimate your future diabetes risk. You'll confirm a few questions, already filled in with what SUSTHITI knows; values from your medical reports, your lifestyle and connected devices are added automatically.",
+  "riskHealthDetailsAvailableCaption": "{available} of {total} health details are available now.",
+  "@riskHealthDetailsAvailableCaption": {
+    "placeholders": {
+      "available": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "heartRunNewScreening": "Run new screening",
+  "heartGetRiskScreening": "Get risk screening",
+  "heartRefreshScreening": "Refresh screening",
+  "heartScreeningUpdatedSnack": "Your heart risk screening has been updated.",
+  "heartNothingChangedSnack": "Nothing relevant has changed since your last screening, so it is still current.",
+  "heartDataUsedHeader": "Data used for this screening",
+  "heartDataUsedSubtitle": "Only information SUSTHITI already had, or that was answered on the assessment form.",
+  "heartHealthInfoSubtitle": "What a screening would use, from your SUSTHITI records.",
+  "heartScreeningHistoryHeader": "Screening history",
+  "heartScreeningHistorySubtitle": "Every screening is kept exactly as it was made.",
+  "heartIntroText": "Screen your heart disease risk. You'll answer a short form covering symptoms, vitals and cardiac tests; values already in your SUSTHITI records (profile, labs, lifestyle) are filled in for you to review.",
+  "commonActivityTab": "Activity",
+  "commonAuditTab": "Audit",
+  "commonPatientFallback": "Patient",
+  "commonNotRecorded": "Not recorded",
+  "commonNever": "Never",
+  "commonNoneRecorded": "None recorded",
+  "commonNoneYet": "None yet",
+  "commonResolvedLabel": "Resolved",
+  "adminEditDoctorButton": "Edit Doctor",
+  "adocUnableToLoadProfile": "Unable to load profile.",
+  "adocBackToDoctors": "Back to Doctors",
+  "adocDoctorIdColon": "Doctor ID: {code}",
+  "@adocDoctorIdColon": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "adocSpecializationNotRecorded": "Specialization not recorded",
+  "adocMoreActionsTooltip": "More actions",
+  "adocViewAuditLogMenuItem": "View audit log",
+  "adocTotalPendingCaption": "{total} total · {pending} pending",
+  "@adocTotalPendingCaption": {
+    "placeholders": {
+      "total": {
+        "type": "String"
+      },
+      "pending": {
+        "type": "String"
+      }
+    }
+  },
+  "adocThisMonthTotalCaption": "{month} this month · {total} total",
+  "@adocThisMonthTotalCaption": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "adocUpcomingLabel": "Upcoming",
+  "adocFollowUpsApptsCaption": "{followUps} follow-ups · {appts} appts",
+  "@adocFollowUpsApptsCaption": {
+    "placeholders": {
+      "followUps": {
+        "type": "String"
+      },
+      "appts": {
+        "type": "String"
+      }
+    }
+  },
+  "adocPendingResolvedCaption": "{pending} pending · {resolved} resolved",
+  "@adocPendingResolvedCaption": {
+    "placeholders": {
+      "pending": {
+        "type": "String"
+      },
+      "resolved": {
+        "type": "String"
+      }
+    }
+  },
+  "adocActivePatientsHeader": "Active Patients",
+  "adocNoActivePatients": "No active patients.",
+  "adocNoRecordedActivityYet": "No recorded activity yet.",
+  "adocPatientAccessHeader": "Patient Access",
+  "adocPatientAccessSubtitle": "Relationships approved or pending through patient authorization",
+  "adocNoAccessRequestsYet": "No access requests yet.",
+  "adocRequestedOnCaption": "{code} · requested {date}",
+  "@adocRequestedOnCaption": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "adocFiguresDisclaimer": "Figures are counted from recorded data. SUSTHITI does not calculate a health score.",
+  "adocNoActivity": "No activity",
+  "adocPatientProgressHeader": "Patient Progress",
+  "adocAcrossActivePatients": "{count, plural, =1{Across 1 active patient} other{Across {count} active patients}}",
+  "@adocAcrossActivePatients": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "adocLatestClassificationLabel": "Latest diabetes model classification",
+  "adocPatternDetected": "Pattern detected",
+  "adocNoPatternDetected": "No pattern detected",
+  "adocGlucoseLast7DaysLabel": "Glucose, last 7 days vs previous weeks",
+  "adocSimilarLabel": "Similar",
+  "adocTooFewReadings": "Too few readings",
+  "adocNeedAttentionPill": "{count} need attention",
+  "@adocNeedAttentionPill": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "adocOpenSideEffectsPill": "{count} with open side effects",
+  "@adocOpenSideEffectsPill": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "adocAssessedIn30DaysPill": "{count} assessed in 30 days",
+  "@adocAssessedIn30DaysPill": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "adocInactiveFor30DaysPill": "{count} inactive for 30 days",
+  "@adocInactiveFor30DaysPill": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "adocNoPatientsInGroup": "No patients in this group.",
+  "adocPatientsCountLabel": "{count, plural, =1{1 patient} other{{count} patients}}",
+  "@adocPatientsCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "adocLatestGlucoseCol": "Latest glucose",
+  "adocProgressCol": "Progress",
+  "adocAccessCol": "Access",
+  "adocGlucoseMgDl": "Glucose {value} mg/dL",
+  "@adocGlucoseMgDl": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "adocLastActivityLine": "Last activity {value}",
+  "@adocLastActivityLine": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "adocReportDateLabel": "Report date {date}",
+  "@adocReportDateLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "adocOpenedLabel": "Opened {relative}",
+  "@adocOpenedLabel": {
+    "placeholders": {
+      "relative": {
+        "type": "String"
+      }
+    }
+  },
+  "adocUploadedLabel": "Uploaded {date}",
+  "@adocUploadedLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "adocReportsUploadedHeader": "Reports Uploaded",
+  "adocNoReportsUploadedByDoctor": "No reports uploaded by this doctor.",
+  "adocReportsOpenedHeader": "Reports Opened",
+  "adocReportsOpenedSubtitle": "Original files the doctor viewed or downloaded",
+  "adocNoRecentReportActivity": "No recent report activity.",
+  "adocAiSummariesHeader": "AI Report Summaries Generated",
+  "adocNoSummariesGenerated": "No report summaries generated.",
+  "adocAllReportsSummaryTitle": "All-reports summary",
+  "adocReportSummaryTitle": "Report summary",
+  "adocPrescriptionsHistoricalNote": "Prescriptions are historical records. Viewing them never changes them.",
+  "adocNoPrescriptionsRecorded": "No prescriptions recorded.",
+  "adocPrescriptionsCountLabel": "{count, plural, =1{1 prescription} other{{count} prescriptions}}",
+  "@adocPrescriptionsCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "adocPrescriptionCol": "Prescription",
+  "adocMedicinesCol": "Medicines",
+  "adocMedicinesCountLabel": "{count, plural, =1{1 medicine} other{{count} medicines}}",
+  "@adocMedicinesCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "adocUpcomingFollowUpsHeader": "Upcoming Follow-ups",
+  "adocUpcomingFollowUpsSubtitle": "Follow-up dates from this doctor's visits and prescriptions",
+  "adocNoUpcomingFollowUps": "No upcoming follow-ups.",
+  "adocVisitFollowUpLabel": "Visit follow-up",
+  "adocPrescriptionFollowUpLabel": "Prescription follow-up",
+  "adocFollowUpStatusLabel": "Follow-up{status}",
+  "@adocFollowUpStatusLabel": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "adocAppointmentRecommendationsHeader": "Appointment Recommendations",
+  "adocNoAppointmentRecommendations": "No appointment recommendations.",
+  "adocRecommendedOn": "Recommended {date}",
+  "@adocRecommendedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "adocSuggestedFor": "Suggested for {date}",
+  "@adocSuggestedFor": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "adocRecentVisitsHeader": "Recent Visits",
+  "adocNoVisitsRecorded": "No visits recorded.",
+  "adocScheduledSurgeriesHeader": "Scheduled Surgeries",
+  "adocPendingReviewLabel": "Pending review",
+  "adocRespondedByDoctorLabel": "Responded by this doctor",
+  "adocNoSideEffectReports": "No side-effect reports.",
+  "adocSideEffectCol": "Side effect",
+  "adocSeverityCol": "Severity",
+  "adocReportedCol": "Reported",
+  "adocDoctorResponseCol": "Doctor response",
+  "adocNoResponseYet": "No response yet",
+  "adocDoctorActivitySubtitle": "What this doctor has done in SUSTHITI. Open an entry to see the record.",
+  "adocLatestOfTotalEntries": "Latest {shown} of {total} entries",
+  "@adocLatestOfTotalEntries": {
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "adocEntriesCountLabel": "{count, plural, =1{1 entry} other{{count} entries}}",
+  "@adocEntriesCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "commonDateColumnLabel": "Date",
+  "adocActionCol": "Action",
+  "adocRelatedRecordCol": "Related record",
+  "adocPerformedByCol": "Performed by",
+  "adocDoctorInformationHeader": "Doctor Information",
+  "adocLicenseRegistrationLabel": "License / registration",
+  "adocAccountCreatedLabel": "Account created",
+  "adocLastSignInLabel": "Last sign-in",
+  "apatUnableToLoadDetails": "Unable to load patient details.",
+  "apatBackToPatients": "Back to Patients",
+  "apatPatientIdColon": "Patient ID: {code}",
+  "@apatPatientIdColon": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "commonAgeYears": "{age} years",
+  "@commonAgeYears": {
+    "placeholders": {
+      "age": {
+        "type": "String"
+      }
+    }
+  },
+  "apatEditPatientButton": "Edit Patient",
+  "apatFoodTab": "Food",
+  "apatAiSummariesTab": "AI Summaries",
+  "apatUnableToLoad": "Unable to load",
+  "apatLatestGlucoseLabel": "Latest glucose",
+  "apatGlucoseRelativeTrend": "{relative} · {trend}",
+  "@apatGlucoseRelativeTrend": {
+    "placeholders": {
+      "relative": {
+        "type": "String"
+      },
+      "trend": {
+        "type": "String"
+      }
+    }
+  },
+  "apatCurrentDoctorsHeader": "Current Doctors",
+  "apatAllRelationshipsButton": "All relationships",
+  "apatNoDoctorAccess": "No doctor currently has access.",
+  "apatRecentReportsHeader": "Recent Reports",
+  "apatNoRecordedHistoryYet": "No recorded history yet.",
+  "apatNoUpcomingFollowUp": "No upcoming follow-up",
+  "apatNextFollowUpOn": "Next follow-up {date}",
+  "@apatNextFollowUpOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "apatFromVisitsAndPrescriptions": "From visits and prescriptions",
+  "apatForDate": "for {date}",
+  "@apatForDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "apatLongitudinalTrendsHeader": "Longitudinal Trends",
+  "apatLongitudinalTrendsSubtitle": "Recorded values only. Nothing is estimated or filled in.",
+  "apatGlucoseDetailsButton": "Glucose details",
+  "apatGlucoseMgDlTitle": "Glucose (mg/dL)",
+  "apatNoDevicesConnected": "No devices connected.",
+  "apatDisconnectedLabel": "Disconnected",
+  "apatNeverLower": "never",
+  "apatLastSyncedPrefix": "Last synced {value}",
+  "@apatLastSyncedPrefix": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "apatSyncFailedLabel": "sync failed",
+  "apatCountsSummary": "Counts: {reports} reports · {assessments} assessments · {glucose} glucose readings · {prescriptions} prescriptions · {visits} visits · {sideEffects} side effects",
+  "@apatCountsSummary": {
+    "placeholders": {
+      "reports": {
+        "type": "String"
+      },
+      "assessments": {
+        "type": "String"
+      },
+      "glucose": {
+        "type": "String"
+      },
+      "prescriptions": {
+        "type": "String"
+      },
+      "visits": {
+        "type": "String"
+      },
+      "sideEffects": {
+        "type": "String"
+      }
+    }
+  },
+  "apatHistoryCountButton": "History ({count})",
+  "@apatHistoryCountButton": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "apatNoRiskEstimateYet": "No risk estimate recorded yet.",
+  "apatAssessedOn": "Assessed {date}{model}",
+  "@apatAssessedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "apatOpenEstimateButton": "Open estimate",
+  "apatAccessSinceLabel": "Access since {date}",
+  "@apatAccessSinceLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "apatPersonalInfoHeader": "Personal Information",
+  "apatHeightWeightLabel": "Height / weight",
+  "apatBmiCalculatedLabel": "BMI (calculated)",
+  "apatNoEmergencyContactRecorded": "No emergency contact recorded.",
+  "apatFoodLoggedNote": "Food logged in the last 30 days. Edited entries keep their earlier versions.",
+  "apatNoFoodLogged30Days": "No food logged in the last 30 days.",
+  "apatNoUpcomingFollowUpRecorded": "No upcoming follow-up recorded.",
+  "apatNextFollowUpColon": "Next follow-up: {date}",
+  "@apatNextFollowUpColon": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "commonRelatedToSideEffect": "Related to a side-effect report",
+  "apatAiDisclaimerText": "AI summaries are generated from available records. They are not a doctor's clinical conclusion and do not replace medical advice. Every generation is kept; nothing here is regenerated when you view it.",
+  "apatNoAiSummariesYet": "No AI summaries generated yet.",
+  "apatGeneratedOn": "Generated {datetime}",
+  "@apatGeneratedOn": {
+    "placeholders": {
+      "datetime": {
+        "type": "String"
+      }
+    }
+  },
+  "apatByRoleSuffix": " by {role}",
+  "@apatByRoleSuffix": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "apatNewerRecordsExist": "newer records exist",
+  "apatBasedOnLabel": "Based on: {list}",
+  "@apatBasedOnLabel": {
+    "placeholders": {
+      "list": {
+        "type": "String"
+      }
+    }
+  },
+  "apatAiModelLabel": "AI model: {model}",
+  "@apatAiModelLabel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "apatViewPdfButton": "View PDF",
+  "apatDownloadPdfButton": "Download PDF",
+  "apatDoctorRelationshipsNote": "Every doctor relationship, including past ones. Doctors see records only while access is approved by the patient.",
+  "apatNoDoctorRequestedAccess": "No doctor has requested access yet.",
+  "apatRequestedCol": "Requested",
+  "apatGrantedEndedCol": "Granted / ended",
+  "apatEndedOn": "Ended {date}",
+  "@apatEndedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "apatSpecRequestedCaption": "{spec} · requested {date}",
+  "@apatSpecRequestedCaption": {
+    "placeholders": {
+      "spec": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "apatLongitudinalHistoryHeader": "Longitudinal History",
+  "apatLongitudinalHistorySubtitle": "Each record keeps its own medical date. Open an entry to see the record.",
+  "apatNothingInCategory": "Nothing recorded in this category.",
+  "apatNotificationsSentHeader": "Notifications Sent to the Patient",
+  "apatNoNotificationsSent": "No notifications sent.",
+  "commonRead": "Read",
+  "apatEditPatientTitle": "Edit Patient",
+  "apatPatientDetailsUpdatedToast": "Patient details updated",
+  "apatDobGenderNotEditableNote": "Date of birth and gender are provided by the patient and used by the diabetes model, so they are not editable here. Medical records cannot be changed from this screen. Changes are recorded in the audit log.",
+  "timelineFilterAssessments": "Assessments",
+  "timelineFilterAiSummaries": "AI summaries",
+  "timelineNoRecordsYet": "No records yet.",
+  "timelineEmptyMessage": "Reports, assessments, prescriptions and visits will appear here in date order.",
+  "apptRecommendationsNote": "Recommendations from your doctor. Please contact the clinic to book a time.",
+  "adocRecentActivityHeader": "Recent Activity",
+  "reportsSelectReportTitle": "Select a report",
+  "reportsSelectReportMessage": "Its details, original file and AI summary appear here.",
+  "reportsSearchHint": "Search reports...",
+  "reportsFilterTooltip": "Filter reports",
+  "reportsUnableToLoad": "Unable to load your reports.",
+  "reportsNoMatchTitle": "No matching reports",
+  "reportsNoMatchMessage": "Try a different search or filter.",
+  "reportsEmptyTitle": "No reports yet.",
+  "reportsEmptyMessage": "Upload your first medical report to begin building your health history.",
+  "reportsCountLabel": "{count, plural, =1{1 report} other{{count} reports}}",
+  "@reportsCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "commonLoadMore": "Load more",
+  "allReportsSummaryTitle": "All Reports Summary",
+  "allReportsSummarySubtitle": "What your collection of reports shows over time",
+  "reportTileSemantic": "{title}, report date {reportDate}, uploaded {uploadedDate} by {role}",
+  "@reportTileSemantic": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "reportDate": {
+        "type": "String"
+      },
+      "uploadedDate": {
+        "type": "String"
+      },
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "reportUploadedByLine": "Uploaded {date} · by {role}",
+  "@reportUploadedByLine": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsFilterSheetTitle": "Filter Reports",
+  "commonCategoryLabel": "Category",
+  "commonAny": "Any",
+  "reportsClearDatesTooltip": "Clear dates",
+  "commonSortLabel": "Sort",
+  "commonNewest": "Newest",
+  "commonOldest": "Oldest",
+  "commonReset": "Reset",
+  "commonApply": "Apply",
+  "allReportsSummaryDisclaimer": "This summary reviews your authorized report history together, in order of report date, and only describes trends that the reports actually support. For what a single report says, open that report and use its AI Summary.",
+  "combinedReportSummaryTitle": "Combined report summary",
+  "combinedSummaryEmptyMessage": "No combined summary generated yet. {count, plural, =1{1 report} other{{count} reports}} available.",
+  "@combinedSummaryEmptyMessage": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "needTwoReportsReason": "At least two reports are needed to look at changes over time.",
+  "generateAllReportsSummaryButton": "Generate All Reports Summary",
+  "reviewingHistoricalReportsMessage": "Reviewing historical reports...",
+  "originalReportsSafeMessage": "Your original reports are still safely available.",
+  "reportFallbackTitle": "Report",
+  "aiSummaryTitle": "AI Summary",
+  "noSummaryGeneratedYet": "No summary generated yet.",
+  "analyzingReportMessage": "Analyzing report...",
+  "originalReportSafeMessage": "Your original report is still safely available.",
+  "commonUploadedLabel": "Uploaded",
+  "commonUploadedByLabel": "Uploaded by",
+  "reportIdLabel": "Report ID",
+  "originalReportHeader": "Original Report",
+  "commonView": "View",
+  "commonDownload": "Download",
+  "imageCannotPreview": "This image can't be previewed here.",
+  "useDownloadToOpen": "Use Download to open it in another app.",
+  "reportValuesSavedToast": "Report values saved.",
+  "noValuesReadFromReport": "No values could be read from this report.",
+  "valuesReadPleaseCheck": "Values read from the report. Please check them.",
+  "valuesFromReportHeader": "Values from this report",
+  "reportValuesAutoReadDescription": "SUSTHITI reads HbA1c and glucose results from the report automatically and uses them in your health features, including your future diabetes risk estimate.",
+  "noValuesRecordedYet": "No values recorded from this report yet.",
+  "looksRightButton": "Looks right",
+  "readAutomaticallyLabel": "Read automatically",
+  "checkedByDoctorLabel": "Checked by doctor",
+  "checkedByYouLabel": "Checked by you",
+  "commonYou": "You",
+  "readAutoCheckNote": "Read automatically: please check these against the report. Correct them with \"Add or correct values\" if needed.",
+  "foundInAiSummaryNote": "Found in the AI summary. Please check them against the report before confirming:",
+  "theseMatchReportButton": "These match the report",
+  "readValuesFromReportButton": "Read values from this report",
+  "addValuesYourselfButton": "Add values yourself",
+  "addOrCorrectValuesButton": "Add or correct values",
+  "reportValuesFormSubtitle": "Report date {date}. Leave a value empty if the report doesn't show it.",
+  "@reportValuesFormSubtitle": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "enterAsNumberError": "Enter {label} as a number, exactly as in the report.",
+  "@enterAsNumberError": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "classificationOnlyIfStatedNote": "Only if the report itself states it. SUSTHITI never works this out from the numbers.",
+  "notStatedChip": "Not stated",
+  "saveValuesButton": "Save values",
+  "riskEstimateTitle": "Risk estimate",
+  "riskDetailDataUsedHeader": "Data used",
+  "riskDetailDataUsedSubtitleEstimate": "As recorded when this estimate was made.",
+  "riskDetailNotAvailableHeader": "Not available at the time",
+  "riskDetailNotAssumedSubtitleEstimate": "Left out of this estimate, not assumed.",
+  "commonRecordLabel": "Record",
+  "assessmentIdLabel": "Assessment ID",
+  "commonMadeLabel": "Made",
+  "commonRequestedByLabel": "Requested by",
+  "commonModelVersionLabel": "Model version",
+  "riskBandsLabel": "Risk bands",
+  "riskPatternThresholdLabel": "Risk pattern threshold",
+  "bmiCalculatedByModelLabel": "BMI (calculated by the model service)",
+  "valuesSentToModelLabel": "Values sent to the model",
+  "modelInputFieldsNote": "Only the model's own input fields; unknown values were left out.",
+  "commonTimeLabel": "Time",
+  "commonModelLabel": "Model",
+  "commonEnteredByLabel": "Entered by",
+  "modelInputsHeader": "Model inputs",
+  "sixteenAnswersNote": "All 16 answers exactly as sent to the earlier model.",
+  "aiInterpretationTitle": "AI Interpretation",
+  "aiInterpretationEmptyMessage": "Combine this assessment with your recent lifestyle and glucose data for a calm, forward-looking explanation. This is an AI interpretation, not a new prediction.",
+  "generateInterpretationButton": "Generate interpretation",
+  "analyzingLifestylePatternsMessage": "Analyzing lifestyle patterns...",
+  "assessmentResultSafeMessage": "Your assessment result is still saved and unchanged.",
+  "glucoseAverageReadings": "{avg} mg/dL average ({count} readings)",
+  "@glucoseAverageReadings": {
+    "placeholders": {
+      "avg": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "foodEntriesOverDays": "{count} entries over {days} days",
+  "@foodEntriesOverDays": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "metricAverageDays": "{value} average ({days} days)",
+  "@metricAverageDays": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "lifestyleSnapshotHeader": "Lifestyle snapshot",
+  "last7DaysBeforeAssessmentNote": "Recorded data from the 7 days before this assessment.",
+  "noLifestyleDataAtTime": "No lifestyle data was recorded at the time.",
+  "heartRiskScreeningTitle": "Heart risk screening",
+  "riskDetailDataUsedSubtitleScreening": "As recorded when this screening was made.",
+  "riskDetailNotAssumedSubtitleScreening": "Left out of this screening, not assumed.",
+  "screeningIdLabel": "Screening ID",
+  "decisionThresholdLabel": "Decision threshold",
+  "bmiCalculatedHeightWeightLabel": "BMI (calculated from height and weight)",
+  "mlScreeningResultLabel": "ML screening result",
+  "modelClassificationLabel": "Model classification",
+  "assessedLabel": "Assessed",
+  "viewWhatThisMeansButton": "View What This Means",
+  "whatThisMeansHeader": "What this means",
+  "shareWithDoctorPositiveNote": "Consider sharing this result with a doctor. Tests such as fasting glucose or HbA1c are how diabetes is actually diagnosed.",
+  "doesNotRuleOutNote": "This does not rule out diabetes. If you have symptoms or concerns, talk to a doctor.",
+  "commonImportantLabel": "Important",
+  "whatAssessmentMeansHeader": "What this assessment means",
+  "whatModelDoesHeader": "What the model does",
+  "whatModelDoesText": "A trained machine-learning model (an RBF support vector machine) looks at your age, gender and 14 yes/no symptom answers and classifies whether they match a pattern associated with diabetes in the data it was trained on.",
+  "probabilityExplanationText": "The probability the model assigns to the Positive (diabetes-related pattern) class for the answers you gave. A low value goes with a Negative result. It is not the probability that you have or will develop diabetes.",
+  "whatItCantTellHeader": "What it can't tell you",
+  "whatItCantTellText": "It is not a diagnosis, and it cannot predict whether or when you might develop diabetes. The training data doesn't include long-term follow-up, so no timeframe can be estimated.",
+  "whatToDoNextHeader": "What to do next",
+  "whatToDoNextText": "Share the result with your doctor, especially if it shows an elevated risk pattern or your symptoms continue. Tests such as fasting glucose or HbA1c are how diabetes is actually diagnosed.",
+  "seekCareIfUnwellNote": "If you feel very unwell, seek medical care promptly. SUSTHITI does not replace professional medical diagnosis, treatment, or emergency care.",
+  "diabetesRiskAssessmentTitle": "Diabetes risk assessment",
+  "commonReviewLabel": "Review",
+  "stepOfTotalLabel": "Step {step} of {total}: {label}",
+  "@stepOfTotalLabel": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "commonBack": "Back",
+  "commonNext": "Next",
+  "seeMyResultButton": "See my result",
+  "answersSavedToProfileNote": "Your answers are saved to your health profile, so you won't be asked again elsewhere.",
+  "alsoUsedAutoHeader": "Also used, collected automatically",
+  "autoValuesExplanation": "Values read from your reports and data from your phone. To change a report value, open the report.",
+  "noAutoDataYetMessage": "No report values or phone data yet. Upload a report with HbA1c or glucose results to include them.",
+  "heartQuestionnaireIntro": "A few questions, already filled in with what SUSTHITI knows where possible; symptoms and test results are always answered fresh.",
+  "heartSectionBasicInfo": "A. Basic information",
+  "heartSectionMedicalHistory": "B. Medical history",
+  "heartSectionSymptoms": "C. Symptoms",
+  "heartSectionVitals": "D. Vitals",
+  "heartSectionLabValues": "E. Laboratory values",
+  "heartSectionCardiacTests": "F. Cardiac tests",
+  "heartSectionLifestyle": "G. Lifestyle",
+  "numberBetweenError": "{label} must be a number between {min} and {max} {unit}.",
+  "@numberBetweenError": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "heartAnswersSavedNote": "Answers to medical history and lifestyle questions are saved to your health profile. Symptoms and test results are kept only with this screening.",
+  "commonYes": "Yes",
+  "commonNo": "No",
+  "notAnsweredHint": "Not answered",
+  "fromYourRecordsLabel": "From your records: {value}{detail}",
+  "@fromYourRecordsLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "notCurrentlyKnownLabel": "Not currently known",
+  "leaveBlankToKeepHint": "Leave blank to keep this",
+  "heartFieldChestPain": "Chest pain",
+  "heartFieldChestPainType": "Chest pain type",
+  "heartOptionTypicalAngina": "Typical angina",
+  "heartOptionAtypicalAngina": "Atypical angina",
+  "heartOptionNonAnginal": "Non-anginal",
+  "heartFieldChestPainDuration": "Chest pain duration",
+  "heartFieldShortnessOfBreath": "Shortness of breath",
+  "heartFieldFatigue": "Fatigue",
+  "heartFieldDizziness": "Dizziness",
+  "heartFieldFainting": "Fainting",
+  "heartFieldSweating": "Sweating",
+  "heartFieldNausea": "Nausea",
+  "heartFieldPalpitations": "Palpitations",
+  "heartFieldLeftArmPain": "Left-arm pain",
+  "heartFieldJawNeckPain": "Jaw or neck pain",
+  "heartFieldBackPain": "Back pain",
+  "heartFieldRestingEcg": "Resting ECG",
+  "heartOptionNormal": "Normal",
+  "heartOptionNormalVariant": "Normal variant",
+  "heartOptionStTAbnormality": "ST-T abnormality",
+  "heartOptionOldInfarctPattern": "Old infarct pattern",
+  "heartOptionLvh": "Left ventricular hypertrophy (LVH)",
+  "heartFieldEcgAbnormality": "ECG abnormality",
+  "heartFieldStDepression": "ST depression",
+  "heartFieldExerciseAngina": "Exercise-induced angina",
+  "heartFieldMaxHeartRate": "Maximum heart rate (exercise)",
+  "heartFieldExerciseDuration": "Exercise duration",
+  "heartFieldStressTestResult": "Stress test result",
+  "heartOptionNegative": "Negative",
+  "heartOptionBorderline": "Borderline",
+  "heartOptionPositive": "Positive",
+  "heartFieldEchoResult": "Echocardiogram result",
+  "heartOptionMildAbnormality": "Mild abnormality",
+  "heartOptionSignificantAbnormality": "Significant abnormality",
+  "heartFieldEjectionFraction": "Ejection fraction",
+  "heartFieldWallMotionAbnormality": "Heart wall motion abnormality",
+  "heartFieldPreviousAbnormalTest": "Previous abnormal cardiac test",
+  "heartHelpDiabetes": "A doctor has diagnosed you with diabetes.",
+  "heartFieldRespiratoryRate": "Respiratory rate",
+  "heartFieldStressLevel": "Stress level (0 = none, 10 = severe)",
+  "heartFieldRestingHeartRate": "Resting heart rate",
+  "heartFieldSystolicBp": "Systolic blood pressure",
+  "heartFieldDiastolicBp": "Diastolic blood pressure",
+  "heartFieldOxygenSaturation": "Oxygen saturation",
+  "heartFieldFastingGlucose": "Fasting glucose",
+  "heartFieldRandomGlucose": "Random glucose",
+  "heartFieldTotalCholesterol": "Total cholesterol",
+  "heartFieldLdl": "LDL cholesterol",
+  "heartFieldHdl": "HDL cholesterol",
+  "heartFieldTriglycerides": "Triglycerides",
+  "heartFieldTroponin": "Troponin",
+  "heartFieldHemoglobin": "Hemoglobin",
+  "heartFieldCreatinine": "Creatinine",
+  "heartFieldSleep": "Sleep",
+  "heartUnitHoursANight": "h a night",
+  "healthProfileIntroText": "SUSTHITI keeps these answers once and uses them wherever they are needed, including your future diabetes risk estimate. Answer what you know; \"Not sure\" is always fine and is never treated as \"No\".",
+  "healthProfileSavedToast": "Health profile saved.",
+  "saveHealthProfileButton": "Save health profile",
+  "heightLabel": "Height",
+  "weightLabel": "Weight",
+  "bmiLabel": "BMI",
+  "needsHeightWeightLabel": "Needs height and weight",
+  "bmiAutoCalculatedNote": "BMI is calculated automatically from height and weight.",
+  "addHeightWeightButton": "Add height and weight",
+  "updateHeightWeightButton": "Update height or weight",
+  "profileIntroBody": "Used to calculate BMI and for health risk estimates.",
+  "profileIntroMedicalHistory": "Conditions a doctor has diagnosed. Choose \"Not sure\" if you don't know.",
+  "profileIntroFamilyHistory": "Your parents, brothers and sisters.",
+  "profileIntroHabits": "Your usual habits. Physical activity is taken from your phone's step count when enough is recorded.",
+  "profileIntroSymptoms": "In the last few weeks, have you noticed any of these? Answers are used for 90 days.",
+  "listItemTooLongError": "{label}: each item must be 200 characters or fewer.",
+  "@listItemTooLongError": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "listTooManyItemsError": "{label}: list up to 20 items.",
+  "@listTooManyItemsError": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "notSureOption": "Not sure",
+  "answeredByLabel": "Answered {date} by {who}",
+  "@answeredByLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "who": {
+        "type": "String"
+      }
+    }
+  },
+  "yourDoctorLabel": "your doctor",
+  "notAnsweredYetLabel": "Not answered yet",
+  "confirmStillCorrectCaption": "{caption}. Please confirm it is still correct.",
+  "@confirmStillCorrectCaption": {
+    "placeholders": {
+      "caption": {
+        "type": "String"
+      }
+    }
+  },
+  "stillCorrectButton": "Still correct",
+  "notRecordedListHint": "Not recorded — separate multiple entries with a comma or a new line",
+  "qrScanPageTitle": "Scan Patient QR",
+  "qrCameraUnavailableTitle": "Camera unavailable",
+  "qrCameraUnavailableMessage": "SUSTHITI needs camera access to scan a QR code. You can still use \"Add Patient\" to enter the details manually.",
+  "qrPointCameraHint": "Point the camera at the patient's QR code",
+  "qrRequestSentTitle": "Request sent",
+  "qrRequestSentMessage": "{name} ({code}) will be asked to approve your request. You will be notified when they respond.",
+  "@qrRequestSentMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "qrViewRequestsButton": "View requests",
+  "qrScanAnotherButton": "Scan another",
+  "qrScanAgainButton": "Scan again",
+  "qrPatientIdentityHeader": "Patient identity",
+  "qrConfirmPatientNote": "Confirm this is the right patient before requesting access. They must still approve it.",
+  "wearDevicesPageTitle": "Connected Devices",
+  "wearHealthSourcesHeader": "Health data sources",
+  "wearHealthSourcesSubtitle": "Synced data is stored in your SUSTHITI record, so it is the same on your phone, tablet and the web.",
+  "wearNoDeviceTitle": "No health device connected.",
+  "wearNoDeviceBody": "Connect a supported health platform to automatically sync your lifestyle data.",
+  "wearDisconnectNote": "Disconnecting stops new data from syncing. Data already synced stays in your history. To change what SUSTHITI may read, use Health Connect (Android) or Settings, then Health (iPhone).",
+  "wearSyncFailedPermissions": "Sync didn't complete. Check your health permissions and try again.",
+  "wearDisconnectConfirmTitle": "Disconnect health data?",
+  "wearDisconnectConfirmMessage": "SUSTHITI will stop syncing new health data from this source.\n\nPreviously synchronized records will remain available according to your data-retention settings.",
+  "wearDisconnectButton": "Disconnect",
+  "wearDisconnectedToast": "Disconnected. Your synced history is kept.",
+  "wearAndroidPhoneLabel": "Android phone",
+  "wearIphoneLabel": "iPhone",
+  "wearFromPlatformFragment": "from your {platform}",
+  "@wearFromPlatformFragment": {
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      }
+    }
+  },
+  "wearConnectedDateNote": "connected {date}",
+  "@wearConnectedDateNote": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "wearSyncUnavailablePill": "Sync unavailable",
+  "wearConnectedPill": "Connected",
+  "wearPermissionsLabel": "Permissions",
+  "wearRetryButton": "Retry",
+  "wearSyncNowButton": "Sync Now",
+  "wearSyncsFromPhoneNote": "Syncs from your {platform}. Open SUSTHITI there to sync.",
+  "@wearSyncsFromPhoneNote": {
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      }
+    }
+  },
+  "wearGenericPhoneLabel": "phone",
+  "wearPermissionShared": "shared",
+  "wearPermissionNotShared": "not shared",
+  "wearDemoTryTitle": "Try with DEMO data",
+  "wearDemoNote": "Development only. Adds clearly labelled demo values; never real health data.",
+  "wearNotSyncedYet": "Not synced yet",
+  "wearLastSyncedAt": "Last synced {time}",
+  "@wearLastSyncedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "wearConnectTitle": "Connect your health data",
+  "wearConnectSubtitle": "Sync steps, heart rate, sleep and more from {platform}.",
+  "@wearConnectSubtitle": {
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      }
+    }
+  },
+  "wearConnectButton": "Connect",
+  "wearSyncingTitle": "Syncing health data...",
+  "wearReadingDataSubtitle": "Reading new data from {platform}.",
+  "@wearReadingDataSubtitle": {
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      }
+    }
+  },
+  "wearConnectedTitle": "Health data connected",
+  "wearLastSyncIncomplete": "The last sync did not complete.",
+  "wearNotConnectedReadOnlyTitle": "Health data not connected",
+  "wearConnectFromMobileNote": "Connect health data from the SUSTHITI mobile app (Lifestyle, then Connect). It will appear here automatically.",
+  "wearHealthDataLabel": "Health data",
+  "wearApplePlatformLabel": "Apple Health on iPhone",
+  "wearAndroidPlatformLabel": "Health Connect on Android",
+  "wearGenericMobilePlatformLabel": "the mobile health platform",
+  "wearConnectedThroughNote": "Connected through {platform}",
+  "@wearConnectedThroughNote": {
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      }
+    }
+  },
+  "wearRefreshButton": "Refresh",
+  "wearManageDevicesButton": "Manage connected devices",
+  "wearOfflineLabel": "Offline",
+  "wearTapToSyncHint": "Tap to sync.",
+  "wearNoneConnectedSummary": "No health platform connected. Values shown were entered manually.",
+  "wearConnectPageTitle": "Connect Health Data",
+  "wearDeniedTitle": "Health data access wasn't enabled.",
+  "wearDeniedBodyIos": "You can enable it later from Connected Devices. On iPhone: open Settings, then Health, Data Access & Devices, SUSTHITI, and turn on the data you want to share.",
+  "wearDeniedBodyOther": "You can enable it later from Connected Devices.",
+  "wearOpenHealthConnectButton": "Open Health Connect",
+  "wearNotNowButton": "Not now",
+  "wearNeedsInstallTitle": "Health Connect is needed",
+  "wearNeedsInstallBody": "Android keeps health data from your watch and fitness apps in Health Connect. Install or update it, then come back and continue.",
+  "wearInstallButton": "Install Health Connect",
+  "wearUnavailableTitle": "Connect from your phone",
+  "wearUnavailableBody": "Browsers and computers cannot read health data directly. Open SUSTHITI on your Android phone or iPhone and go to Lifestyle, then Connect. Your synced data then appears here automatically.",
+  "wearFailedTitle": "We couldn't connect your health data.",
+  "wearFailedBody": "Please check:\n• Health permissions\n• Device connection\n• Internet connection",
+  "wearExplainSubtitle": "SUSTHITI can use health information from {platform} to show your lifestyle trends.",
+  "@wearExplainSubtitle": {
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      }
+    }
+  },
+  "wearDataMayIncludeHeader": "Data may include",
+  "wearExerciseMinutesNote": " (exercise minutes)",
+  "wearWhereSupportedNote": " where supported",
+  "wearPrivacyNote": "SUSTHITI only reads this data; it never writes to your health platform. You choose what to share on the next screen and can change it any time. Your doctor sees it only while you have approved their access. Not every watch records blood pressure or SpO₂; SUSTHITI only shows what your device provides.",
+  "wearContinueButton": "Continue",
+  "wearConnectingTitle": "Connecting...",
+  "wearConnectingBody": "Reading your recent health data for the first sync.",
+  "wearSuccessHeadline": "Health Data Connected",
+  "wearSuccessSubtitle": "Your health data is now connected to SUSTHITI.",
+  "wearSourceLabel": "Source",
+  "wearLastSyncLabel": "Last synchronization",
+  "wearJustNowValue": "Just now",
+  "wearMeasurementsAddedLabel": "Measurements added",
+  "wearSharingLabel": "Sharing",
+  "wearNoRecentDataNote": "No recent data was found yet. New readings from your watch will sync automatically when you open SUSTHITI.",
+  "wearViewDashboardButton": "View Lifestyle Dashboard",
+  "accessPatientPageTitle": "Doctor Access",
+  "accessAdminPageTitle": "Access Review",
+  "accessPatientIntro": "Doctors can only see your records after you approve them. You can revoke access at any time.",
+  "accessAllFilterLabel": "All",
+  "accessNoRequestsTitle": "No access requests.",
+  "accessNoStatusRequestsTitle": "No {status} requests.",
+  "@accessNoStatusRequestsTitle": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "accessPatientEmptyHint": "When a doctor requests access using your name and Patient ID, it will appear here.",
+  "accessRejectConfirmTitle": "Reject request?",
+  "accessRevokeConfirmTitle": "Revoke access?",
+  "accessRejectConfirmMessage": "Dr. {doctor} will not be able to see your records.",
+  "@accessRejectConfirmMessage": {
+    "placeholders": {
+      "doctor": {
+        "type": "String"
+      }
+    }
+  },
+  "accessRevokeConfirmMessageAdmin": "Dr. {doctor} will immediately lose access to {patient}'s records. The patient and doctor are notified.",
+  "@accessRevokeConfirmMessageAdmin": {
+    "placeholders": {
+      "doctor": {
+        "type": "String"
+      },
+      "patient": {
+        "type": "String"
+      }
+    }
+  },
+  "accessRevokeConfirmMessagePatient": "Dr. {doctor} will immediately lose access to your records. Records they created stay in your history.",
+  "@accessRevokeConfirmMessagePatient": {
+    "placeholders": {
+      "doctor": {
+        "type": "String"
+      }
+    }
+  },
+  "accessRejectButton": "Reject",
+  "accessRevokeButton": "Revoke",
+  "accessApprovedToast": "Access approved",
+  "accessRejectedToast": "Request rejected",
+  "accessRevokedToast": "Access revoked",
+  "accessDoctorNameLabel": "Doctor: {name}",
+  "@accessDoctorNameLabel": { "placeholders": { "name": { "type": "String" } } },
+  "accessPatientNameLabel": "Patient: {name}",
+  "@accessPatientNameLabel": { "placeholders": { "name": { "type": "String" } } },
+  "accessPatientIdLabel": "Patient ID: {id}",
+  "@accessPatientIdLabel": { "placeholders": { "id": { "type": "String" } } },
+  "accessDoctorIdLabel": "Doctor ID: {id}",
+  "@accessDoctorIdLabel": { "placeholders": { "id": { "type": "String" } } },
+  "accessSpecializationLabel": "Specialization: {specialization}",
+  "@accessSpecializationLabel": { "placeholders": { "specialization": { "type": "String" } } },
+  "accessPatientNameCode": "Patient: {name} · {code}",
+  "@accessPatientNameCode": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "accessRequestedOnLabel": "Requested {date}",
+  "@accessRequestedOnLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "accessApproveButton": "Approve",
+  "accessRevokeAccessButton": "Revoke access",
+  "aiPatientSummaryTitle": "AI Patient Summary",
+  "aiPatientSummaryLoadingMessage": "Reviewing assessments, reports, glucose, lifestyle and care history...",
+  "aiPatientSummaryEmptyMessage": "No patient summary yet. Generate one to see an overview of the recorded history.",
+  "aiGeneratePatientSummaryButton": "Generate Patient Summary",
+  "aiOriginalRecordsUnchangedNote": "All original records are unchanged and still available.",
+  "aiYourHealthSummaryTitle": "Your Health Summary",
+  "aiHealthSummaryLoadingMessage": "Looking at your recorded health information...",
+  "aiHealthSummaryEmptyMessage": "Get a short summary of your recorded health information, in plain language.",
+  "aiGenerateSummaryButton": "Generate Summary",
+  "aiYourRecordsUnchangedNote": "Your original records are unchanged and still available.",
+  "aiLifestyleInsightTitle": "Lifestyle Insight",
+  "aiLifestyleLoadingMessage": "Looking at your recent activity, sleep, food and glucose...",
+  "aiLifestyleEmptyMessage": "Get gentle, practical suggestions based on what you have recorded.",
+  "aiGenerateInsightButton": "Generate Insight",
+  "aiLifestyleUnchangedNote": "Your recorded lifestyle data is unchanged.",
+  "aiDefaultFailureReassurance": "Your original medical information is still available.",
+  "aiAdminCannotGenerateNote": "No AI summary has been generated for this record. Administrators can view AI summaries but cannot generate them.",
+  "aiNotConfiguredMessage": "AI features are not set up on this server yet.",
+  "aiGenerateFailedMessage": "We couldn't generate the summary right now.",
+  "aiStaleSummaryNote": "New information has been added since this summary was generated. It may no longer reflect the current records.",
+  "aiGeneratedOnLabel": "Generated {date}",
+  "@aiGeneratedOnLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "aiGeneratedByRole": "by {role}",
+  "@aiGeneratedByRole": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "aiBasedOnLabel": "Based on: {items}",
+  "@aiBasedOnLabel": {
+    "placeholders": {
+      "items": {
+        "type": "String"
+      }
+    }
+  },
+  "aiModelLabel": "AI model: {model}",
+  "@aiModelLabel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "aiRegenerateButton": "Regenerate",
+  "aiHideDetailsButton": "Hide details",
+  "aiKeyFindingsLabel": "Key findings",
+  "aiRelevantValuesLabel": "Relevant values",
+  "aiReportInformationLabel": "Report information",
+  "aiObservedWithinReportLabel": "Observed within this report",
+  "aiQuestionsToDiscussLabel": "Questions to discuss",
+  "aiLimitationsLabel": "Limitations",
+  "aiNotEnoughInfoLabel": "Not enough information to compare",
+  "aiAttentionLabel": "Attention",
+  "aiRecentChangesLabel": "Recent changes",
+  "aiDiabetesHistoryLabel": "Diabetes History",
+  "aiRecentAssessmentsLabel": "Recent Assessments",
+  "aiMedicalReportsLabel": "Medical Reports",
+  "aiGlucoseHistoryLabel": "Glucose History",
+  "aiLifestyleTrendsLabel": "Lifestyle Trends",
+  "aiMedicationHistoryLabel": "Medication / Prescription History",
+  "aiSideEffectsLabel": "Side Effects",
+  "aiDoctorVisitsLabel": "Doctor Visits",
+  "aiRecentDevelopmentsLabel": "Recent Developments",
+  "aiHeartHistoryLabel": "Heart History",
+  "aiWhatStandsOutLabel": "What stands out",
+  "aiWhatHasChangedLabel": "What has changed",
+  "aiKeepInMindLabel": "What to keep in mind",
+  "aiDiscussWithDoctorLabel": "What to discuss with your doctor",
+  "aiObservationsLabel": "Observations",
+  "aiSuggestionsWithAiPrefixLabel": "AI Suggestions",
+  "aiSuggestionsLabel": "Suggestions",
+  "aiPatternsConsideredLabel": "Patterns considered",
+  "aiInterpretationHeading": "AI interpretation",
+  "aiReferenceRangeLabel": "Reference {range}",
+  "@aiReferenceRangeLabel": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "aiEarlierLabel": "Earlier",
+  "aiLatestLabel": "Latest",
+  "aiObservedChangeLabel": "Observed change",
+  "aiTrendRecentChangeLabel": "Recent change",
+  "aiTrendStableLabel": "Stable",
+  "aiTrendImprovingLabel": "Improving",
+  "aiTrendWorseningLabel": "Worsening",
+  "aiTrendUnknownLabel": "Unknown",
+  "aiLifestyleOverviewLabel": "Lifestyle Overview",
+  "appDisclaimerText": "SUSTHITI provides AI-assisted informational insights and does not replace professional medical diagnosis, treatment, or emergency care.",
+  "chartSemanticLabel": "Chart with {count} recorded values from {start} to {end}",
+  "@chartSemanticLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "metricDemoDataSuffix": ", demo data",
+  "aiGeneratedBadgeLabel": "AI-generated",
+  "demoBadgeTooltip": "Demonstration data, not real health data",
+  "statusPrefixSemantic": "Status: {label}",
+  "@statusPrefixSemantic": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "copyPatientIdTooltip": "Copy {label}",
+  "@copyPatientIdTooltip": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "patientIdCopiedToast": "{label} copied",
+  "@patientIdCopiedToast": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "fieldOptionalSuffix": "Optional",
+  "choiceRequiredMessage": "Please choose one option.",
+  "dateFieldSelectPlaceholder": "Select",
+  "passwordShowTooltip": "Show password",
+  "passwordHideTooltip": "Hide password",
+  "unableToLoadSection": "Unable to load {title}.",
+  "@unableToLoadSection": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "commonRetry": "Retry",
+  "timelineTodayAt": "Today, {time}",
+  "@timelineTodayAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "timelineYesterdayAt": "Yesterday, {time}",
+  "@timelineYesterdayAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "timelineOpenLabel": "Open",
+  "pageNotFoundTitle": "Page not found.",
+  "goHomeButton": "Go home",
+  "authTaglineHeadline": "Understand your health. Track your journey. Stay connected with your doctor.",
+  "authTaglineSubtitle": "Diabetes-focused longitudinal health monitoring for patients and doctors.",
+  "probabilityShortLabel": "probability",
+  "rolePatient": "Patient",
+  "roleDoctor": "Doctor",
+  "roleAdmin": "Admin",
+  "glucoseTypeFasting": "Fasting",
+  "glucoseTypePostMeal": "Post-meal",
+  "glucoseTypeRandom": "Random",
+  "mealTypeBreakfast": "Breakfast",
+  "mealTypeLunch": "Lunch",
+  "mealTypeDinner": "Dinner",
+  "mealTypeSnack": "Snack",
+  "mealTypeOther": "Other",
+  "lifestyleMetricSteps": "Steps",
+  "lifestyleMetricHeartRate": "Heart Rate",
+  "lifestyleMetricSleep": "Sleep",
+  "lifestyleMetricActivity": "Activity",
+  "lifestyleMetricBloodPressure": "Blood Pressure",
+  "lifestyleMetricSpo2": "SpO₂",
+  "lifestyleMetricCalories": "Calories",
+  "dataSourceHealthPlatform": "Health Platform",
+  "dataSourceDevice": "Device",
+  "dataSourceManual": "Manual",
+  "dataSourceImported": "Imported",
+  "rangeDaily": "Daily",
+  "rangeWeekly": "Weekly",
+  "rangeMonthly": "Monthly",
+  "rangeCustom": "Custom",
+  "range7Days": "7 days",
+  "range30Days": "30 days",
+  "range1Month": "1 Month",
+  "range3Months": "3 Months",
+  "range6Months": "6 Months",
+  "range1Year": "1 Year",
+  "trendNoDataRecorded": "No {metric} recorded in this period.",
+  "@trendNoDataRecorded": {
+    "placeholders": {
+      "metric": {
+        "type": "String"
+      }
+    }
+  },
+  "trendSingleRecordedResult": "Single recorded result",
+  "trendSingleValueOnDate": "{value} on {date}",
+  "@trendSingleValueOnDate": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "trendMoreResultsNeeded": "More results are needed to show a trend.",
+  "trendAverageAcross": "Average {avg} across {count} recorded {unit}",
+  "@trendAverageAcross": {
+    "placeholders": {
+      "avg": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "trendUnitReadings": "{count, plural, =1{reading} other{readings}}",
+  "@trendUnitReadings": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "trendUnitDays": "{count, plural, =1{day} other{days}}",
+  "@trendUnitDays": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "severityMild": "Mild",
+  "severityModerate": "Moderate",
+  "severitySevere": "Severe",
+  "severityEmergency": "Emergency",
+  "sideEffectStatusNew": "New",
+  "sideEffectStatusUnderReview": "Under Review",
+  "sideEffectStatusResponded": "Responded",
+  "sideEffectStatusAppointmentRecommended": "Appointment Recommended",
+  "sideEffectStatusResolved": "Resolved",
+  "doctorResponseNoImmediateAction": "No immediate action",
+  "doctorResponseMonitor": "Monitor",
+  "doctorResponseContactDoctor": "Contact doctor",
+  "doctorResponseAppointmentRecommended": "Appointment recommended",
+  "doctorResponseUrgentMedicalAttention": "Urgent medical attention",
+  "followUpStatusScheduled": "Scheduled",
+  "followUpStatusCompleted": "Completed",
+  "followUpStatusCancelled": "Cancelled",
+  "surgeryStatusScheduled": "Scheduled",
+  "surgeryStatusCompleted": "Completed",
+  "surgeryStatusCancelled": "Cancelled",
+  "accessStatusPending": "Pending",
+  "accessStatusApproved": "Approved",
+  "accessStatusRejected": "Rejected",
+  "accessStatusRevoked": "Revoked",
+  "reportCategoryFullBody": "Full Body Checkup",
+  "reportCategoryBloodReport": "Blood Report",
+  "reportCategoryHba1c": "HbA1c",
+  "reportCategoryBloodGlucose": "Blood Glucose",
+  "reportCategoryLipidProfile": "Lipid Profile",
+  "reportCategoryKidneyFunction": "Kidney Function",
+  "reportCategoryLiverFunction": "Liver Function",
+  "reportCategoryUrineTest": "Urine Test",
+  "reportCategoryXRay": "X-Ray",
+  "reportCategoryMri": "MRI",
+  "reportCategoryCt": "CT",
+  "reportCategoryEcg": "ECG",
+  "reportCategoryOther": "Other",
+  "reportFilterGroupAll": "All",
+  "reportFilterGroupBlood": "Blood",
+  "reportFilterGroupHba1c": "HbA1c",
+  "reportFilterGroupImaging": "Imaging",
+  "reportFilterGroupOther": "Other",
+  "aiSummaryKindReport": "Report Summary",
+  "aiSummaryKindAllReports": "All Reports Summary",
+  "aiSummaryKindPatient": "AI Patient Summary",
+  "aiSummaryKindPatientFriendly": "Your Health Summary",
+  "aiSummaryKindLifestyle": "Lifestyle Insight",
+  "aiSummaryKindInterpretation": "Assessment Interpretation",
+  "aiSummaryKindHeartInterpretation": "Heart Risk Screening Interpretation",
+  "accessStatusPending": "Pending",
+  "accessStatusApproved": "Approved",
+  "accessStatusRejected": "Rejected",
+  "accessStatusRevoked": "Revoked",
+  "sideEffectStatusNew": "New",
+  "sideEffectStatusUnderReview": "Under Review",
+  "sideEffectStatusResponded": "Responded",
+  "sideEffectStatusAppointmentRecommended": "Appointment Recommended",
+  "sideEffectStatusResolved": "Resolved",
+  "severityMild": "Mild",
+  "severityModerate": "Moderate",
+  "severitySevere": "Severe",
+  "severityEmergency": "Emergency",
+  "followUpStatusUpcoming": "Upcoming",
+  "followUpStatusUnscheduled": "Needs scheduling",
+  "followUpStatusPast": "Past",
+  "aiSummaryFallbackNotice": "Translation unavailable. Showing English version.",
+  "aiSummaryRequestTranslation": "Request translation",
+  "pdfLanguageLimitationNotice": "PDF exports are currently available in English only. Full multilingual PDF support coming soon."
+}

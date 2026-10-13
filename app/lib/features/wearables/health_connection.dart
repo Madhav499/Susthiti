@@ -11,6 +11,7 @@ import '../../core/widgets/labels.dart';
 import '../../data/models/tracking.dart';
 import '../../data/providers.dart';
 import '../../data/services/wearable_service.dart';
+import '../../l10n/app_localizations.dart';
 
 final devicesProvider = FutureProvider.autoDispose<List<WearableConnection>>((ref) => ref.watch(wearableRepositoryProvider).devices());
 final wearableProvidersProvider = FutureProvider.autoDispose<List<WearableProvider>>((ref) => ref.watch(wearableRepositoryProvider).providers());
@@ -19,13 +20,13 @@ final wearableProvidersProvider = FutureProvider.autoDispose<List<WearableProvid
 List<WearableConnection> healthConnections(List<WearableConnection> devices) => [for (final d in devices) if (!d.isDemo && d.status != 'disconnected') d];
 
 /// "Last synced 10:32 AM" today, "Last synced 24 Sep, 10:32 AM" otherwise.
-String lastSyncedText(DateTime? t) {
-  if (t == null) return 'Not synced yet';
+String lastSyncedText(AppLocalizations l10n, DateTime? t) {
+  if (t == null) return l10n.wearNotSyncedYet;
   final l = t.toLocal();
   final now = DateTime.now();
   final today = l.year == now.year && l.month == now.month && l.day == now.day;
-  if (now.difference(l).inMinutes < 1) return 'Synced just now';
-  return 'Last synced ${today ? Fmt.time(l) : Fmt.dateTime(l)}';
+  if (now.difference(l).inMinutes < 1) return l10n.lifestyleSyncedJustNowToast;
+  return l10n.wearLastSyncedAt(today ? Fmt.time(l) : Fmt.dateTime(l));
 }
 
 /// Syncs in the foreground when a sync is due (on launch and when lifestyle opens). Failures
@@ -83,6 +84,7 @@ class _HealthConnectionCardState extends ConsumerState<HealthConnectionCard> {
   Future<void> _sync() async {
     final c = _connection;
     if (c == null) return;
+    final l10n = AppLocalizations.of(context);
     setState(() => _syncing = true);
     try {
       final outcome = await ref.read(wearableServiceProvider).sync(c);
@@ -90,12 +92,12 @@ class _HealthConnectionCardState extends ConsumerState<HealthConnectionCard> {
       ref.invalidate(devicesProvider);
       if (!mounted) return;
       if (outcome.device.syncFailed) {
-        showToast(context, "Sync didn't complete. Check your health permissions and try again.", error: true);
+        showToast(context, l10n.wearSyncFailedPermissions, error: true);
       } else {
-        showToast(context, outcome.upToDate ? 'Already up to date' : 'Synced just now');
+        showToast(context, outcome.upToDate ? l10n.lifestyleAlreadyUpToDateToast : l10n.lifestyleSyncedJustNowToast);
       }
     } catch (e) {
-      if (mounted) showToast(context, "Sync didn't complete. Check your connection and try again.", error: true);
+      if (mounted) showToast(context, l10n.lifestyleSyncFailedToast, error: true);
     } finally {
       if (mounted) setState(() => _syncing = false);
     }
@@ -109,51 +111,52 @@ class _HealthConnectionCardState extends ConsumerState<HealthConnectionCard> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final c = _connection;
     final platformName = ref.read(wearableServiceProvider).platform.name;
     final (IconData icon, StatusTone tone, String title, String subtitle, Widget? action) = switch (_state) {
       _CardState.notConnected => (
           Icons.favorite_border,
           StatusTone.info,
-          'Connect your health data',
-          'Sync steps, heart rate, sleep and more from $platformName.',
-          FilledButton(onPressed: _connect, child: const Text('Connect')),
+          l10n.wearConnectTitle,
+          l10n.wearConnectSubtitle(platformName),
+          FilledButton(onPressed: _connect, child: Text(l10n.wearConnectButton)),
         ),
       _CardState.syncing => (
           Icons.sync,
           StatusTone.info,
-          'Syncing health data...',
-          'Reading new data from $platformName.',
+          l10n.wearSyncingTitle,
+          l10n.wearReadingDataSubtitle(platformName),
           const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4)),
         ),
       _CardState.connected => (
           Icons.favorite,
           StatusTone.positive,
-          'Health data connected',
-          '${c!.deviceName} · ${lastSyncedText(c.lastSyncedAt)}',
-          OutlinedButton.icon(onPressed: _sync, icon: const Icon(Icons.sync, size: 18), label: const Text('Sync Now')),
+          l10n.wearConnectedTitle,
+          '${c!.deviceName} · ${lastSyncedText(l10n, c.lastSyncedAt)}',
+          OutlinedButton.icon(onPressed: _sync, icon: const Icon(Icons.sync, size: 18), label: Text(l10n.wearSyncNowButton)),
         ),
       _CardState.error => (
           Icons.sync_problem,
           StatusTone.attention,
-          'Sync unavailable',
-          c?.lastError ?? 'The last sync did not complete.',
-          FilledButton(onPressed: _sync, child: const Text('Retry')),
+          l10n.wearSyncUnavailablePill,
+          c?.lastError ?? l10n.wearLastSyncIncomplete,
+          FilledButton(onPressed: _sync, child: Text(l10n.wearRetryButton)),
         ),
       _CardState.readOnly => c == null
           ? (
               Icons.phone_iphone,
               StatusTone.inactive,
-              'Health data not connected',
-              'Connect health data from the SUSTHITI mobile app (Lifestyle, then Connect). It will appear here automatically.',
+              l10n.wearNotConnectedReadOnlyTitle,
+              l10n.wearConnectFromMobileNote,
               null,
             )
           : (
               Icons.favorite,
               StatusTone.positive,
-              'Health data',
-              'Connected through ${c.platform == 'ios' ? 'Apple Health on iPhone' : c.platform == 'android' ? 'Health Connect on Android' : 'the mobile health platform'} · ${lastSyncedText(c.lastSyncedAt)}',
-              OutlinedButton.icon(onPressed: widget.onChanged, icon: const Icon(Icons.refresh, size: 18), label: const Text('Refresh')),
+              l10n.wearHealthDataLabel,
+              '${l10n.wearConnectedThroughNote(c.platform == 'ios' ? l10n.wearApplePlatformLabel : c.platform == 'android' ? l10n.wearAndroidPlatformLabel : l10n.wearGenericMobilePlatformLabel)} · ${lastSyncedText(l10n, c.lastSyncedAt)}',
+              OutlinedButton.icon(onPressed: widget.onChanged, icon: const Icon(Icons.refresh, size: 18), label: Text(l10n.wearRefreshButton)),
             ),
     };
     return AppCard(
@@ -182,7 +185,7 @@ class _HealthConnectionCardState extends ConsumerState<HealthConnectionCard> {
                 widget.onChanged();
               },
               style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 36)),
-              child: const Text('Manage connected devices'),
+              child: Text(l10n.wearManageDevicesButton),
             ),
           ),
       ]),
@@ -199,12 +202,14 @@ class SyncIndicator extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final connection = healthConnections(devices).firstOrNull;
     if (connection == null && !offline) return const SizedBox.shrink();
-    final text = offline ? 'Offline · ${lastSyncedText(connection?.lastSyncedAt)}' : lastSyncedText(connection?.lastSyncedAt);
+    final syncedText = lastSyncedText(l10n, connection?.lastSyncedAt);
+    final text = offline ? '${l10n.wearOfflineLabel} · $syncedText' : syncedText;
     return Semantics(
       button: true,
-      label: '$text. Tap to sync.',
+      label: '$text ${l10n.wearTapToSyncHint}',
       excludeSemantics: true,
       child: InkWell(
         onTap: onTap,
@@ -230,6 +235,7 @@ class HealthSourceSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final connections = healthConnections(devices);
     return Row(children: [
       const Icon(Icons.favorite_border, size: 18, color: AppColors.textSecondary),
@@ -237,8 +243,8 @@ class HealthSourceSummary extends StatelessWidget {
       Expanded(
         child: Text(
           connections.isEmpty
-              ? 'No health platform connected. Values shown were entered manually.'
-              : connections.map((c) => '${c.deviceName} · ${lastSyncedText(c.lastSyncedAt)}').join('   '),
+              ? l10n.wearNoneConnectedSummary
+              : connections.map((c) => '${c.deviceName} · ${lastSyncedText(l10n, c.lastSyncedAt)}').join('   '),
           style: t.bodySmall,
         ),
       ),

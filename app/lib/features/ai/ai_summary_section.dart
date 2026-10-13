@@ -11,6 +11,7 @@ import '../../core/widgets/labels.dart';
 import '../../data/models/ai_summary.dart';
 import '../../data/models/user.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../authentication/auth_controller.dart';
 
 /// Shared AI block: stored summary (never regenerated on view), explicit Generate /
@@ -24,8 +25,8 @@ class AiSummarySection extends ConsumerStatefulWidget {
     required this.onGenerated,
     required this.loadingMessage,
     required this.emptyMessage,
-    this.generateLabel = 'Generate Summary',
-    this.failureReassurance = 'Your original medical information is still available.',
+    this.generateLabel,
+    this.failureReassurance,
     this.canGenerate = true,
     this.cannotGenerateReason,
   });
@@ -36,8 +37,12 @@ class AiSummarySection extends ConsumerStatefulWidget {
   final VoidCallback onGenerated;
   final String loadingMessage;
   final String emptyMessage;
-  final String generateLabel;
-  final String failureReassurance;
+
+  /// Defaults to [AppLocalizations.aiGenerateSummaryButton] when not given.
+  final String? generateLabel;
+
+  /// Defaults to [AppLocalizations.aiDefaultFailureReassurance] when not given.
+  final String? failureReassurance;
   final bool canGenerate;
   final String? cannotGenerateReason;
 
@@ -83,8 +88,8 @@ class _AiSummarySectionState extends ConsumerState<AiSummarySection> {
   /// Admins read AI summaries but never generate them (the backend refuses it too).
   bool get _canGenerate => widget.canGenerate && ref.watch(currentUserProvider)?.role != UserRole.admin;
 
-  String? get _cannotGenerateReason => ref.watch(currentUserProvider)?.role == UserRole.admin
-      ? 'No AI summary has been generated for this record. Administrators can view AI summaries but cannot generate them.'
+  String? _cannotGenerateReason(AppLocalizations l10n) => ref.watch(currentUserProvider)?.role == UserRole.admin
+      ? l10n.aiAdminCannotGenerateNote
       : widget.cannotGenerateReason;
 
   @override
@@ -104,6 +109,8 @@ class _AiSummarySectionState extends ConsumerState<AiSummarySection> {
 
   Widget _body(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
+    final failureReassurance = widget.failureReassurance ?? l10n.aiDefaultFailureReassurance;
     if (_generating) {
       return Semantics(
         key: const ValueKey('generating'),
@@ -129,31 +136,32 @@ class _AiSummarySectionState extends ConsumerState<AiSummarySection> {
       return Column(key: const ValueKey('error'), crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(
           notConfigured
-              ? 'AI features are not set up on this server yet.'
+              ? l10n.aiNotConfiguredMessage
               : retryable
-                  ? "We couldn't generate the summary right now."
+                  ? l10n.aiGenerateFailedMessage
                   : failure.message,
           style: t.titleSmall,
         ),
         const SizedBox(height: 4),
-        Text(widget.failureReassurance, style: t.bodyMedium?.copyWith(color: AppColors.primary)),
+        Text(failureReassurance, style: t.bodyMedium?.copyWith(color: AppColors.primary)),
         if (!notConfigured && retryable) ...[
           const SizedBox(height: AppSpacing.md),
-          OutlinedButton.icon(onPressed: _generate, icon: const Icon(Icons.refresh), label: const Text('Try Again')),
+          OutlinedButton.icon(onPressed: _generate, icon: const Icon(Icons.refresh), label: Text(l10n.commonTryAgain)),
         ],
       ]);
     }
     return widget.value.when(
       skipLoadingOnRefresh: true,
       loading: () => const Column(key: ValueKey('loading'), children: [Skeleton(height: 14), SizedBox(height: 8), Skeleton(height: 14, width: 220)]),
-      error: (e, _) => ErrorState(key: const ValueKey('load-error'), error: e, compact: true, onRetry: widget.onGenerated, reassurance: widget.failureReassurance),
+      error: (e, _) => ErrorState(key: const ValueKey('load-error'), error: e, compact: true, onRetry: widget.onGenerated, reassurance: failureReassurance),
       data: (summary) {
+        final generateLabel = widget.generateLabel ?? l10n.aiGenerateSummaryButton;
         if (summary == null) {
           return Column(key: const ValueKey('empty'), crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(_canGenerate ? widget.emptyMessage : (_cannotGenerateReason ?? widget.emptyMessage), style: t.bodyMedium?.copyWith(color: AppColors.textSecondary)),
+            Text(_canGenerate ? widget.emptyMessage : (_cannotGenerateReason(l10n) ?? widget.emptyMessage), style: t.bodyMedium?.copyWith(color: AppColors.textSecondary)),
             if (_canGenerate) ...[
               const SizedBox(height: AppSpacing.md),
-              FilledButton.icon(onPressed: _generate, icon: const Icon(Icons.auto_awesome_outlined), label: Text(widget.generateLabel)),
+              FilledButton.icon(onPressed: _generate, icon: const Icon(Icons.auto_awesome_outlined), label: Text(generateLabel)),
             ],
           ]);
         }
@@ -167,7 +175,7 @@ class _AiSummarySectionState extends ConsumerState<AiSummarySection> {
                 child: Row(children: [
                   const Icon(Icons.history_outlined, size: 18, color: AppColors.warningText),
                   const SizedBox(width: AppSpacing.sm),
-                  Expanded(child: Text('New information has been added since this summary was generated. It may no longer reflect the current records.', style: t.bodySmall?.copyWith(color: AppColors.warningText))),
+                  Expanded(child: Text(l10n.aiStaleSummaryNote, style: t.bodySmall?.copyWith(color: AppColors.warningText))),
                 ]),
               ),
             ),
@@ -175,16 +183,16 @@ class _AiSummarySectionState extends ConsumerState<AiSummarySection> {
           const SizedBox(height: AppSpacing.lg),
           const Divider(),
           const SizedBox(height: AppSpacing.md),
-          Text('Generated ${Fmt.dateTime(summary.generatedAt)}${summary.generatedByRole != null ? ' by ${summary.generatedByRole}' : ''}', style: t.bodySmall),
-          if (summary.basedOn.isNotEmpty) Text('Based on: ${summary.basedOn.join(', ')}', style: t.bodySmall),
-          Text('AI model: ${summary.model}', style: t.bodySmall),
+          Text('${l10n.aiGeneratedOnLabel(Fmt.dateTime(summary.generatedAt))}${summary.generatedByRole != null ? ' ${l10n.aiGeneratedByRole(summary.generatedByRole!)}' : ''}', style: t.bodySmall),
+          if (summary.basedOn.isNotEmpty) Text(l10n.aiBasedOnLabel(summary.basedOn.join(', ')), style: t.bodySmall),
+          Text(l10n.aiModelLabel(summary.model), style: t.bodySmall),
           const SizedBox(height: AppSpacing.md),
           Text(summary.disclaimer, style: t.bodySmall?.copyWith(fontStyle: FontStyle.italic)),
           const SizedBox(height: AppSpacing.lg),
           Wrap(spacing: AppSpacing.sm, runSpacing: AppSpacing.sm, children: [
-            OutlinedButton.icon(onPressed: () => _viewPdf(summary), icon: const Icon(Icons.visibility_outlined), label: const Text('View PDF')),
-            FilledButton.icon(onPressed: () => _downloadPdf(summary), icon: const Icon(Icons.picture_as_pdf_outlined), label: const Text('Download PDF')),
-            if (_canGenerate) TextButton.icon(onPressed: _generate, icon: const Icon(Icons.refresh), label: const Text('Regenerate')),
+            OutlinedButton.icon(onPressed: () => _viewPdf(summary), icon: const Icon(Icons.visibility_outlined), label: Text(l10n.apatViewPdfButton)),
+            FilledButton.icon(onPressed: () => _downloadPdf(summary), icon: const Icon(Icons.picture_as_pdf_outlined), label: Text(l10n.apatDownloadPdfButton)),
+            if (_canGenerate) TextButton.icon(onPressed: _generate, icon: const Icon(Icons.refresh), label: Text(l10n.aiRegenerateButton)),
           ]),
         ]);
       },
@@ -210,54 +218,55 @@ class _AiSummaryContentState extends State<AiSummaryContent> {
   @override
   Widget build(BuildContext context) {
     final s = widget.s;
+    final l10n = AppLocalizations.of(context);
     final (quick, details) = switch (s.kind) {
       AISummaryKind.individualReport => (
           [
             _para(context, null, s.text('summary')),
-            _bullets(context, 'Key findings', s.list('key_findings')),
+            _bullets(context, l10n.aiKeyFindingsLabel, s.list('key_findings')),
             _values(context, s.maps('relevant_values')),
             _interpretation(context, s.text('interpretation')),
           ],
           [
-            _para(context, 'Report information', s.text('report_information')),
-            _bullets(context, 'Observed within this report', s.list('observed_trends')),
-            _bullets(context, 'Questions to discuss', s.list('questions_for_doctor')),
-            _bullets(context, 'Limitations', s.list('limitations')),
+            _para(context, l10n.aiReportInformationLabel, s.text('report_information')),
+            _bullets(context, l10n.aiObservedWithinReportLabel, s.list('observed_trends')),
+            _bullets(context, l10n.aiQuestionsToDiscussLabel, s.list('questions_for_doctor')),
+            _bullets(context, l10n.aiLimitationsLabel, s.list('limitations')),
           ],
         ),
       AISummaryKind.allReports => (
           [
             _para(context, null, s.text('summary')),
             _trendsGrouped(context, s.maps('observed_trends')),
-            _bullets(context, 'Key findings', s.list('key_findings')),
+            _bullets(context, l10n.aiKeyFindingsLabel, s.list('key_findings')),
           ],
           [
-            _bullets(context, 'Not enough information to compare', s.list('gaps')),
+            _bullets(context, l10n.aiNotEnoughInfoLabel, s.list('gaps')),
             _interpretation(context, s.text('interpretation')),
-            _bullets(context, 'Questions to discuss', s.list('questions_for_doctor')),
+            _bullets(context, l10n.aiQuestionsToDiscussLabel, s.list('questions_for_doctor')),
           ],
         ),
       AISummaryKind.patientSummary => (
           [
             _para(context, null, s.text('current_status')),
-            _bullets(context, 'Key findings', s.list('key_findings')),
-            _bullets(context, 'Trends', s.list('trends')),
-            _bullets(context, 'Attention', s.list('attention_items')),
-            _bullets(context, 'Recent changes', s.list('recent_changes')),
+            _bullets(context, l10n.aiKeyFindingsLabel, s.list('key_findings')),
+            _bullets(context, l10n.lifestyleTrendsHeader, s.list('trends')),
+            _bullets(context, l10n.aiAttentionLabel, s.list('attention_items')),
+            _bullets(context, l10n.aiRecentChangesLabel, s.list('recent_changes')),
             _interpretation(context, s.text('interpretation')),
           ],
           [
-            for (final (key, label) in const [
-              ('diabetes_history', 'Diabetes History'),
-              ('recent_assessments', 'Recent Assessments'),
-              ('medical_reports', 'Medical Reports'),
-              ('glucose_history', 'Glucose History'),
-              ('lifestyle_trends', 'Lifestyle Trends'),
-              ('medication_history', 'Medication / Prescription History'),
-              ('side_effects', 'Side Effects'),
-              ('doctor_visits', 'Doctor Visits'),
-              ('recent_developments', 'Recent Developments'),
-              ('heart_history', 'Heart History'),
+            for (final (key, label) in [
+              ('diabetes_history', l10n.aiDiabetesHistoryLabel),
+              ('recent_assessments', l10n.aiRecentAssessmentsLabel),
+              ('medical_reports', l10n.aiMedicalReportsLabel),
+              ('glucose_history', l10n.aiGlucoseHistoryLabel),
+              ('lifestyle_trends', l10n.aiLifestyleTrendsLabel),
+              ('medication_history', l10n.aiMedicationHistoryLabel),
+              ('side_effects', l10n.aiSideEffectsLabel),
+              ('doctor_visits', l10n.aiDoctorVisitsLabel),
+              ('recent_developments', l10n.aiRecentDevelopmentsLabel),
+              ('heart_history', l10n.aiHeartHistoryLabel),
             ])
               _para(context, label, s.text(key)),
           ],
@@ -265,10 +274,10 @@ class _AiSummaryContentState extends State<AiSummaryContent> {
       AISummaryKind.patientFriendlySummary => (
           [
             _para(context, null, s.text('overall')),
-            _bullets(context, 'What stands out', s.list('standouts')),
-            _bullets(context, 'What has changed', s.list('changes')),
-            _bullets(context, 'What to keep in mind', s.list('keep_in_mind')),
-            _bullets(context, 'What to discuss with your doctor', s.list('discuss_with_doctor')),
+            _bullets(context, l10n.aiWhatStandsOutLabel, s.list('standouts')),
+            _bullets(context, l10n.aiWhatHasChangedLabel, s.list('changes')),
+            _bullets(context, l10n.aiKeepInMindLabel, s.list('keep_in_mind')),
+            _bullets(context, l10n.aiDiscussWithDoctorLabel, s.list('discuss_with_doctor')),
           ],
           const <Widget?>[],
         ),
@@ -279,22 +288,22 @@ class _AiSummaryContentState extends State<AiSummaryContent> {
             _interpretation(context, s.text('interpretation')),
           ],
           [
-            _bullets(context, 'Observations', s.list('observations')),
-            _numbered(context, 'AI Suggestions', s.list('suggestions')),
+            _bullets(context, l10n.aiObservationsLabel, s.list('observations')),
+            _numbered(context, l10n.aiSuggestionsWithAiPrefixLabel, s.list('suggestions')),
           ],
         ),
       AISummaryKind.assessmentInterpretation => (
           [_para(context, null, s.text('interpretation'))],
           [
-            _bullets(context, 'Patterns considered', s.list('contributing_patterns')),
-            _numbered(context, 'Suggestions', s.list('suggestions')),
+            _bullets(context, l10n.aiPatternsConsideredLabel, s.list('contributing_patterns')),
+            _numbered(context, l10n.aiSuggestionsLabel, s.list('suggestions')),
           ],
         ),
       AISummaryKind.heartInterpretation => (
           [_para(context, null, s.text('interpretation'))],
           [
-            _bullets(context, 'Patterns considered', s.list('contributing_patterns')),
-            _numbered(context, 'Suggestions', s.list('suggestions')),
+            _bullets(context, l10n.aiPatternsConsideredLabel, s.list('contributing_patterns')),
+            _numbered(context, l10n.aiSuggestionsLabel, s.list('suggestions')),
           ],
         ),
     };
@@ -308,7 +317,7 @@ class _AiSummaryContentState extends State<AiSummaryContent> {
           child: TextButton.icon(
             onPressed: () => setState(() => _open = !_open),
             icon: Icon(_open ? Icons.expand_less : Icons.expand_more),
-            label: Text(_open ? 'Hide details' : 'View details'),
+            label: Text(_open ? l10n.aiHideDetailsButton : l10n.dashViewDetails),
           ),
         ),
         if (_open) ...detailBlocks,
@@ -364,6 +373,7 @@ class _AiSummaryContentState extends State<AiSummaryContent> {
   Widget? _interpretation(BuildContext context, String text) {
     if (text.isEmpty) return null;
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(top: AppSpacing.lg),
       child: Container(
@@ -371,7 +381,7 @@ class _AiSummaryContentState extends State<AiSummaryContent> {
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(color: AppColors.primarySoft, borderRadius: AppRadius.controlBorder),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('AI interpretation', style: t.labelMedium?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600)),
+          Text(l10n.aiInterpretationHeading, style: t.labelMedium?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600)),
           const SizedBox(height: 4),
           Text(text, style: t.bodyMedium),
         ]),
@@ -382,8 +392,9 @@ class _AiSummaryContentState extends State<AiSummaryContent> {
   Widget? _values(BuildContext context, List<Map<String, dynamic>> values) {
     if (values.isEmpty) return null;
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _heading(context, 'Relevant values'),
+      _heading(context, l10n.aiRelevantValuesLabel),
       for (final v in values)
         Container(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -394,7 +405,7 @@ class _AiSummaryContentState extends State<AiSummaryContent> {
               flex: 3,
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('${v['value']} ${v['unit'] ?? ''}'.trim(), style: t.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
-                if (v['reference_range'] != null) Text('Reference ${v['reference_range']}', style: t.bodySmall),
+                if (v['reference_range'] != null) Text(l10n.aiReferenceRangeLabel('${v['reference_range']}'), style: t.bodySmall),
                 if (v['note'] != null) Text('${v['note']}', style: t.bodySmall),
               ]),
             ),
@@ -406,13 +417,15 @@ class _AiSummaryContentState extends State<AiSummaryContent> {
   // Direction/category are backend-computed (never AI-guessed, see report_values.classify_trend
   // server-side). Grouped in this fixed order so the most actionable groups aren't buried.
   static const _trendCategoryOrder = ['recent_change', 'stable', 'improving', 'worsening', 'unknown'];
-  static const _trendCategoryLabels = {
-    'recent_change': 'Recent change',
-    'stable': 'Stable',
-    'improving': 'Improving',
-    'worsening': 'Worsening',
-    'unknown': 'Unknown',
-  };
+
+  static String _trendCategoryLabel(AppLocalizations l10n, String category) => switch (category) {
+        'recent_change' => l10n.aiTrendRecentChangeLabel,
+        'stable' => l10n.aiTrendStableLabel,
+        'improving' => l10n.aiTrendImprovingLabel,
+        'worsening' => l10n.aiTrendWorseningLabel,
+        _ => l10n.aiTrendUnknownLabel,
+      };
+
   static const _trendCategoryColors = {
     'recent_change': AppColors.textSecondary,
     'stable': AppColors.textSecondary,
@@ -424,6 +437,7 @@ class _AiSummaryContentState extends State<AiSummaryContent> {
   Widget? _trendsGrouped(BuildContext context, List<Map<String, dynamic>> trends) {
     if (trends.isEmpty) return null;
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     String point(Object? p) {
       if (p is! Map) return '—';
       final date = p['date'] != null ? ' (${p['date']})' : '';
@@ -440,7 +454,7 @@ class _AiSummaryContentState extends State<AiSummaryContent> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       for (final category in _trendCategoryOrder)
         if ((groups[category] ?? const []).isNotEmpty) ...[
-          _heading(context, _trendCategoryLabels[category]!),
+          _heading(context, _trendCategoryLabel(l10n, category)),
           for (final tr in groups[category]!)
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -452,9 +466,9 @@ class _AiSummaryContentState extends State<AiSummaryContent> {
                     Text('${tr['parameter']}', style: t.titleSmall),
                   ]),
                   const SizedBox(height: 6),
-                  KeyValueRow('Earlier', point(tr['earlier'])),
-                  KeyValueRow('Latest', point(tr['latest'])),
-                  KeyValueRow('Observed change', '${tr['observed_change'] ?? '—'}'),
+                  KeyValueRow(l10n.aiEarlierLabel, point(tr['earlier'])),
+                  KeyValueRow(l10n.aiLatestLabel, point(tr['latest'])),
+                  KeyValueRow(l10n.aiObservedChangeLabel, '${tr['observed_change'] ?? '—'}'),
                 ]),
               ),
             ),
@@ -465,6 +479,6 @@ class _AiSummaryContentState extends State<AiSummaryContent> {
   Widget? _overview(BuildContext context, Map<String, dynamic> overview) {
     final rows = [for (final e in overview.entries) if ((e.value as String? ?? '').isNotEmpty) KeyValueRow(Fmt.titleCase(e.key), e.value as String)];
     if (rows.isEmpty) return null;
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_heading(context, 'Lifestyle Overview'), ...rows]);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_heading(context, AppLocalizations.of(context).aiLifestyleOverviewLabel), ...rows]);
   }
 }

@@ -7,6 +7,7 @@ import '../../core/widgets/app_card.dart';
 import '../../core/widgets/app_page.dart';
 import '../../core/widgets/feedback.dart';
 import '../../data/models/user.dart';
+import '../../l10n/app_localizations.dart';
 import '../authentication/auth_controller.dart';
 import '../diabetes/risk_widgets.dart' show DataUsedCard;
 import 'heart_providers.dart';
@@ -22,11 +23,12 @@ class HeartRiskDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final value = ref.watch(heartRiskAssessmentProvider(assessmentId));
     final role = ref.watch(currentUserProvider)?.role;
     final t = Theme.of(context).textTheme;
     return AppPage(
-      title: 'Heart risk screening',
+      title: l10n.heartRiskScreeningTitle,
       body: AsyncBody(
         value: value,
         onRetry: () => ref.invalidate(heartRiskAssessmentProvider(assessmentId)),
@@ -34,11 +36,11 @@ class HeartRiskDetailScreen extends ConsumerWidget {
           HeroPanel(child: HeartResultBlock(assessment: a)),
           if (a.warnings.isNotEmpty) ...[const SizedBox(height: AppSpacing.md), HeartWarningNotes(a.warnings)],
           const SizedBox(height: AppSpacing.section),
-          const SectionHeader('Data used', subtitle: 'As recorded when this screening was made.'),
+          SectionHeader(l10n.riskDetailDataUsedHeader, subtitle: l10n.riskDetailDataUsedSubtitleScreening),
           DataUsedCard(data: a.dataUsed),
           if (a.dataUsed.missing.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.section),
-            const SectionHeader('Not available at the time', subtitle: 'Left out of this screening, not assumed.'),
+            SectionHeader(l10n.riskDetailNotAvailableHeader, subtitle: l10n.riskDetailNotAssumedSubtitleScreening),
             AppCard(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 for (final m in a.dataUsed.missing) Padding(padding: const EdgeInsets.only(bottom: AppSpacing.xs), child: Text('${m.label} — ${m.reason}', style: t.bodySmall)),
@@ -48,22 +50,22 @@ class HeartRiskDetailScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.section),
           AppCard(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Record', style: t.titleMedium),
+              Text(l10n.commonRecordLabel, style: t.titleMedium),
               const SizedBox(height: AppSpacing.sm),
-              if (a.code != null) KeyValueRow('Screening ID', a.code!),
-              KeyValueRow('Made', Fmt.dateTime(a.createdAt)),
-              if (a.performedByRole != null) KeyValueRow('Requested by', Fmt.titleCase(a.performedByRole!)),
-              KeyValueRow('Model version', a.modelVersion),
-              if (a.decisionThreshold != null) KeyValueRow('Decision threshold', '${(a.decisionThreshold! * 100).toStringAsFixed(2)}%'),
-              if (a.bmi != null) KeyValueRow('BMI (calculated from height and weight)', a.bmi!.toStringAsFixed(1)),
+              if (a.code != null) KeyValueRow(l10n.screeningIdLabel, a.code!),
+              KeyValueRow(l10n.commonMadeLabel, Fmt.dateTime(a.createdAt)),
+              if (a.performedByRole != null) KeyValueRow(l10n.commonRequestedByLabel, Fmt.titleCase(a.performedByRole!)),
+              KeyValueRow(l10n.commonModelVersionLabel, a.modelVersion),
+              if (a.decisionThreshold != null) KeyValueRow(l10n.decisionThresholdLabel, '${(a.decisionThreshold! * 100).toStringAsFixed(2)}%'),
+              if (a.bmi != null) KeyValueRow(l10n.bmiCalculatedHeightWeightLabel, a.bmi!.toStringAsFixed(1)),
             ]),
           ),
           if (role == UserRole.doctor || role == UserRole.admin) ...[
             const SizedBox(height: AppSpacing.lg),
             AppCard(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Values sent to the model', style: t.titleMedium),
-                Text('Only the model\'s own input fields; unknown values were left out.', style: t.bodySmall),
+                Text(l10n.valuesSentToModelLabel, style: t.titleMedium),
+                Text(l10n.modelInputFieldsNote, style: t.bodySmall),
                 const SizedBox(height: AppSpacing.sm),
                 for (final e in a.inputFeatures.entries) KeyValueRow(e.key, '${e.value}'),
               ]),

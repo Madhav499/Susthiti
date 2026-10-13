@@ -1,5 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:susthiti/data/models/heart_risk.dart';
+import 'package:susthiti/l10n/app_localizations_en.dart';
+
+final _l10n = AppLocalizationsEn();
 
 Map<String, dynamic> _assessmentJson({bool report = true}) => {
       'id': 'a1', 'code': 'HR-000001', 'created_at': '2026-10-04T09:00:00Z',
@@ -17,16 +20,16 @@ void main() {
     expect(a.percentLabel, '37.4%');
     expect(a.riskLevel, 'low');
     expect(a.modelVersion, 'susthiti-heart-v3');
-    expect(a.signalLabel, isNot(contains('diagnos')));
-    expect(a.signalLabel, isNot(contains('has heart disease')));
+    expect(a.signalLabel(_l10n), isNot(contains('diagnos')));
+    expect(a.signalLabel(_l10n), isNot(contains('has heart disease')));
     expect(a.reportAvailable, isTrue);
     expect(a.reportFieldsPresent, ['troponin']);
   });
 
   test('without report values the basis says so, and never implies a normal result', () {
     final a = HeartRiskAssessment.fromJson(_assessmentJson(report: false));
-    expect(a.basisText, HeartWording.noReportBasis);
-    expect(a.basisText.toLowerCase(), isNot(contains('normal')));
+    expect(a.basisText(_l10n), HeartWording.noReportBasis(_l10n));
+    expect(a.basisText(_l10n).toLowerCase(), isNot(contains('normal')));
   });
 
   test('incomplete responses are rejected, not shown with made-up values', () {
@@ -36,12 +39,12 @@ void main() {
 
   test('risk signal wording never claims diagnostic certainty', () {
     for (final level in ['low', 'moderate', 'high']) {
-      final label = HeartWording.signalLabel(level);
+      final label = HeartWording.signalLabel(_l10n, level);
       expect(label.toLowerCase(), isNot(contains('you have')));
       expect(label.toLowerCase(), contains('signal'));
     }
-    expect(HeartWording.safety.toLowerCase(), contains('not a medical diagnosis'));
-    expect(HeartWording.safety.toLowerCase(), contains('synthetic'));
+    expect(HeartWording.safety(_l10n).toLowerCase(), contains('not a medical diagnosis'));
+    expect(HeartWording.safety(_l10n).toLowerCase(), contains('synthetic'));
   });
 
   test('risk tones differ by band, same pattern as diabetes', () {

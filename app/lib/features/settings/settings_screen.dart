@@ -11,8 +11,10 @@ import '../../core/widgets/app_page.dart';
 import '../../core/widgets/feedback.dart';
 import '../../core/widgets/form_fields.dart';
 import '../../core/widgets/labels.dart';
+import '../../core/widgets/language_field.dart';
 import '../../data/models/user.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../authentication/auth_controller.dart';
 import '../notifications/notifications.dart';
 
@@ -21,17 +23,28 @@ class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key, this.large = false});
   final bool large;
 
+  Future<void> _changeLanguage(BuildContext context, WidgetRef ref, String locale) async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      await ref.read(authControllerProvider.notifier).updateLanguage(locale);
+      if (context.mounted) showToast(context, l10n.settingsLanguageUpdated);
+    } on Failure catch (_) {
+      if (context.mounted) showToast(context, l10n.settingsLanguageUpdateFailed, error: true);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     if (user == null) return const SizedBox.shrink();
     final isPatient = user.role == UserRole.patient;
     return AppPage(
-      title: 'Settings',
+      title: l10n.settingsTitle,
       large: large,
       body: PageBody(maxWidth: 720, children: [
-        const SectionHeader('Account'),
+        SectionHeader(l10n.settingsAccount),
         AppCard(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
@@ -41,66 +54,71 @@ class SettingsScreen extends ConsumerWidget {
             Text(user.email, style: t.bodySmall),
             const SizedBox(height: AppSpacing.sm),
             StatusPill(user.role.label, tone: StatusTone.info, dot: false),
-            if (user.doctorCode != null) ...[const SizedBox(height: AppSpacing.sm), Text('Doctor ID ${user.doctorCode}', style: t.bodySmall)],
+            if (user.doctorCode != null) ...[const SizedBox(height: AppSpacing.sm), Text(l10n.settingsDoctorIdLabel(user.doctorCode!), style: t.bodySmall)],
           ]),
         ),
         if (isPatient) ...[
           const SizedBox(height: AppSpacing.sm),
           AppCard(
             padding: EdgeInsets.zero,
-            child: ListTile(leading: const Icon(Icons.person_outline, color: AppColors.primary), title: const Text('Edit profile'), trailing: const Icon(Icons.chevron_right), onTap: () => context.go('/p/profile')),
+            child: ListTile(leading: const Icon(Icons.person_outline, color: AppColors.primary), title: Text(l10n.settingsEditProfile), trailing: const Icon(Icons.chevron_right), onTap: () => context.go('/p/profile')),
           ),
         ],
+        const SizedBox(height: AppSpacing.section),
+        SectionHeader(l10n.settingsLanguageTitle),
+        AppCard(
+          child: LanguageField(value: user.preferredLocale, onChanged: (v) => _changeLanguage(context, ref, v), helper: l10n.settingsLanguageSubtitle),
+        ),
         if (user.role != UserRole.admin) ...[
           const SizedBox(height: AppSpacing.section),
-          const SectionHeader('Notifications'),
+          SectionHeader(l10n.settingsNotifications),
           const NotificationPreferencesCard(),
         ],
         if (isPatient) ...[
           const SizedBox(height: AppSpacing.section),
-          const SectionHeader('Privacy'),
+          SectionHeader(l10n.settingsPrivacy),
           AppCard(
             padding: EdgeInsets.zero,
             child: Column(children: [
               ListTile(
                 leading: const Icon(Icons.verified_user_outlined, color: AppColors.primary),
-                title: const Text('Doctor access'),
-                subtitle: const Text('Approve, reject or revoke doctors who can see your records'),
+                title: Text(l10n.settingsDoctorAccess),
+                subtitle: Text(l10n.settingsDoctorAccessSubtitle),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push('/p/access'),
               ),
               const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
               ListTile(
                 leading: const Icon(Icons.watch_outlined, color: AppColors.primary),
-                title: const Text('Connected devices'),
+                title: Text(l10n.settingsConnectedDevices),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push('/p/devices'),
               ),
             ]),
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text('Your records are only visible to you and to doctors you approve. Administrators manage accounts but cannot read your medical records.', style: t.bodySmall),
+          Text(l10n.settingsPrivacyNote, style: t.bodySmall),
         ],
         const SizedBox(height: AppSpacing.section),
-        const SectionHeader('Security'),
+        SectionHeader(l10n.settingsSecurity),
         AppCard(
           padding: EdgeInsets.zero,
           child: Column(children: [
             ListTile(
               leading: const Icon(Icons.lock_outline, color: AppColors.primary),
-              title: const Text('Change password'),
+              title: Text(l10n.settingsChangePassword),
               trailing: const Icon(Icons.chevron_right),
               onTap: () async {
                 final changed = await showModalBottomSheet<bool>(context: context, isScrollControlled: true, builder: (_) => const _ChangePasswordSheet());
-                if (changed == true && context.mounted) showToast(context, 'Password changed');
+                if (changed == true && context.mounted) showToast(context, l10n.settingsPasswordChanged);
               },
             ),
             const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
             ListTile(
               leading: const Icon(Icons.logout, color: AppColors.error),
-              title: const Text('Log out'),
+              title: Text(l10n.settingsLogOut),
               onTap: () async {
-                final ok = await confirmAction(context, title: 'Log out?', message: 'You will need to sign in again to see your records.', confirmLabel: 'Log out');
+                final ok = await confirmAction(context, title: l10n.settingsLogOutConfirmTitle, message: l10n.settingsLogOutConfirmMessage, confirmLabel: l10n.settingsLogOut);
                 if (ok) await ref.read(authControllerProvider.notifier).logout();
               },
             ),
@@ -145,14 +163,15 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SheetForm(
-      title: 'Change password',
+      title: l10n.settingsChangePassword,
       form: _form,
       children: [
-        PasswordField(controller: _current, label: 'Current password', validator: (v) => Validators.required(v, 'Current password')),
-        PasswordField(controller: _next, label: 'New password', newPassword: true, validator: Validators.password, helper: 'At least 8 characters with a letter and a number.'),
-        PasswordField(controller: _confirm, label: 'Confirm new password', newPassword: true, validator: (v) => v != _next.text ? 'Passwords do not match.' : null),
-        BusyButton(label: 'Change password', onPressed: _save, expand: true),
+        PasswordField(controller: _current, label: l10n.settingsCurrentPassword, validator: (v) => Validators.required(l10n, v, l10n.settingsCurrentPassword)),
+        PasswordField(controller: _next, label: l10n.settingsNewPassword, newPassword: true, validator: (v) => Validators.password(l10n, v), helper: l10n.authPasswordHelper),
+        PasswordField(controller: _confirm, label: l10n.settingsConfirmNewPassword, newPassword: true, validator: (v) => v != _next.text ? l10n.authPasswordsDontMatch : null),
+        BusyButton(label: l10n.settingsChangePassword, onPressed: _save, expand: true),
       ],
     );
   }

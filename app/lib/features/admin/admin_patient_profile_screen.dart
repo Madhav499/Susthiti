@@ -23,6 +23,7 @@ import '../../data/models/patient.dart';
 import '../../data/models/report.dart';
 import '../../data/models/tracking.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../ai/ai_summary_section.dart';
 import '../diabetes/risk_widgets.dart';
 import '../diabetes/diabetes_screen.dart';
@@ -54,6 +55,7 @@ class AdminPatientProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final value = ref.watch(adminPatientProvider(patientId));
     void back() => context.canPop() ? context.pop() : context.go('/a/patients');
 
@@ -61,10 +63,10 @@ class AdminPatientProfileScreen extends ConsumerWidget {
       skipLoadingOnRefresh: true,
       loading: () => const _Skeleton(),
       error: (e, _) => AppPage(
-        title: 'Patient',
+        title: l10n.patientFallbackName,
         body: Column(children: [
-          ErrorState(error: e, title: e is NotFoundFailure ? null : 'Unable to load patient details.', onRetry: () => ref.invalidate(adminPatientProvider(patientId))),
-          TextButton.icon(onPressed: back, icon: const Icon(Icons.arrow_back, size: 18), label: const Text('Back to Patients')),
+          ErrorState(error: e, title: e is NotFoundFailure ? null : l10n.apatUnableToLoadDetails, onRetry: () => ref.invalidate(adminPatientProvider(patientId))),
+          TextButton.icon(onPressed: back, icon: const Icon(Icons.arrow_back, size: 18), label: Text(l10n.apatBackToPatients)),
         ]),
       ),
       data: (d) {
@@ -73,36 +75,36 @@ class AdminPatientProfileScreen extends ConsumerWidget {
           initialTab: initialTab,
           header: ProfileHeader(
             name: p.fullName,
-            backLabel: 'Back to Patients',
+            backLabel: l10n.apatBackToPatients,
             onBack: back,
-            breadcrumbs: ['Admin', 'Patients', p.fullName],
-            idLabel: 'Patient ID: ${p.patientCode}',
-            details: [if (p.age != null) '${p.age} years', ?p.gender, if (d.lastActivityAt != null) 'Last activity ${Fmt.relative(d.lastActivityAt)}'],
-            status: activePill(d.isActive),
+            breadcrumbs: [l10n.adminDashboardTitle, l10n.navPatients, p.fullName],
+            idLabel: l10n.apatPatientIdColon(p.patientCode),
+            details: [if (p.age != null) l10n.commonAgeYears('${p.age}'), ?p.gender, if (d.lastActivityAt != null) l10n.adocLastActivityLine(Fmt.relative(l10n, d.lastActivityAt))],
+            status: activePill(l10n, d.isActive),
             badges: [if (p.isDemo) const DemoBadge()],
             actions: [
-              FilledButton.icon(onPressed: () => context.push('/a/patients/${p.id}/edit'), icon: const Icon(Icons.edit_outlined, size: 18), label: const Text('Edit Patient')),
+              FilledButton.icon(onPressed: () => context.push('/a/patients/${p.id}/edit'), icon: const Icon(Icons.edit_outlined, size: 18), label: Text(l10n.apatEditPatientButton)),
               _PatientMoreMenu(detail: d),
             ],
           ),
           tabs: [
-            ProfileTab('overview', 'Overview', _OverviewTab(detail: d)),
-            ProfileTab('diabetes', 'Diabetes', DiabetesView(patientId: patientId, embedded: true)),
-            ProfileTab('heart', 'Heart', HeartView(patientId: patientId, embedded: true)),
-            ProfileTab('reports', 'Reports', ReportsView(patientId: patientId, uploadRoute: '/a/patients/$patientId/upload', embedded: true)),
-            ProfileTab('glucose', 'Glucose', GlucoseView(patientId: patientId, embedded: true, ranges: TrendCard.clinicalRanges)),
-            ProfileTab('lifestyle', 'Lifestyle', LifestyleView(patientId: patientId, embedded: true, ranges: TrendCard.clinicalRanges)),
-            ProfileTab('food', 'Food', _FoodTab(patientId: patientId)),
-            ProfileTab('prescriptions', 'Prescriptions', PrescriptionsView(patientId: patientId, embedded: true)),
-            ProfileTab('visits', 'Visits', VisitsView(patientId: patientId, embedded: true)),
-            ProfileTab('appointments', 'Appointments', _AppointmentsTab(detail: d)),
-            ProfileTab('follow-ups', 'Follow-ups', FollowUpsView(patientId: patientId, embedded: true)),
-            ProfileTab('surgeries', 'Surgeries', SurgeriesView(patientId: patientId, embedded: true)),
-            ProfileTab('side-effects', 'Side Effects', SideEffectsView(patientId: patientId, embedded: true)),
-            ProfileTab('ai', 'AI Summaries', _AiTab(patientId: patientId)),
-            ProfileTab('doctors', 'Doctors', _DoctorsTab(detail: d)),
-            ProfileTab('activity', 'Activity', _ActivityTab(patientId: patientId)),
-            ProfileTab('audit', 'Audit', _AuditTab(patientId: patientId)),
+            ProfileTab('overview', l10n.tabOverview, _OverviewTab(detail: d)),
+            ProfileTab('diabetes', l10n.navDiabetes, DiabetesView(patientId: patientId, embedded: true)),
+            ProfileTab('heart', l10n.navHeart, HeartView(patientId: patientId, embedded: true)),
+            ProfileTab('reports', l10n.navReports, ReportsView(patientId: patientId, uploadRoute: '/a/patients/$patientId/upload', embedded: true)),
+            ProfileTab('glucose', l10n.navGlucose, GlucoseView(patientId: patientId, embedded: true, ranges: TrendCard.clinicalRanges)),
+            ProfileTab('lifestyle', l10n.navLifestyle, LifestyleView(patientId: patientId, embedded: true, ranges: TrendCard.clinicalRanges)),
+            ProfileTab('food', l10n.apatFoodTab, _FoodTab(patientId: patientId)),
+            ProfileTab('prescriptions', l10n.navPrescriptions, PrescriptionsView(patientId: patientId, embedded: true)),
+            ProfileTab('visits', l10n.tabVisits, VisitsView(patientId: patientId, embedded: true)),
+            ProfileTab('appointments', l10n.navAppointments, _AppointmentsTab(detail: d)),
+            ProfileTab('follow-ups', l10n.navFollowUps, FollowUpsView(patientId: patientId, embedded: true)),
+            ProfileTab('surgeries', l10n.navSurgeries, SurgeriesView(patientId: patientId, embedded: true)),
+            ProfileTab('side-effects', l10n.navSideEffects, SideEffectsView(patientId: patientId, embedded: true)),
+            ProfileTab('ai', l10n.apatAiSummariesTab, _AiTab(patientId: patientId)),
+            ProfileTab('doctors', l10n.navDoctors, _DoctorsTab(detail: d)),
+            ProfileTab('activity', l10n.commonActivityTab, _ActivityTab(patientId: patientId)),
+            ProfileTab('audit', l10n.commonAuditTab, _AuditTab(patientId: patientId)),
           ],
         );
       },
@@ -114,17 +116,17 @@ class _PatientMoreMenu extends ConsumerWidget {
   const _PatientMoreMenu({required this.detail});
   final AdminPatientDetail detail;
 
-  Future<void> _toggle(BuildContext context, WidgetRef ref) async {
+  Future<void> _toggle(BuildContext context, WidgetRef ref, AppLocalizations l10n) async {
     final p = detail.profile;
     if (detail.isActive) {
-      final ok = await confirmAction(context, title: 'Deactivate ${p.fullName}?', message: 'They will be signed out and cannot sign in. Their records are kept.', confirmLabel: 'Deactivate', destructive: true);
+      final ok = await confirmAction(context, title: l10n.adminDeactivatePatientTitle(p.fullName), message: l10n.adminDeactivatePatientMessage, confirmLabel: l10n.commonDeactivate, destructive: true);
       if (!ok) return;
     }
     try {
       await ref.read(adminRepositoryProvider).setPatientActive(p.id, !detail.isActive);
       ref.invalidate(adminPatientProvider(p.id));
       ref.invalidate(adminPatientsProvider);
-      if (context.mounted) showToast(context, detail.isActive ? 'Patient deactivated' : 'Patient reactivated');
+      if (context.mounted) showToast(context, detail.isActive ? l10n.adminPatientDeactivatedToast : l10n.adminPatientReactivatedToast);
     } catch (e) {
       if (context.mounted) showFailure(context, e);
     }
@@ -132,28 +134,29 @@ class _PatientMoreMenu extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final p = detail.profile;
     return PopupMenuButton<String>(
-      tooltip: 'More actions',
+      tooltip: l10n.adocMoreActionsTooltip,
       onSelected: (a) => switch (a) {
         'upload' => context.push('/a/patients/${p.id}/upload'),
-        'toggle' => _toggle(context, ref),
+        'toggle' => _toggle(context, ref, l10n),
         _ => TabbedProfile.goTo(context, a),
       },
       itemBuilder: (_) => [
-        const PopupMenuItem(value: 'reports', child: Text('View reports')),
-        const PopupMenuItem(value: 'activity', child: Text('View activity')),
-        const PopupMenuItem(value: 'doctors', child: Text('View doctors')),
-        const PopupMenuItem(value: 'upload', child: Text('Upload report for patient')),
+        PopupMenuItem(value: 'reports', child: Text(l10n.adminViewReportsMenuItem)),
+        PopupMenuItem(value: 'activity', child: Text(l10n.commonViewActivity)),
+        PopupMenuItem(value: 'doctors', child: Text(l10n.adminViewDoctorsMenuItem)),
+        PopupMenuItem(value: 'upload', child: Text(l10n.adminUploadReportForPatientMenuItem)),
         const PopupMenuDivider(),
-        PopupMenuItem(value: 'toggle', child: Text(detail.isActive ? 'Deactivate account' : 'Reactivate account', style: TextStyle(color: detail.isActive ? AppColors.errorText : null))),
+        PopupMenuItem(value: 'toggle', child: Text(detail.isActive ? l10n.adminDeactivateAccountMenuItem : l10n.adminReactivateAccountMenuItem, style: TextStyle(color: detail.isActive ? AppColors.errorText : null))),
       ],
       child: Container(
         height: 48,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         decoration: BoxDecoration(color: AppColors.surface, borderRadius: AppRadius.buttonBorder, border: Border.all(color: AppColors.border)),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Text('More', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.primary)),
+          Text(l10n.navMore, style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.primary)),
           const SizedBox(width: AppSpacing.xs),
           const Icon(Icons.expand_more, size: 18, color: AppColors.primary),
         ]),
@@ -173,6 +176,7 @@ class _OverviewTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final lifestyle = ref.watch(lifestyleOverviewProvider(_pid));
     const reportsQuery = ReportQuery();
     final reports = ref.watch(reportsControllerProvider((patientId: _pid, query: reportsQuery)));
@@ -186,14 +190,14 @@ class _OverviewTab extends ConsumerWidget {
     Widget metric(LifestyleMetricType m, IconData icon) => lifestyle.when(
           skipLoadingOnRefresh: true,
           loading: () => const Skeleton(height: 118, radius: 16),
-          error: (_, _) => StatBlock(icon: icon, label: m.label, value: '—', caption: 'Unable to load'),
+          error: (_, _) => StatBlock(icon: icon, label: m.label, value: '—', caption: l10n.apatUnableToLoad),
           data: (o) {
             final latest = o.metrics[m]?.latest;
             return StatBlock(
               icon: icon,
               label: m.label,
-              value: latest == null ? 'No data' : m.format(latest.value, latest.value2),
-              caption: latest == null ? 'Not recorded' : (o.metrics[m]!.isToday ? 'Today' : 'Last recorded ${Fmt.shortDate(latest.date)}'),
+              value: latest == null ? l10n.commonNoData : m.format(latest.value, latest.value2),
+              caption: latest == null ? l10n.commonNotRecorded : (o.metrics[m]!.isToday ? l10n.commonToday : l10n.dashLastRecorded(Fmt.shortDate(latest.date))),
               onTap: () => goTo('lifestyle'),
             );
           },
@@ -218,9 +222,9 @@ class _OverviewTab extends ConsumerWidget {
         ResponsiveGrid(minItemWidth: 190, maxColumns: 4, children: [
           StatBlock(
             icon: Icons.water_drop_outlined,
-            label: 'Latest glucose',
-            value: detail.latestGlucose == null ? 'No data' : '${detail.latestGlucose!.round()} mg/dL',
-            caption: detail.latestGlucose == null ? 'No readings yet' : '${Fmt.relative(detail.latestGlucoseAt)} · ${trendLabel(detail.glucoseTrend)}',
+            label: l10n.apatLatestGlucoseLabel,
+            value: detail.latestGlucose == null ? l10n.commonNoData : '${detail.latestGlucose!.round()} mg/dL',
+            caption: detail.latestGlucose == null ? l10n.dashNoReadingsYet : l10n.apatGlucoseRelativeTrend(Fmt.relative(l10n, detail.latestGlucoseAt), trendLabel(l10n, detail.glucoseTrend)),
             onTap: () => goTo('glucose'),
           ),
           metric(LifestyleMetricType.steps, Icons.directions_walk_outlined),
@@ -233,9 +237,9 @@ class _OverviewTab extends ConsumerWidget {
           right: AppCard(
             padding: const EdgeInsets.all(AppSpacing.lgPlus),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              SectionHeader('Current Doctors', action: TextButton(onPressed: () => goTo('doctors'), child: const Text('All relationships'))),
+              SectionHeader(l10n.apatCurrentDoctorsHeader, action: TextButton(onPressed: () => goTo('doctors'), child: Text(l10n.apatAllRelationshipsButton))),
               if (detail.currentDoctors.isEmpty)
-                const EmptyLine('No doctor currently has access.', icon: Icons.medical_services_outlined)
+                EmptyLine(l10n.apatNoDoctorAccess, icon: Icons.medical_services_outlined)
               else
                 for (final a in detail.currentDoctors) _DoctorRow(access: a),
             ]),
@@ -244,12 +248,12 @@ class _OverviewTab extends ConsumerWidget {
         const SizedBox(height: AppSpacing.lg),
         TwoColumn(
           left: AsyncSection(
-            title: 'Recent Reports',
+            title: l10n.apatRecentReportsHeader,
             value: reports,
             onRetry: () => ref.invalidate(reportsControllerProvider((patientId: _pid, query: reportsQuery))),
-            action: TextButton(onPressed: () => goTo('reports'), child: const Text('View all')),
+            action: TextButton(onPressed: () => goTo('reports'), child: Text(l10n.commonViewAll)),
             builder: (r) => r.items.isEmpty
-                ? const EmptyLine('No reports available.', icon: Icons.description_outlined)
+                ? EmptyLine(l10n.dashNoReportsAvailable, icon: Icons.description_outlined)
                 : Column(children: [
                     for (final report in r.items.take(4)) ...[
                       ReportTile(report: report, onTap: () => context.push('/r/$_pid/reports/${report.id}')),
@@ -258,41 +262,41 @@ class _OverviewTab extends ConsumerWidget {
                   ]),
           ),
           right: AsyncSection<({List<TimelineEvent> items, bool hasMore})>(
-            title: 'Recent Activity',
+            title: l10n.adocRecentActivityHeader,
             value: timeline,
             onRetry: () => ref.invalidate(timelineProvider((patientId: _pid, type: 'all'))),
-            action: TextButton(onPressed: () => goTo('activity'), child: const Text('View all')),
+            action: TextButton(onPressed: () => goTo('activity'), child: Text(l10n.commonViewAll)),
             builder: (r) => ActivityTimeline(
-              emptyMessage: 'No recorded history yet.',
-              entries: [for (final e in r.items.take(7)) _timelineEntry(context, e)],
+              emptyMessage: l10n.apatNoRecordedHistoryYet,
+              entries: [for (final e in r.items.take(7)) _timelineEntry(context, l10n, e)],
             ),
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
         ResponsiveGrid(minItemWidth: 280, maxColumns: 3, spacing: AppSpacing.lg, children: [
           AsyncSection<List<Prescription>>(
-            title: 'Prescriptions',
+            title: l10n.navPrescriptions,
             value: prescriptions,
             onRetry: () => ref.invalidate(prescriptionsProvider((patientId: _pid, query: ''))),
-            action: TextButton(onPressed: () => goTo('prescriptions'), child: const Text('View all')),
+            action: TextButton(onPressed: () => goTo('prescriptions'), child: Text(l10n.commonViewAll)),
             builder: (items) => items.isEmpty
-                ? const EmptyLine('No prescriptions recorded.', icon: Icons.medication_outlined)
+                ? EmptyLine(l10n.adocNoPrescriptionsRecorded, icon: Icons.medication_outlined)
                 : Column(children: [
                     for (final rx in items.take(3))
                       _CompactRow(
                         title: rx.code,
-                        subtitle: 'Dr. ${rx.doctorName} · ${Fmt.date(rx.prescribedOn)} · ${rx.medicines.length} medicine${rx.medicines.length == 1 ? '' : 's'}',
+                        subtitle: '${l10n.commonDrName(rx.doctorName)} · ${Fmt.date(rx.prescribedOn)} · ${l10n.adocMedicinesCountLabel(rx.medicines.length)}',
                         onTap: () => context.push('/r/$_pid/prescriptions/${rx.id}'),
                       ),
                   ]),
           ),
           AsyncSection<List<SideEffect>>(
-            title: 'Side Effects',
+            title: l10n.navSideEffects,
             value: sideEffects,
             onRetry: () => ref.invalidate(sideEffectsProvider(_pid)),
-            action: TextButton(onPressed: () => goTo('side-effects'), child: const Text('View all')),
+            action: TextButton(onPressed: () => goTo('side-effects'), child: Text(l10n.commonViewAll)),
             builder: (items) => items.isEmpty
-                ? const EmptyLine('No side effects reported.', icon: Icons.healing_outlined)
+                ? EmptyLine(l10n.sideEffectsEmptyTitle, icon: Icons.healing_outlined)
                 : Column(children: [
                     for (final s in items.take(3))
                       _CompactRow(
@@ -304,28 +308,28 @@ class _OverviewTab extends ConsumerWidget {
                   ]),
           ),
           AsyncSection<List<AppointmentRecommendation>>(
-            title: 'Appointments',
+            title: l10n.navAppointments,
             value: appointments,
             onRetry: () => ref.invalidate(appointmentsProvider(_pid)),
-            action: TextButton(onPressed: () => goTo('appointments'), child: const Text('View all')),
+            action: TextButton(onPressed: () => goTo('appointments'), child: Text(l10n.commonViewAll)),
             builder: (items) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               _CompactRow(
-                title: detail.nextFollowUp == null ? 'No upcoming follow-up' : 'Next follow-up ${Fmt.date(detail.nextFollowUp)}',
-                subtitle: 'From visits and prescriptions',
+                title: detail.nextFollowUp == null ? l10n.apatNoUpcomingFollowUp : l10n.apatNextFollowUpOn(Fmt.date(detail.nextFollowUp)),
+                subtitle: l10n.apatFromVisitsAndPrescriptions,
               ),
               if (items.isEmpty)
-                const EmptyLine('No appointment recommendations.', icon: Icons.event_available_outlined)
+                EmptyLine(l10n.adocNoAppointmentRecommendations, icon: Icons.event_available_outlined)
               else
                 for (final a in items.take(2))
-                  _CompactRow(title: a.reason, subtitle: 'Dr. ${a.doctorName} · ${a.recommendedFor == null ? Fmt.date(a.createdAt) : 'for ${Fmt.date(a.recommendedFor)}'}'),
+                  _CompactRow(title: a.reason, subtitle: '${l10n.commonDrName(a.doctorName)} · ${a.recommendedFor == null ? Fmt.date(a.createdAt) : l10n.apatForDate(Fmt.date(a.recommendedFor))}'),
             ]),
           ),
         ]),
         const SizedBox(height: AppSpacing.section),
-        SectionHeader('Longitudinal Trends', subtitle: 'Recorded values only. Nothing is estimated or filled in.', action: TextButton(onPressed: () => goTo('glucose'), child: const Text('Glucose details'))),
+        SectionHeader(l10n.apatLongitudinalTrendsHeader, subtitle: l10n.apatLongitudinalTrendsSubtitle, action: TextButton(onPressed: () => goTo('glucose'), child: Text(l10n.apatGlucoseDetailsButton))),
         TwoColumn(
-          left: TrendCard(patientId: _pid, metric: 'glucose', title: 'Glucose (mg/dL)', ranges: TrendCard.clinicalRanges),
-          right: TrendCard(patientId: _pid, metric: 'steps', title: 'Steps', ranges: TrendCard.clinicalRanges, bars: true),
+          left: TrendCard(patientId: _pid, metric: 'glucose', title: l10n.apatGlucoseMgDlTitle, ranges: TrendCard.clinicalRanges),
+          right: TrendCard(patientId: _pid, metric: 'steps', title: l10n.lifestyleStepsLabel, ranges: TrendCard.clinicalRanges, bars: true),
         ),
         const SizedBox(height: AppSpacing.section),
         TwoColumn(
@@ -334,35 +338,44 @@ class _OverviewTab extends ConsumerWidget {
             _EmergencyCard(contact: detail.profile.emergencyContact),
             const SizedBox(height: AppSpacing.lg),
             AsyncSection<List<WearableConnection>>(
-              title: 'Connected Devices',
+              title: l10n.settingsConnectedDevices,
               value: devices,
               onRetry: () => ref.invalidate(adminPatientDevicesProvider(_pid)),
               builder: (items) => items.isEmpty
-                  ? const EmptyLine('No devices connected.', icon: Icons.watch_outlined)
+                  ? EmptyLine(l10n.apatNoDevicesConnected, icon: Icons.watch_outlined)
                   : Column(children: [
                       for (final dv in items)
                         _CompactRow(
                           title: dv.deviceName,
                           subtitle: dv.status == 'disconnected'
-                              ? 'Disconnected'
-                              : 'Last synced ${dv.lastSyncedAt == null ? 'never' : Fmt.relative(dv.lastSyncedAt)}${dv.syncFailed ? ' · sync failed' : ''}',
+                              ? l10n.apatDisconnectedLabel
+                              : '${l10n.apatLastSyncedPrefix(dv.lastSyncedAt == null ? l10n.apatNeverLower : Fmt.relative(l10n, dv.lastSyncedAt))}${dv.syncFailed ? ' · ${l10n.apatSyncFailedLabel}' : ''}',
                           trailing: dv.isDemo ? const DemoBadge() : null,
                         ),
                     ]),
             ),
           ]),
         ),
-        Text('Counts: ${detail.count('reports')} reports · ${detail.count('assessments')} assessments · ${detail.count('glucose_readings')} glucose readings · '
-            '${detail.count('prescriptions')} prescriptions · ${detail.count('visits')} visits · ${detail.count('side_effects')} side effects', style: t.bodySmall),
+        Text(
+          l10n.apatCountsSummary(
+            '${detail.count('reports')}',
+            '${detail.count('assessments')}',
+            '${detail.count('glucose_readings')}',
+            '${detail.count('prescriptions')}',
+            '${detail.count('visits')}',
+            '${detail.count('side_effects')}',
+          ),
+          style: t.bodySmall,
+        ),
         const Disclaimer(),
       ],
     );
   }
 
-  TimelineEntry _timelineEntry(BuildContext context, TimelineEvent e) => _eventEntry(context, e, _pid);
+  TimelineEntry _timelineEntry(BuildContext context, AppLocalizations l10n, TimelineEvent e) => _eventEntry(context, l10n, e, _pid);
 }
 
-TimelineEntry _eventEntry(BuildContext context, TimelineEvent e, String pid) {
+TimelineEntry _eventEntry(BuildContext context, AppLocalizations l10n, TimelineEvent e, String pid) {
   final route = switch (e.type) {
     'report' => '/r/$pid/reports/${e.id}',
     'assessment' => '/r/$pid/assessments/${e.id}',
@@ -412,6 +425,7 @@ class _AttentionBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(color: AppColors.warningSoft, borderRadius: AppRadius.cardBorder, border: Border.all(color: const Color(0x33D9A441))),
@@ -420,7 +434,7 @@ class _AttentionBanner extends StatelessWidget {
         const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Needs attention', style: t.titleSmall?.copyWith(color: AppColors.warningText)),
+            Text(l10n.docNeedsAttention, style: t.titleSmall?.copyWith(color: AppColors.warningText)),
             const SizedBox(height: AppSpacing.xs),
             Wrap(spacing: AppSpacing.sm, runSpacing: AppSpacing.xs, children: [
               for (final group in _grouped())
@@ -443,28 +457,29 @@ class _AssessmentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final a = detail.latestAssessment;
     final pid = detail.profile.id;
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.lgPlus),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        SectionHeader(RiskWording.title, action: TextButton(onPressed: () => TabbedProfile.goTo(context, 'diabetes'), child: Text('History (${detail.count('assessments')})'))),
+        SectionHeader(RiskWording.title(l10n), action: TextButton(onPressed: () => TabbedProfile.goTo(context, 'diabetes'), child: Text(l10n.apatHistoryCountButton(detail.count('assessments'))))),
         if (a == null)
-          const EmptyLine('No risk estimate recorded yet.', icon: Icons.insights_outlined)
+          EmptyLine(l10n.apatNoRiskEstimateYet, icon: Icons.insights_outlined)
         else
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Wrap(spacing: AppSpacing.sm, crossAxisAlignment: WrapCrossAlignment.center, children: [
               Text(a.percentLabel, style: t.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
               RiskCategoryPill(a.riskCategory),
             ]),
-            Text(RiskWording.estimateLabel, style: t.bodyMedium),
-            Text(a.reportAvailable ? 'Included medical report values' : 'Symptoms and risk factors only', style: t.bodySmall),
-            Text('Assessed ${Fmt.date(a.assessedAt)}${a.modelVersion == null ? '' : ' · model ${a.modelVersion}'}', style: t.bodySmall),
+            Text(RiskWording.estimateLabel(l10n), style: t.bodyMedium),
+            Text(a.reportAvailable ? l10n.dashIncludesReportValues : l10n.dashBasedOnSymptomsOnly, style: t.bodySmall),
+            Text(l10n.apatAssessedOn(Fmt.date(a.assessedAt), a.modelVersion == null ? '' : ' · model ${a.modelVersion}'), style: t.bodySmall),
             const SizedBox(height: AppSpacing.sm),
             TextButton(
               onPressed: () => context.push('/r/$pid/diabetes-risk/${a.id}'),
               style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 36)),
-              child: const Text('Open estimate'),
+              child: Text(l10n.apatOpenEstimateButton),
             ),
           ]),
       ]),
@@ -478,12 +493,13 @@ class _DoctorRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: const IconBadge(Icons.medical_services_outlined, size: 36),
-      title: Text('Dr. ${access.doctorName}'),
-      subtitle: Text([access.doctorSpecialization ?? 'Specialization not recorded', if (access.respondedAt != null) 'Access since ${Fmt.date(access.respondedAt)}'].join(' · ')),
-      trailing: accessPill(access.status),
+      title: Text(l10n.commonDrName(access.doctorName)),
+      subtitle: Text([access.doctorSpecialization ?? l10n.adocSpecializationNotRecorded, if (access.respondedAt != null) l10n.apatAccessSinceLabel(Fmt.date(access.respondedAt))].join(' · ')),
+      trailing: accessPill(l10n, access.status),
       onTap: () => context.push(adminDoctorRoute(access.doctorId)),
     );
   }
@@ -525,27 +541,28 @@ class _PersonalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final p = detail.profile;
-    const none = 'Not provided';
+    final none = l10n.commonNotProvided;
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.lgPlus),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        const SectionHeader('Personal Information'),
-        KeyValueRow('Full name', p.fullName),
-        KeyValueRow('Patient ID', p.patientCode),
-        KeyValueRow('Date of birth', p.dateOfBirth == null ? none : Fmt.date(p.dateOfBirth)),
-        KeyValueRow('Age', p.age == null ? none : '${p.age} years'),
-        KeyValueRow('Gender', p.gender ?? none),
-        KeyValueRow('Height / weight', [
+        SectionHeader(l10n.apatPersonalInfoHeader),
+        KeyValueRow(l10n.authFullName, p.fullName),
+        KeyValueRow(l10n.doctorPatientIdLabel, p.patientCode),
+        KeyValueRow(l10n.authDateOfBirth, p.dateOfBirth == null ? none : Fmt.date(p.dateOfBirth)),
+        KeyValueRow(l10n.commonAgeLabel, p.age == null ? none : l10n.commonAgeYears('${p.age}')),
+        KeyValueRow(l10n.authGender, p.gender ?? none),
+        KeyValueRow(l10n.apatHeightWeightLabel, [
           if (p.body.heightCm != null) '${p.body.heightCm!.toStringAsFixed(p.body.heightCm! % 1 == 0 ? 0 : 1)} cm',
           if (p.body.weightKg != null) '${p.body.weightKg!.toStringAsFixed(p.body.weightKg! % 1 == 0 ? 0 : 1)} kg',
         ].join(' · ').orIfEmpty(none)),
-        KeyValueRow('BMI (calculated)', p.body.bmi?.toStringAsFixed(1) ?? none),
-        KeyValueRow('Phone', p.phone ?? none),
-        KeyValueRow('Email', p.email),
+        KeyValueRow(l10n.apatBmiCalculatedLabel, p.body.bmi?.toStringAsFixed(1) ?? none),
+        KeyValueRow(l10n.authPhone, p.phone ?? none),
+        KeyValueRow(l10n.authEmailLabel, p.email),
         const Divider(height: AppSpacing.xl),
-        KeyValueRow('Account', '', valueWidget: Align(alignment: Alignment.centerLeft, child: activePill(detail.isActive))),
-        KeyValueRow('Last sign-in', detail.lastLoginAt == null ? 'Never' : Fmt.dateTime(detail.lastLoginAt)),
+        KeyValueRow(l10n.settingsAccount, '', valueWidget: Align(alignment: Alignment.centerLeft, child: activePill(l10n, detail.isActive))),
+        KeyValueRow(l10n.adocLastSignInLabel, detail.lastLoginAt == null ? l10n.commonNever : Fmt.dateTime(detail.lastLoginAt)),
       ]),
     );
   }
@@ -557,17 +574,18 @@ class _EmergencyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const none = 'Not provided';
+    final l10n = AppLocalizations.of(context);
+    final none = l10n.commonNotProvided;
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.lgPlus),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        const SectionHeader('Emergency Contact'),
+        SectionHeader(l10n.doctorEmergencyContactLabel),
         if (contact.isEmpty)
-          const EmptyLine('No emergency contact recorded.', icon: Icons.contact_phone_outlined)
+          EmptyLine(l10n.apatNoEmergencyContactRecorded, icon: Icons.contact_phone_outlined)
         else ...[
-          KeyValueRow('Name', contact.name ?? none),
-          KeyValueRow('Relationship', contact.relationship ?? none),
-          KeyValueRow('Phone', contact.phone ?? none),
+          KeyValueRow(l10n.commonNameLabel, contact.name ?? none),
+          KeyValueRow(l10n.commonRelationshipLabel, contact.relationship ?? none),
+          KeyValueRow(l10n.authPhone, contact.phone ?? none),
         ],
       ]),
     );
@@ -583,6 +601,7 @@ class _FoodTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final now = DateTime.now();
     final key = (patientId: patientId, start: DateTime(now.year, now.month, now.day).subtract(const Duration(days: 29)), end: DateTime(now.year, now.month, now.day));
     return PageBody(
@@ -590,14 +609,14 @@ class _FoodTab extends ConsumerWidget {
       maxWidth: 900,
       onRefresh: () async => ref.invalidate(foodEntriesProvider(key)),
       children: [
-        Text('Food logged in the last 30 days. Edited entries keep their earlier versions.', style: t.bodySmall),
+        Text(l10n.apatFoodLoggedNote, style: t.bodySmall),
         const SizedBox(height: AppSpacing.md),
         AsyncBody(
           value: ref.watch(foodEntriesProvider(key)),
           onRetry: () => ref.invalidate(foodEntriesProvider(key)),
           loading: const SkeletonList(count: 4),
           data: (items) {
-            if (items.isEmpty) return const EmptyState(icon: Icons.restaurant_outlined, title: 'No food logged in the last 30 days.');
+            if (items.isEmpty) return EmptyState(icon: Icons.restaurant_outlined, title: l10n.apatNoFoodLogged30Days);
             final byDay = <DateTime, List<FoodEntry>>{};
             for (final e in items) {
               final l = e.eatenAt.toLocal();
@@ -610,7 +629,7 @@ class _FoodTab extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
                   child: Column(children: [
                     for (final e in byDay[day]!)
-                      _CompactRow(title: '${e.foodName} · ${e.quantity}', subtitle: '${e.mealType.label} · ${Fmt.time(e.eatenAt)}${e.isEdited ? ' · edited' : ''}'),
+                      _CompactRow(title: '${e.foodName} · ${e.quantity}', subtitle: '${e.mealType.label} · ${Fmt.time(e.eatenAt)}${e.isEdited ? ' · ${l10n.commonEditedTag}' : ''}'),
                   ]),
                 ),
               ],
@@ -632,6 +651,7 @@ class _AppointmentsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final pid = detail.profile.id;
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return PageBody(
       padding: const EdgeInsets.fromLTRB(0, AppSpacing.xl, 0, AppSpacing.huge),
       maxWidth: 900,
@@ -643,17 +663,17 @@ class _AppointmentsTab extends ConsumerWidget {
             const IconBadge(Icons.event_outlined),
             const SizedBox(width: AppSpacing.md),
             Expanded(
-              child: Text(detail.nextFollowUp == null ? 'No upcoming follow-up recorded.' : 'Next follow-up: ${Fmt.date(detail.nextFollowUp)}', style: t.titleSmall),
+              child: Text(detail.nextFollowUp == null ? l10n.apatNoUpcomingFollowUpRecorded : l10n.apatNextFollowUpColon(Fmt.date(detail.nextFollowUp)), style: t.titleSmall),
             ),
           ]),
         ),
         const SizedBox(height: AppSpacing.lg),
         AsyncSection<List<AppointmentRecommendation>>(
-          title: 'Appointment Recommendations',
+          title: l10n.adocAppointmentRecommendationsHeader,
           value: ref.watch(appointmentsProvider(pid)),
           onRetry: () => ref.invalidate(appointmentsProvider(pid)),
           builder: (items) => items.isEmpty
-              ? const EmptyLine('No appointment recommendations.', icon: Icons.event_available_outlined)
+              ? EmptyLine(l10n.adocNoAppointmentRecommendations, icon: Icons.event_available_outlined)
               : Column(children: [
                   for (final a in items)
                     ListTile(
@@ -661,9 +681,9 @@ class _AppointmentsTab extends ConsumerWidget {
                       leading: const IconBadge(Icons.event_available_outlined, size: 36),
                       title: Text(a.reason),
                       subtitle: Text([
-                        'Dr. ${a.doctorName}',
-                        a.recommendedFor == null ? 'Recommended ${Fmt.date(a.createdAt)}' : 'Suggested for ${Fmt.date(a.recommendedFor)}',
-                        if (a.sideEffectId != null) 'Related to a side-effect report',
+                        l10n.commonDrName(a.doctorName),
+                        a.recommendedFor == null ? l10n.adocRecommendedOn(Fmt.date(a.createdAt)) : l10n.adocSuggestedFor(Fmt.date(a.recommendedFor)),
+                        if (a.sideEffectId != null) l10n.commonRelatedToSideEffect,
                       ].join(' · ')),
                       trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
                       onTap: a.sideEffectId != null
@@ -686,6 +706,7 @@ class _AiTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return PageBody(
       padding: const EdgeInsets.fromLTRB(0, AppSpacing.xl, 0, AppSpacing.huge),
       maxWidth: 900,
@@ -699,8 +720,7 @@ class _AiTab extends ConsumerWidget {
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(
-                'AI summaries are generated from available records. They are not a doctor\'s clinical conclusion and do not replace medical advice. '
-                'Every generation is kept; nothing here is regenerated when you view it.',
+                l10n.apatAiDisclaimerText,
                 style: t.bodySmall?.copyWith(color: AppColors.textPrimary),
               ),
             ),
@@ -712,7 +732,7 @@ class _AiTab extends ConsumerWidget {
           onRetry: () => ref.invalidate(adminPatientAiSummariesProvider(patientId)),
           loading: const SkeletonList(count: 3),
           data: (items) => items.isEmpty
-              ? const EmptyState(icon: Icons.auto_awesome_outlined, title: 'No AI summaries generated yet.')
+              ? EmptyState(icon: Icons.auto_awesome_outlined, title: l10n.apatNoAiSummariesYet)
               : Column(children: [
                   for (final s in items) ...[
                     _SummaryCard(summary: s),
@@ -739,6 +759,7 @@ class _SummaryCardState extends ConsumerState<_SummaryCard> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final s = widget.summary;
     return AppCard(
       padding: EdgeInsets.zero,
@@ -746,7 +767,7 @@ class _SummaryCardState extends ConsumerState<_SummaryCard> {
         ListTile(
           leading: const IconBadge(Icons.auto_awesome_outlined, size: 36),
           title: Text(s.kind.label),
-          subtitle: Text('Generated ${Fmt.dateTime(s.generatedAt)}${s.generatedByRole == null ? '' : ' by ${s.generatedByRole}'}${s.isStale ? ' · newer records exist' : ''}'),
+          subtitle: Text('${l10n.apatGeneratedOn(Fmt.dateTime(s.generatedAt))}${s.generatedByRole == null ? '' : l10n.apatByRoleSuffix(s.generatedByRole!)}${s.isStale ? ' · ${l10n.apatNewerRecordsExist}' : ''}'),
           trailing: Icon(_open ? Icons.expand_less : Icons.expand_more),
           onTap: () => setState(() => _open = !_open),
         ),
@@ -758,8 +779,8 @@ class _SummaryCardState extends ConsumerState<_SummaryCard> {
               const SizedBox(height: AppSpacing.sm),
               AiSummaryContent(s),
               const SizedBox(height: AppSpacing.md),
-              if (s.basedOn.isNotEmpty) Text('Based on: ${s.basedOn.join(', ')}', style: t.bodySmall),
-              Text('AI model: ${s.model}', style: t.bodySmall),
+              if (s.basedOn.isNotEmpty) Text(l10n.apatBasedOnLabel(s.basedOn.join(', ')), style: t.bodySmall),
+              Text(l10n.apatAiModelLabel(s.model), style: t.bodySmall),
               if (s.disclaimer.isNotEmpty) ...[const SizedBox(height: AppSpacing.sm), Text(s.disclaimer, style: t.bodySmall?.copyWith(fontStyle: FontStyle.italic))],
               const SizedBox(height: AppSpacing.md),
               Wrap(spacing: AppSpacing.sm, runSpacing: AppSpacing.sm, children: [
@@ -772,7 +793,7 @@ class _SummaryCardState extends ConsumerState<_SummaryCard> {
                     }
                   },
                   icon: const Icon(Icons.visibility_outlined, size: 18),
-                  label: const Text('View PDF'),
+                  label: Text(l10n.apatViewPdfButton),
                 ),
                 OutlinedButton.icon(
                   onPressed: () async {
@@ -783,7 +804,7 @@ class _SummaryCardState extends ConsumerState<_SummaryCard> {
                     }
                   },
                   icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
-                  label: const Text('Download PDF'),
+                  label: Text(l10n.apatDownloadPdfButton),
                 ),
               ]),
             ]),
@@ -802,33 +823,34 @@ class _DoctorsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return PageBody(
       padding: const EdgeInsets.fromLTRB(0, AppSpacing.xl, 0, AppSpacing.huge),
       children: [
-        Text('Every doctor relationship, including past ones. Doctors see records only while access is approved by the patient.', style: t.bodySmall),
+        Text(l10n.apatDoctorRelationshipsNote, style: t.bodySmall),
         const SizedBox(height: AppSpacing.md),
         if (detail.doctors.isEmpty)
-          const EmptyState(icon: Icons.medical_services_outlined, title: 'No doctor has requested access yet.')
+          EmptyState(icon: Icons.medical_services_outlined, title: l10n.apatNoDoctorRequestedAccess)
         else
           ResponsiveTable<AccessRequest>(
             rows: detail.doctors,
             onRowTap: (a) => context.push(adminDoctorRoute(a.doctorId)),
             columns: [
-              TableColumnSpec('Doctor', (a) => CellText('Dr. ${a.doctorName}', secondary: a.doctorCode, bold: true), flex: 3),
-              TableColumnSpec('Specialization', (a) => CellText(a.doctorSpecialization ?? '—'), flex: 3),
-              TableColumnSpec('Access', (a) => PillCell(accessPill(a.status)), flex: 2),
-              TableColumnSpec('Requested', (a) => CellText(Fmt.date(a.requestedAt)), flex: 2, tabletVisible: false),
+              TableColumnSpec(l10n.adminColDoctor, (a) => CellText(l10n.commonDrName(a.doctorName), secondary: a.doctorCode, bold: true), flex: 3),
+              TableColumnSpec(l10n.commonSpecializationLabel, (a) => CellText(a.doctorSpecialization ?? '—'), flex: 3),
+              TableColumnSpec(l10n.adocAccessCol, (a) => PillCell(accessPill(l10n, a.status)), flex: 2),
+              TableColumnSpec(l10n.apatRequestedCol, (a) => CellText(Fmt.date(a.requestedAt)), flex: 2, tabletVisible: false),
               TableColumnSpec(
-                'Granted / ended',
-                (a) => CellText(a.revokedAt != null ? 'Ended ${Fmt.date(a.revokedAt)}' : (a.respondedAt == null ? '—' : Fmt.date(a.respondedAt))),
+                l10n.apatGrantedEndedCol,
+                (a) => CellText(a.revokedAt != null ? l10n.apatEndedOn(Fmt.date(a.revokedAt)) : (a.respondedAt == null ? '—' : Fmt.date(a.respondedAt))),
                 flex: 2,
               ),
             ],
             mobileCard: (a) => AppCard(
               onTap: () => context.push(adminDoctorRoute(a.doctorId)),
               child: Row(children: [
-                Expanded(child: CellText('Dr. ${a.doctorName}', secondary: '${a.doctorSpecialization ?? 'Specialization not recorded'} · requested ${Fmt.date(a.requestedAt)}', bold: true)),
-                accessPill(a.status),
+                Expanded(child: CellText(l10n.commonDrName(a.doctorName), secondary: l10n.apatSpecRequestedCaption(a.doctorSpecialization ?? l10n.adocSpecializationNotRecorded, Fmt.date(a.requestedAt)), bold: true)),
+                accessPill(l10n, a.status),
               ]),
             ),
           ),
@@ -852,34 +874,36 @@ class _ActivityTabState extends ConsumerState<_ActivityTab> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final key = (patientId: widget.patientId, type: _type);
+    final filterLabels = timelineFilterLabels(l10n);
     return PageBody(
       padding: const EdgeInsets.fromLTRB(0, AppSpacing.xl, 0, AppSpacing.huge),
       maxWidth: 900,
       onRefresh: () async => ref.invalidate(timelineProvider(key)),
       children: [
         Wrap(spacing: AppSpacing.sm, runSpacing: AppSpacing.sm, children: [
-          for (final f in timelineFilters.entries) ChoiceChip(label: Text(f.value), selected: _type == f.key, onSelected: (_) => setState(() => _type = f.key)),
+          for (final k in timelineFilterKeys) ChoiceChip(label: Text(filterLabels[k]!), selected: _type == k, onSelected: (_) => setState(() => _type = k)),
         ]),
         const SizedBox(height: AppSpacing.lg),
         AsyncSection<({List<TimelineEvent> items, bool hasMore})>(
-          title: 'Longitudinal History',
-          subtitle: 'Each record keeps its own medical date. Open an entry to see the record.',
+          title: l10n.apatLongitudinalHistoryHeader,
+          subtitle: l10n.apatLongitudinalHistorySubtitle,
           value: ref.watch(timelineProvider(key)),
           onRetry: () => ref.invalidate(timelineProvider(key)),
           loadingLines: 6,
-          builder: (r) => ActivityTimeline(emptyMessage: 'Nothing recorded in this category.', entries: [for (final e in r.items) _eventEntry(context, e, widget.patientId)]),
+          builder: (r) => ActivityTimeline(emptyMessage: l10n.apatNothingInCategory, entries: [for (final e in r.items) _eventEntry(context, l10n, e, widget.patientId)]),
         ),
         const SizedBox(height: AppSpacing.lg),
         AsyncSection(
-          title: 'Notifications Sent to the Patient',
+          title: l10n.apatNotificationsSentHeader,
           value: ref.watch(adminPatientNotificationsProvider(widget.patientId)),
           onRetry: () => ref.invalidate(adminPatientNotificationsProvider(widget.patientId)),
           builder: (items) => items.isEmpty
-              ? const EmptyLine('No notifications sent.', icon: Icons.notifications_none_outlined)
+              ? EmptyLine(l10n.apatNoNotificationsSent, icon: Icons.notifications_none_outlined)
               : Column(children: [
                   for (final n in items.take(20))
-                    _CompactRow(title: n.title, subtitle: '${Fmt.dateTime(n.createdAt)} · ${n.isRead ? 'Read' : 'Unread'}'),
+                    _CompactRow(title: n.title, subtitle: '${Fmt.dateTime(n.createdAt)} · ${n.isRead ? l10n.commonRead : l10n.notifFilterUnread}'),
                 ]),
         ),
       ],
@@ -893,6 +917,7 @@ class _AuditTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     return PageBody(
       padding: const EdgeInsets.fromLTRB(0, AppSpacing.xl, 0, AppSpacing.huge),
       onRefresh: () async => ref.invalidate(adminPatientAuditProvider(patientId)),
@@ -901,7 +926,7 @@ class _AuditTab extends ConsumerWidget {
           value: ref.watch(adminPatientAuditProvider(patientId)),
           onRetry: () => ref.invalidate(adminPatientAuditProvider(patientId)),
           loading: const SkeletonList(count: 5),
-          data: (r) => r.items.isEmpty ? const EmptyState(icon: Icons.receipt_long_outlined, title: 'No audit entries.') : AuditTable(entries: r.items, total: r.total),
+          data: (r) => r.items.isEmpty ? EmptyState(icon: Icons.receipt_long_outlined, title: l10n.adminNoAuditEntries) : AuditTable(entries: r.items, total: r.total),
         ),
       ],
     );
@@ -971,7 +996,7 @@ class _AdminPatientEditScreenState extends ConsumerState<AdminPatientEditScreen>
     _ePhone = TextEditingController(text: p.emergencyContact.phone);
   }
 
-  Future<void> _save() async {
+  Future<void> _save(AppLocalizations l10n) async {
     if (!_form.currentState!.validate()) return;
     String? v(TextEditingController c) => c.text.trim().isEmpty ? null : c.text.trim();
     try {
@@ -986,7 +1011,7 @@ class _AdminPatientEditScreenState extends ConsumerState<AdminPatientEditScreen>
       ref.invalidate(patientProfileProvider(widget.patientId));
       ref.invalidate(adminPatientsProvider);
       if (!mounted) return;
-      showToast(context, 'Patient details updated');
+      showToast(context, l10n.apatPatientDetailsUpdatedToast);
       context.pop();
     } on Failure catch (e) {
       if (mounted) showFailure(context, e);
@@ -996,8 +1021,9 @@ class _AdminPatientEditScreenState extends ConsumerState<AdminPatientEditScreen>
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return AppPage(
-      title: 'Edit Patient',
+      title: l10n.apatEditPatientTitle,
       body: PageBody(maxWidth: 600, children: [
         AsyncBody(
           value: ref.watch(patientProfileProvider(widget.patientId)),
@@ -1014,18 +1040,17 @@ class _AdminPatientEditScreenState extends ConsumerState<AdminPatientEditScreen>
                   ]),
                 ),
                 const SizedBox(height: AppSpacing.xl),
-                AppTextField(label: 'Full name', controller: _name, validator: (v) => Validators.required(v, 'Full name'), textCapitalization: TextCapitalization.words),
-                AppTextField(label: 'Phone', controller: _phone, optional: true, keyboardType: TextInputType.phone, validator: Validators.optionalPhone),
+                AppTextField(label: l10n.authFullName, controller: _name, validator: (v) => Validators.required(l10n, v, l10n.authFullName), textCapitalization: TextCapitalization.words),
+                AppTextField(label: l10n.authPhone, controller: _phone, optional: true, keyboardType: TextInputType.phone, validator: (v) => Validators.optionalPhone(l10n, v)),
                 const SizedBox(height: AppSpacing.sm),
-                Text('Emergency contact', style: t.titleSmall),
+                Text(l10n.doctorEmergencyContactLabel, style: t.titleSmall),
                 const SizedBox(height: AppSpacing.md),
-                AppTextField(label: 'Name', controller: _eName, optional: true, textCapitalization: TextCapitalization.words),
-                AppTextField(label: 'Relationship', controller: _eRelationship, optional: true, textCapitalization: TextCapitalization.words),
-                AppTextField(label: 'Phone', controller: _ePhone, optional: true, keyboardType: TextInputType.phone, validator: Validators.optionalPhone),
-                BusyButton(label: 'Save changes', onPressed: _save, expand: true),
+                AppTextField(label: l10n.commonNameLabel, controller: _eName, optional: true, textCapitalization: TextCapitalization.words),
+                AppTextField(label: l10n.commonRelationshipLabel, controller: _eRelationship, optional: true, textCapitalization: TextCapitalization.words),
+                AppTextField(label: l10n.authPhone, controller: _ePhone, optional: true, keyboardType: TextInputType.phone, validator: (v) => Validators.optionalPhone(l10n, v)),
+                BusyButton(label: l10n.commonSaveChanges, onPressed: () => _save(l10n), expand: true),
                 const SizedBox(height: AppSpacing.md),
-                Text('Date of birth and gender are provided by the patient and used by the diabetes model, so they are not editable here. '
-                    'Medical records cannot be changed from this screen. Changes are recorded in the audit log.', style: t.bodySmall),
+                Text(l10n.apatDobGenderNotEditableNote, style: t.bodySmall),
               ]),
             );
           },

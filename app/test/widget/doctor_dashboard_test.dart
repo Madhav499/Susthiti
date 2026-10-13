@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,7 @@ import 'package:susthiti/data/repositories/notification_repository.dart';
 import 'package:susthiti/data/repositories/patient_repository.dart';
 import 'package:susthiti/features/authentication/auth_controller.dart';
 import 'package:susthiti/features/doctor/doctor_dashboard_screen.dart';
+import 'package:susthiti/l10n/app_localizations.dart';
 
 import '../helpers.dart';
 
@@ -43,7 +45,17 @@ void main() {
         doctorRepositoryProvider.overrideWithValue(doctors),
         notificationRepositoryProvider.overrideWithValue(notifications),
       ],
-      child: MaterialApp.router(theme: AppTheme.light(), routerConfig: router),
+      child: MaterialApp.router(
+        theme: AppTheme.light(),
+        routerConfig: router,
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+      ),
     ));
     await tester.pumpAndSettle();
   }

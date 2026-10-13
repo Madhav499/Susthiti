@@ -34,7 +34,8 @@ def request_access(body: AccessRequestIn, current: CurrentUser = Depends(require
     db.add(req)
     db.flush()
     notify(db, patient.user_id, "access_request", "Doctor access request",
-           f"Dr. {current.name} has requested access to your health records.", "access_request", req.id, patient.id)
+           f"Dr. {current.name} has requested access to your health records.", "access_request", req.id, patient.id,
+           template_params={"doctor_name": current.name})
     audit(db, current, "access_requested", "access_request", req.id, None, {"patient_code": patient.patient_code, "doctor_code": doctor.doctor_code})
     db.commit()
     db.refresh(req)
@@ -69,7 +70,8 @@ def approve(request_id: str, current: CurrentUser = Depends(require_patient), db
         raise errors.conflict("This request has already been answered.")
     req.status, req.responded_at = "approved", utcnow()
     notify(db, req.doctor.user_id, "access_approved", "Access approved",
-           f"{req.patient.user.full_name} ({req.patient.patient_code}) approved your access request.", "patient", req.patient_id, req.patient_id)
+           f"{req.patient.user.full_name} ({req.patient.patient_code}) approved your access request.", "patient", req.patient_id, req.patient_id,
+           template_params={"patient_name": req.patient.user.full_name, "patient_code": req.patient.patient_code})
     audit(db, current, "access_approved", "access_request", req.id, None, {"patient_code": req.patient.patient_code, "doctor_code": req.doctor.doctor_code})
     db.commit()
     return access_out(req)
@@ -82,7 +84,8 @@ def reject(request_id: str, current: CurrentUser = Depends(require_patient), db:
         raise errors.conflict("This request has already been answered.")
     req.status, req.responded_at = "rejected", utcnow()
     notify(db, req.doctor.user_id, "access_rejected", "Access request declined",
-           f"{req.patient.patient_code} declined your access request.", "access_request", req.id)
+           f"{req.patient.patient_code} declined your access request.", "access_request", req.id,
+           template_params={"patient_code": req.patient.patient_code})
     audit(db, current, "access_rejected", "access_request", req.id, None, {"patient_code": req.patient.patient_code, "doctor_code": req.doctor.doctor_code})
     db.commit()
     return access_out(req)
@@ -104,7 +107,8 @@ def revoke(request_id: str, current: CurrentUser = Depends(get_current_user), db
         raise errors.conflict("Only pending or approved access can be revoked.")
     req.status, req.revoked_at, req.revoked_by_user_id = "revoked", utcnow(), current.id
     notify(db, req.doctor.user_id, "access_revoked", "Access revoked",
-           f"Your access to {req.patient.patient_code} has been revoked.", "access_request", req.id)
+           f"Your access to {req.patient.patient_code} has been revoked.", "access_request", req.id,
+           template_params={"patient_code": req.patient.patient_code})
     audit(db, current, "access_revoked", "access_request", req.id, None, {"patient_code": req.patient.patient_code, "doctor_code": req.doctor.doctor_code})
     db.commit()
     return access_out(req)

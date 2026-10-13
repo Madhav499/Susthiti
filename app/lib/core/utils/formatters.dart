@@ -1,5 +1,7 @@
 import 'package:intl/intl.dart';
 
+import '../../l10n/app_localizations.dart';
+
 /// Date/time presentation. Distinct medical dates (report, upload, visit...) are always
 /// passed separately and labelled by the caller; nothing here merges them.
 abstract final class Fmt {
@@ -17,21 +19,23 @@ abstract final class Fmt {
   static String isoDate(DateTime d) => _iso.format(d);
   static String number(num n) => _number.format(n);
 
-  static String relative(DateTime? d, {DateTime? now}) {
+  /// "just now" / "5 minutes ago" / "2 hours ago" / "3 days ago", in [l10n]'s locale.
+  /// Falls back to an absolute date once a week has passed, same as before.
+  static String relative(AppLocalizations l10n, DateTime? d, {DateTime? now}) {
     if (d == null) return '—';
     final diff = (now ?? DateTime.now()).difference(d.toLocal());
-    if (diff.inSeconds < 60) return 'just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} minute${diff.inMinutes == 1 ? '' : 's'} ago';
-    if (diff.inHours < 24) return '${diff.inHours} hour${diff.inHours == 1 ? '' : 's'} ago';
-    if (diff.inDays < 7) return '${diff.inDays} day${diff.inDays == 1 ? '' : 's'} ago';
+    if (diff.inSeconds < 60) return l10n.fmtJustNow;
+    if (diff.inMinutes < 60) return l10n.fmtMinutesAgo(diff.inMinutes);
+    if (diff.inHours < 24) return l10n.fmtHoursAgo(diff.inHours);
+    if (diff.inDays < 7) return l10n.fmtDaysAgo(diff.inDays);
     return date(d);
   }
 
-  static String greeting([DateTime? now]) {
+  static String greeting(AppLocalizations l10n, [DateTime? now]) {
     final hour = (now ?? DateTime.now()).hour;
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
+    if (hour < 12) return l10n.fmtGoodMorning;
+    if (hour < 17) return l10n.fmtGoodAfternoon;
+    return l10n.fmtGoodEvening;
   }
 
   static String duration(num minutes) {

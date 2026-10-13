@@ -9,6 +9,7 @@ import '../../core/widgets/app_page.dart';
 import '../../core/widgets/labels.dart';
 import '../../data/models/diabetes_risk.dart';
 import '../../data/models/user.dart';
+import '../../l10n/app_localizations.dart';
 
 /// "Moderate risk", coloured by band. Bands and category come from the API, never from the app.
 class RiskCategoryPill extends StatelessWidget {
@@ -16,7 +17,10 @@ class RiskCategoryPill extends StatelessWidget {
   final String category;
 
   @override
-  Widget build(BuildContext context) => StatusPill(RiskWording.categoryLabel(category), tone: RiskWording.tone(category));
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return StatusPill(RiskWording.categoryLabel(l10n, category), tone: RiskWording.tone(category));
+  }
 }
 
 /// The headline of one assessment: model-estimated risk, category, basis and when.
@@ -28,13 +32,14 @@ class RiskResultBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final a = assessment;
     return Semantics(
       container: true,
-      label: '${RiskWording.title}: ${RiskWording.estimateLabel.toLowerCase()} ${a.percentLabel}, ${RiskWording.categoryLabel(a.riskCategory)}. ${a.basisText}',
+      label: '${RiskWording.title(l10n)}: ${RiskWording.estimateLabel(l10n).toLowerCase()} ${a.percentLabel}, ${RiskWording.categoryLabel(l10n, a.riskCategory)}. ${a.basisText(l10n)}',
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Expanded(child: Text(RiskWording.title, style: t.labelLarge?.copyWith(color: AppColors.primaryDeep))),
+          Expanded(child: Text(RiskWording.title(l10n), style: t.labelLarge?.copyWith(color: AppColors.primaryDeep))),
           RiskCategoryPill(a.riskCategory),
         ]),
         const SizedBox(height: AppSpacing.sm),
@@ -42,15 +47,15 @@ class RiskResultBlock extends StatelessWidget {
           child: Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
             Text(a.percentLabel, style: t.displaySmall?.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
             const SizedBox(width: AppSpacing.sm),
-            Flexible(child: Text(RiskWording.estimateLabel, style: t.bodyMedium?.copyWith(color: AppColors.textSecondary))),
+            Flexible(child: Text(RiskWording.estimateLabel(l10n), style: t.bodyMedium?.copyWith(color: AppColors.textSecondary))),
           ]),
         ),
         const SizedBox(height: AppSpacing.xs),
-        Text('Risk pattern: ${a.predictionLabel}', style: t.bodyMedium),
+        Text(l10n.riskPatternPrefix(a.predictionLabel), style: t.bodyMedium),
         const SizedBox(height: AppSpacing.sm),
         _BasisLine(assessment: a),
         const SizedBox(height: AppSpacing.xs),
-        Text('Last updated ${Fmt.relative(a.createdAt)} · ${Fmt.dateTime(a.createdAt)}', style: t.bodySmall),
+        Text(l10n.riskLastUpdated(Fmt.relative(l10n, a.createdAt), Fmt.dateTime(a.createdAt)), style: t.bodySmall),
         if (actions.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.lg),
           Wrap(spacing: AppSpacing.sm, runSpacing: AppSpacing.sm, children: actions),
@@ -67,11 +72,12 @@ class _BasisLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final withReport = assessment.reportAvailable;
     return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Icon(withReport ? Icons.description_outlined : Icons.person_outline, size: 18, color: AppColors.textSecondary),
       const SizedBox(width: AppSpacing.sm),
-      Expanded(child: Text(assessment.basisText, style: t.bodyMedium)),
+      Expanded(child: Text(assessment.basisText(l10n), style: t.bodyMedium)),
     ]);
   }
 }
@@ -104,6 +110,7 @@ class StaleBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final tone = StatusTone.info;
     return ToneCard(
       tone: tone,
@@ -111,20 +118,18 @@ class StaleBanner extends StatelessWidget {
         Row(children: [
           Icon(Icons.update, color: tone.foreground),
           const SizedBox(width: AppSpacing.md),
-          Expanded(child: Text('Updated health information is available.', style: t.titleSmall?.copyWith(color: tone.foreground))),
+          Expanded(child: Text(l10n.riskUpdatedInfoAvailable, style: t.titleSmall?.copyWith(color: tone.foreground))),
         ]),
         const SizedBox(height: AppSpacing.sm),
         Text(
-          offline
-              ? 'New health information is available. Connect to the internet to update your assessment.'
-              : 'The estimate above doesn\'t include it yet. Refresh your diabetes risk assessment to use your latest information.',
+          offline ? l10n.riskNewInfoOffline : l10n.riskRefreshToInclude,
           style: t.bodyMedium,
         ),
         for (final r in reasons)
           Padding(padding: const EdgeInsets.only(top: AppSpacing.xs), child: Text('• $r', style: t.bodySmall)),
         if (onRefresh != null && !offline) ...[
           const SizedBox(height: AppSpacing.md),
-          FilledButton.icon(onPressed: onRefresh, icon: const Icon(Icons.refresh), label: const Text('Update with my latest data')),
+          FilledButton.icon(onPressed: onRefresh, icon: const Icon(Icons.refresh), label: Text(l10n.riskUpdateWithLatestData)),
         ],
       ]),
     );
@@ -137,6 +142,7 @@ class OfflineRiskBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return ToneCard(
       tone: StatusTone.inactive,
       child: Row(children: [
@@ -144,9 +150,7 @@ class OfflineRiskBanner extends StatelessWidget {
         const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Text(
-            lastUpdated == null
-                ? 'You\'re offline. Showing the information saved on this device.'
-                : 'You\'re offline. Showing your last assessment, updated ${Fmt.relative(lastUpdated)}. Newer health information isn\'t included until you\'re back online.',
+            lastUpdated == null ? l10n.riskOfflineSavedInfo : l10n.riskOfflineLastAssessment(Fmt.relative(l10n, lastUpdated)),
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ),
@@ -173,8 +177,9 @@ class DataUsedCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     if (data.groups.isEmpty) {
-      return AppCard(child: Text('No health information was available yet beyond what the model requires.', style: t.bodyMedium));
+      return AppCard(child: Text(l10n.riskNoDataAvailable, style: t.bodyMedium));
     }
     return AppCard(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -220,12 +225,12 @@ String? addDataRoute(AddDataTarget target, String patientId, UserRole? role) {
   };
 }
 
-String addDataLabel(AddDataTarget target) => switch (target) {
-      AddDataTarget.profile => 'Update profile',
-      AddDataTarget.healthProfile => 'Open health profile',
-      AddDataTarget.reportValues => 'Add values from a report',
-      AddDataTarget.healthConnection => 'Connect health data',
-      AddDataTarget.heartAssessmentForm => 'Answer on the heart assessment form',
+String addDataLabel(AppLocalizations l10n, AddDataTarget target) => switch (target) {
+      AddDataTarget.profile => l10n.riskUpdateProfileAction,
+      AddDataTarget.healthProfile => l10n.riskOpenHealthProfileAction,
+      AddDataTarget.reportValues => l10n.riskAddReportValuesAction,
+      AddDataTarget.healthConnection => l10n.riskConnectHealthDataAction,
+      AddDataTarget.heartAssessmentForm => l10n.riskAnswerOnHeartFormAction,
     };
 
 /// Information the estimate could use but doesn't have, and where to add it. Nothing is guessed.
@@ -238,6 +243,7 @@ class MissingDataCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final byGroup = <String, List<MissingItem>>{};
     for (final m in missing) {
       byGroup.putIfAbsent(m.groupLabel, () => []).add(m);
@@ -260,7 +266,7 @@ class MissingDataCard extends StatelessWidget {
             final targets = {for (final m in entry.value) m.target};
             final links = [
               for (final target in targets)
-                if (addDataRoute(target, patientId, role) case final route?) TextButton(onPressed: () => context.push(route), child: Text(addDataLabel(target))),
+                if (addDataRoute(target, patientId, role) case final route?) TextButton(onPressed: () => context.push(route), child: Text(addDataLabel(l10n, target))),
             ];
             return links.isEmpty ? const SizedBox(height: AppSpacing.sm) : Wrap(spacing: AppSpacing.sm, children: links);
           }),
@@ -278,6 +284,7 @@ class RiskHistoryList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return AppCard(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Column(children: [
@@ -291,7 +298,7 @@ class RiskHistoryList extends StatelessWidget {
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text('${Fmt.date(items[i].createdAt)} · ${items[i].percentLabel}', style: t.titleSmall),
-                    Text(items[i].reportAvailable ? 'Included medical report values' : 'Symptoms and risk factors only', style: t.bodySmall),
+                    Text(items[i].reportAvailable ? l10n.dashIncludesReportValues : l10n.dashBasedOnSymptomsOnly, style: t.bodySmall),
                   ]),
                 ),
                 RiskCategoryPill(items[i].riskCategory),
@@ -324,5 +331,5 @@ class RiskSafetyNote extends StatelessWidget {
   const RiskSafetyNote({super.key});
 
   @override
-  Widget build(BuildContext context) => const Disclaimer(text: RiskWording.safety);
+  Widget build(BuildContext context) => Disclaimer(text: RiskWording.safety(AppLocalizations.of(context)));
 }

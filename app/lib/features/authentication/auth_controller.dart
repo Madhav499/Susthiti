@@ -36,17 +36,25 @@ class AuthController extends AsyncNotifier<AppUser?> {
     state = AsyncData(session.user);
   }
 
-  Future<void> register({required String fullName, required String email, required String password, required DateTime dateOfBirth, required String gender, String? phone}) async {
+  Future<void> register({required String fullName, required String email, required String password, required DateTime dateOfBirth, required String gender, String? phone, String? preferredLocale}) async {
     // Development trace only: never the email, password, token or health details.
     _trace('registration started, server ${AppConfig.serverOrigin}');
     try {
-      final session = await ref.read(authRepositoryProvider).register(fullName: fullName, email: email, password: password, dateOfBirth: dateOfBirth, gender: gender, phone: phone);
+      final session = await ref.read(authRepositoryProvider).register(fullName: fullName, email: email, password: password, dateOfBirth: dateOfBirth, gender: gender, phone: phone, preferredLocale: preferredLocale);
       _trace('registration succeeded, role ${session.user.role.name}');
       state = AsyncData(session.user);
     } on Failure catch (f) {
       _trace('registration failed: ${f.runtimeType} (${f.code})');
       rethrow;
     }
+  }
+
+  /// Updates the signed-in user's own interface language and applies it immediately --
+  /// no logout or restart needed. Independent per account: this never touches any other
+  /// user's row, and the next login always restores that account's own saved preference.
+  Future<void> updateLanguage(String locale) async {
+    final updated = await ref.read(authRepositoryProvider).updateLanguage(locale);
+    state = AsyncData(updated);
   }
 
   static void _trace(String message) {

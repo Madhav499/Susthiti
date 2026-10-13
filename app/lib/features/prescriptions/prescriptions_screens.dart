@@ -16,6 +16,7 @@ import '../../core/widgets/labels.dart';
 import '../../data/models/care.dart';
 import '../../data/models/user.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../authentication/auth_controller.dart';
 
 typedef PrescriptionsKey = ({String patientId, String query});
@@ -31,14 +32,15 @@ class PrescriptionsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final isDoctor = ref.watch(currentUserProvider)?.role == UserRole.doctor;
     return AppPage(
-      title: 'Prescriptions',
+      title: l10n.navPrescriptions,
       floatingActionButton: isDoctor
           ? FloatingActionButton.extended(
               onPressed: () => context.push('/d/patients/$patientId/prescriptions/new'),
               icon: const Icon(Icons.add),
-              label: const Text('New Prescription'),
+              label: Text(l10n.doctorNewPrescriptionButton),
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               elevation: 1,
@@ -72,6 +74,7 @@ class _PrescriptionsViewState extends ConsumerState<PrescriptionsView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final key = (patientId: widget.patientId, query: _query);
     final value = ref.watch(prescriptionsProvider(key));
     return PageBody(
@@ -82,12 +85,12 @@ class _PrescriptionsViewState extends ConsumerState<PrescriptionsView> {
         TextField(
           controller: _search,
           decoration: InputDecoration(
-            hintText: 'Search by medicine, doctor or ID',
+            hintText: l10n.rxSearchHint,
             prefixIcon: const Icon(Icons.search),
             suffixIcon: _query.isEmpty
                 ? null
                 : IconButton(
-                    tooltip: 'Clear search',
+                    tooltip: l10n.rxClearSearchTooltip,
                     icon: const Icon(Icons.close),
                     onPressed: () {
                       _search.clear();
@@ -104,8 +107,8 @@ class _PrescriptionsViewState extends ConsumerState<PrescriptionsView> {
           data: (items) => items.isEmpty
               ? EmptyState(
                   icon: Icons.medication_outlined,
-                  title: _query.isEmpty ? 'No prescriptions yet.' : 'No prescriptions match "$_query".',
-                  message: _query.isEmpty ? 'Prescriptions from your doctor will appear here.' : null,
+                  title: _query.isEmpty ? l10n.rxEmptyNoneYet : l10n.rxEmptyNoMatch(_query),
+                  message: _query.isEmpty ? l10n.rxEmptyMessage : null,
                 )
               : Column(children: [
                   for (final p in items) ...[
@@ -127,6 +130,7 @@ class PrescriptionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final p = prescription;
     return AppCard(
       onTap: onTap,
@@ -137,8 +141,8 @@ class PrescriptionTile extends StatelessWidget {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(p.medicines.map((m) => m.medicine).join(', '), maxLines: 2, overflow: TextOverflow.ellipsis, style: t.titleSmall),
             const SizedBox(height: 2),
-            Text('Dr. ${p.doctorName} · ${Fmt.date(p.prescribedOn)} · ${p.code}', style: t.bodySmall),
-            if (p.followUpDate != null) Text('Follow-up ${Fmt.date(p.followUpDate)}', style: t.bodySmall?.copyWith(color: AppColors.primary)),
+            Text(l10n.visitsDoctorDateCode(p.doctorName, Fmt.date(p.prescribedOn), p.code), style: t.bodySmall),
+            if (p.followUpDate != null) Text(l10n.visitsFollowUpOn(Fmt.date(p.followUpDate)), style: t.bodySmall?.copyWith(color: AppColors.primary)),
           ]),
         ),
         const Icon(Icons.chevron_right, color: AppColors.textSecondary),
@@ -154,8 +158,9 @@ class PrescriptionDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return AppPage(
-      title: 'Prescription',
+      title: l10n.rxDetailTitle,
       body: PageBody(maxWidth: 760, children: [
         AsyncBody(
           value: ref.watch(prescriptionProvider(prescriptionId)),
@@ -163,23 +168,23 @@ class PrescriptionDetailScreen extends ConsumerWidget {
           data: (p) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             AppCard(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                KeyValueRow('Prescription ID', p.code),
-                KeyValueRow('Doctor', 'Dr. ${p.doctorName}'),
-                KeyValueRow('Date', Fmt.date(p.prescribedOn)),
-                if (p.followUpDate != null) KeyValueRow('Follow-up', Fmt.date(p.followUpDate)),
+                KeyValueRow(l10n.rxIdLabel, p.code),
+                KeyValueRow(l10n.commonDoctorLabel, l10n.commonDrName(p.doctorName)),
+                KeyValueRow(l10n.rxDateLabel, Fmt.date(p.prescribedOn)),
+                if (p.followUpDate != null) KeyValueRow(l10n.visitFollowUpLabel, Fmt.date(p.followUpDate)),
               ]),
             ),
             const SizedBox(height: AppSpacing.section),
-            const SectionHeader('Medicines'),
+            SectionHeader(l10n.rxMedicinesHeader),
             for (final m in p.medicines) ...[
               AppCard(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(m.medicine, style: t.titleMedium),
                   const SizedBox(height: AppSpacing.sm),
-                  KeyValueRow('Dosage', m.dosage),
-                  KeyValueRow('Frequency', m.frequency),
-                  KeyValueRow('Duration', m.duration),
-                  if (m.instructions != null && m.instructions!.isNotEmpty) KeyValueRow('Instructions', m.instructions!),
+                  KeyValueRow(l10n.rxDosageLabel, m.dosage),
+                  KeyValueRow(l10n.rxFrequencyLabel, m.frequency),
+                  KeyValueRow(l10n.rxDurationLabel, m.duration),
+                  if (m.instructions != null && m.instructions!.isNotEmpty) KeyValueRow(l10n.commonInstructionsLabel, m.instructions!),
                 ]),
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -188,13 +193,13 @@ class PrescriptionDetailScreen extends ConsumerWidget {
               const SizedBox(height: AppSpacing.lg),
               AppCard(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  if ((p.instructions ?? '').isNotEmpty) ...[Text('Instructions', style: t.titleSmall), const SizedBox(height: 4), Text(p.instructions!, style: t.bodyMedium)],
-                  if ((p.notes ?? '').isNotEmpty) ...[const SizedBox(height: AppSpacing.md), Text('Notes', style: t.titleSmall), const SizedBox(height: 4), Text(p.notes!, style: t.bodyMedium)],
+                  if ((p.instructions ?? '').isNotEmpty) ...[Text(l10n.commonInstructionsLabel, style: t.titleSmall), const SizedBox(height: 4), Text(p.instructions!, style: t.bodyMedium)],
+                  if ((p.notes ?? '').isNotEmpty) ...[const SizedBox(height: AppSpacing.md), Text(l10n.commonNotesLabel, style: t.titleSmall), const SizedBox(height: 4), Text(p.notes!, style: t.bodyMedium)],
                 ]),
               ),
             ],
             const SizedBox(height: AppSpacing.md),
-            Text('Prescriptions are never edited. A change is issued as a new prescription.', style: t.bodySmall),
+            Text(l10n.rxNeverEditedNote, style: t.bodySmall),
           ]),
         ),
       ]),
@@ -251,7 +256,7 @@ class _CreatePrescriptionScreenState extends ConsumerState<CreatePrescriptionScr
     super.dispose();
   }
 
-  Future<void> _save() async {
+  Future<void> _save(AppLocalizations l10n) async {
     if (!_form.currentState!.validate()) return;
     try {
       final p = await ref.read(prescriptionRepositoryProvider).create(
@@ -264,7 +269,7 @@ class _CreatePrescriptionScreenState extends ConsumerState<CreatePrescriptionScr
           );
       ref.invalidate(prescriptionsProvider);
       if (!mounted) return;
-      showToast(context, 'Prescription ${p.code} created');
+      showToast(context, l10n.rxCreatedToast(p.code));
       context.pop();
     } on Failure catch (e) {
       if (mounted) showFailure(context, e);
@@ -273,53 +278,54 @@ class _CreatePrescriptionScreenState extends ConsumerState<CreatePrescriptionScr
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final t = Theme.of(context).textTheme;
     final now = DateTime.now();
     return AppPage(
-      title: 'New Prescription',
+      title: l10n.doctorNewPrescriptionButton,
       body: PageBody(maxWidth: 760, children: [
         Form(
           key: _form,
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            DateTimeField(label: 'Prescription date', value: _date, onChanged: (d) => setState(() => _date = d), validator: (d) => Validators.notFuture(d, 'Prescription date')),
-            const SectionHeader('Medicines'),
+            DateTimeField(label: l10n.rxPrescriptionDateLabel, value: _date, onChanged: (d) => setState(() => _date = d), validator: (d) => Validators.notFuture(l10n, d, l10n.rxPrescriptionDateLabel)),
+            SectionHeader(l10n.rxMedicinesHeader),
             for (var i = 0; i < _medicines.length; i++) ...[
               AppCard(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                   Row(children: [
-                    Expanded(child: Text('Medicine ${i + 1}', style: t.titleSmall)),
+                    Expanded(child: Text(l10n.rxMedicineNLabel(i + 1), style: t.titleSmall)),
                     if (_medicines.length > 1)
                       IconButton(
-                        tooltip: 'Remove medicine',
+                        tooltip: l10n.rxRemoveMedicineTooltip,
                         icon: const Icon(Icons.delete_outline),
                         onPressed: () => setState(() => _medicines.removeAt(i).dispose()),
                       ),
                   ]),
                   const SizedBox(height: AppSpacing.sm),
-                  AppTextField(label: 'Medicine', controller: _medicines[i].medicine, validator: (v) => Validators.required(v, 'Medicine')),
+                  AppTextField(label: l10n.rxMedicineLabel, controller: _medicines[i].medicine, validator: (v) => Validators.required(l10n, v, l10n.rxMedicineLabel)),
                   Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Expanded(child: AppTextField(label: 'Dosage', hint: 'e.g. 500 mg', controller: _medicines[i].dosage, validator: (v) => Validators.required(v, 'Dosage'))),
+                    Expanded(child: AppTextField(label: l10n.rxDosageLabel, hint: l10n.rxDosageHint, controller: _medicines[i].dosage, validator: (v) => Validators.required(l10n, v, l10n.rxDosageLabel))),
                     const SizedBox(width: AppSpacing.md),
-                    Expanded(child: AppTextField(label: 'Frequency', hint: 'e.g. Twice daily', controller: _medicines[i].frequency, validator: (v) => Validators.required(v, 'Frequency'))),
+                    Expanded(child: AppTextField(label: l10n.rxFrequencyLabel, hint: l10n.rxFrequencyHint, controller: _medicines[i].frequency, validator: (v) => Validators.required(l10n, v, l10n.rxFrequencyLabel))),
                   ]),
-                  AppTextField(label: 'Duration', hint: 'e.g. 30 days', controller: _medicines[i].duration, validator: (v) => Validators.required(v, 'Duration')),
-                  AppTextField(label: 'Instructions', hint: 'e.g. After meals', controller: _medicines[i].instructions, optional: true),
+                  AppTextField(label: l10n.rxDurationLabel, hint: l10n.rxDurationHint, controller: _medicines[i].duration, validator: (v) => Validators.required(l10n, v, l10n.rxDurationLabel)),
+                  AppTextField(label: l10n.commonInstructionsLabel, hint: l10n.rxMedicineInstructionsHint, controller: _medicines[i].instructions, optional: true),
                 ]),
               ),
               const SizedBox(height: AppSpacing.md),
             ],
             Align(
               alignment: Alignment.centerLeft,
-              child: TextButton.icon(onPressed: () => setState(() => _medicines.add(_MedicineDraft())), icon: const Icon(Icons.add), label: const Text('Add medicine')),
+              child: TextButton.icon(onPressed: () => setState(() => _medicines.add(_MedicineDraft())), icon: const Icon(Icons.add), label: Text(l10n.rxAddMedicineButton)),
             ),
             const SizedBox(height: AppSpacing.lg),
-            AppTextField(label: 'General instructions', controller: _instructions, optional: true, maxLines: 3, textCapitalization: TextCapitalization.sentences),
-            AppTextField(label: 'Notes', controller: _notes, optional: true, maxLines: 3, textCapitalization: TextCapitalization.sentences),
-            DateTimeField(label: 'Follow-up date', optional: true, value: _followUp, firstDate: now, lastDate: now.add(const Duration(days: 730)), onChanged: (d) => setState(() => _followUp = d)),
+            AppTextField(label: l10n.rxGeneralInstructionsLabel, controller: _instructions, optional: true, maxLines: 3, textCapitalization: TextCapitalization.sentences),
+            AppTextField(label: l10n.commonNotesLabel, controller: _notes, optional: true, maxLines: 3, textCapitalization: TextCapitalization.sentences),
+            DateTimeField(label: l10n.visitFollowUpDateLabel, optional: true, value: _followUp, firstDate: now, lastDate: now.add(const Duration(days: 730)), onChanged: (d) => setState(() => _followUp = d)),
             const SizedBox(height: AppSpacing.sm),
-            BusyButton(label: 'Create prescription', onPressed: _save, expand: true),
+            BusyButton(label: l10n.rxCreateButton, onPressed: () => _save(l10n), expand: true),
             const SizedBox(height: AppSpacing.md),
-            Text('The patient is notified. Earlier prescriptions stay unchanged.', style: t.bodySmall),
+            Text(l10n.rxPatientNotifiedNote, style: t.bodySmall),
           ]),
         ),
       ]),

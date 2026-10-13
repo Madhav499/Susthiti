@@ -2,6 +2,8 @@ import json
 import os
 import tempfile
 
+# Set test environment variables BEFORE any app imports to ensure settings use test values
+os.environ["JWT_SECRET"] = "test-jwt-secret-for-running-test-suite-only-never-production"
 os.environ.setdefault("REMINDERS_ENABLED", "false")
 # Tests sign in many times from one client; the limiter has its own test that switches it on.
 os.environ.setdefault("AUTH_RATE_LIMIT_ENABLED", "false")
@@ -13,6 +15,10 @@ os.environ.setdefault("OPENROUTER_API_KEY", "test-key-not-real")
 import httpx  # noqa: E402
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
+
+# Clear the settings cache before importing app modules to force reload with test env vars
+from app.config import get_settings  # noqa: E402
+get_settings.cache_clear()
 
 from app import db as db_module  # noqa: E402
 from app.db import Base  # noqa: E402

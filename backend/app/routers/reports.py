@@ -12,6 +12,7 @@ from ..deps import CurrentUser, authorize_patient, require_clinical, require_rec
 from ..models import AccessRequest, Doctor, Patient, Report
 from ..schemas import REPORT_CATEGORIES, report_out
 from ..services.health_data.report_extraction import extract_from_text, extract_in_background, needs_ai
+from ..services.i18n import role_label
 from ..services.records import audit, next_code, notify
 from ..services.storage import ALLOWED_REPORT_TYPES, get_storage, sha256, sniff_content_type
 
@@ -111,9 +112,11 @@ async def store_report(
             .where(AccessRequest.patient_id == patient.id, AccessRequest.status == "approved")
         )
         for user_id in doctor_users:
-            notify(db, user_id, "new_report", "New report", f"{patient.user.full_name} ({patient.patient_code}) uploaded a new report.", "report", report.id, patient.id)
+            notify(db, user_id, "new_report", "New report", f"{patient.user.full_name} ({patient.patient_code}) uploaded a new report.", "report", report.id, patient.id,
+                   template_params={"patient_name": patient.user.full_name, "patient_code": patient.patient_code}, template_key="new_report_for_doctor")
     else:
-        notify(db, patient.user_id, "new_report", "New report added", f"A new report was added to your record by {current.name} ({current.role}).", "report", report.id, patient.id)
+        notify(db, patient.user_id, "new_report", "New report added", f"A new report was added to your record by {current.name} ({current.role}).", "report", report.id, patient.id,
+               template_params={"actor_name": current.name, "actor_role": role_label(current.role, patient.user.preferred_locale)}, template_key="new_report_for_patient")
     return report
 
 

@@ -47,6 +47,7 @@ import '../../features/visits/visits_screens.dart';
 import '../../features/wearables/devices_screen.dart';
 import '../../features/wearables/health_connect_screen.dart';
 import '../widgets/feedback.dart';
+import '../../l10n/app_localizations.dart';
 import 'role_shell.dart';
 
 const _publicRoutes = {'/login', '/register', '/forgot-password', '/reset-password'};
@@ -145,25 +146,28 @@ final routerProvider = Provider<GoRouter>((ref) {
       page('/p/surgeries', (_) => SurgeryScreen(patientId: pid())),
 
       StatefulShellRoute.indexedStack(
-        builder: (context, state, shell) => RoleShell(shell: shell, header: const BrandMark(size: 30), accountRoute: '/p/profile', links: [
-          const ShellLink('Glucose', Icons.water_drop_outlined, '/p/glucose'),
-          const ShellLink('Food log', Icons.restaurant_outlined, '/p/food'),
-          ShellLink('Prescriptions', Icons.medication_outlined, '/r/${pid()}/prescriptions'),
-          const ShellLink('Appointments', Icons.event_outlined, '/p/appointments'),
-          const ShellLink('Follow-ups', Icons.event_repeat_outlined, '/p/follow-ups'),
-          const ShellLink('Surgeries', Icons.local_hospital_outlined, '/p/surgeries'),
-          ShellLink('Side effects', Icons.healing_outlined, '/r/${pid()}/side-effects'),
-          const ShellLink('History', Icons.timeline_outlined, '/p/timeline'),
-          const ShellLink('Notifications', Icons.notifications_none_outlined, '/p/notifications'),
-          const ShellLink('Settings', Icons.settings_outlined, '/p/settings'),
-        ], destinations: const [
-          ShellDestination('Home', Icons.home_outlined, Icons.home),
-          ShellDestination('Reports', Icons.description_outlined, Icons.description),
-          ShellDestination('Lifestyle', Icons.directions_walk_outlined, Icons.directions_walk),
-          ShellDestination('Diabetes', Icons.fact_check_outlined, Icons.fact_check),
-          ShellDestination('Heart', Icons.favorite_border, Icons.favorite),
-          ShellDestination('Profile', Icons.person_outline, Icons.person),
-        ]),
+        builder: (context, state, shell) {
+          final l10n = AppLocalizations.of(context);
+          return RoleShell(shell: shell, header: const BrandMark(size: 30), accountRoute: '/p/profile', links: [
+            ShellLink(l10n.navGlucose, Icons.water_drop_outlined, '/p/glucose'),
+            ShellLink(l10n.navFoodLog, Icons.restaurant_outlined, '/p/food'),
+            ShellLink(l10n.navPrescriptions, Icons.medication_outlined, '/r/${pid()}/prescriptions'),
+            ShellLink(l10n.navAppointments, Icons.event_outlined, '/p/appointments'),
+            ShellLink(l10n.navFollowUps, Icons.event_repeat_outlined, '/p/follow-ups'),
+            ShellLink(l10n.navSurgeries, Icons.local_hospital_outlined, '/p/surgeries'),
+            ShellLink(l10n.navSideEffects, Icons.healing_outlined, '/r/${pid()}/side-effects'),
+            ShellLink(l10n.navHistory, Icons.timeline_outlined, '/p/timeline'),
+            ShellLink(l10n.navNotifications, Icons.notifications_none_outlined, '/p/notifications'),
+            ShellLink(l10n.navSettings, Icons.settings_outlined, '/p/settings'),
+          ], destinations: [
+            ShellDestination(l10n.navHome, Icons.home_outlined, Icons.home),
+            ShellDestination(l10n.navReports, Icons.description_outlined, Icons.description),
+            ShellDestination(l10n.navLifestyle, Icons.directions_walk_outlined, Icons.directions_walk),
+            ShellDestination(l10n.navDiabetes, Icons.fact_check_outlined, Icons.fact_check),
+            ShellDestination(l10n.navHeart, Icons.favorite_border, Icons.favorite),
+            ShellDestination(l10n.navProfile, Icons.person_outline, Icons.person),
+          ]);
+        },
         branches: [
           StatefulShellBranch(routes: [GoRoute(path: '/p/home', builder: (_, _) => PatientDashboardScreen(patientId: pid()))]),
           StatefulShellBranch(routes: [GoRoute(path: '/p/reports', builder: (_, _) => ReportsScreen(patientId: pid()))]),
@@ -185,15 +189,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       page('/d/patients/:pid/food', (s) => FoodScreen(patientId: s.pathParameters['pid']!, canLog: false)),
 
       StatefulShellRoute.indexedStack(
-        builder: (context, state, shell) => RoleShell(shell: shell, header: const BrandMark(size: 30), accountRoute: '/d/settings', links: const [
-          ShellLink('Add patient', Icons.person_add_alt_outlined, '/d/patients/add'),
-          ShellLink('Notifications', Icons.notifications_none_outlined, '/d/notifications'),
-        ], destinations: const [
-          ShellDestination('Dashboard', Icons.space_dashboard_outlined, Icons.space_dashboard),
-          ShellDestination('Patients', Icons.people_outline, Icons.people),
-          ShellDestination('Requests', Icons.verified_user_outlined, Icons.verified_user),
-          ShellDestination('Account', Icons.manage_accounts_outlined, Icons.manage_accounts),
-        ]),
+        builder: (context, state, shell) {
+          final l10n = AppLocalizations.of(context);
+          return RoleShell(shell: shell, header: const BrandMark(size: 30), accountRoute: '/d/settings', links: [
+            ShellLink(l10n.navAddPatient, Icons.person_add_alt_outlined, '/d/patients/add'),
+            ShellLink(l10n.navNotifications, Icons.notifications_none_outlined, '/d/notifications'),
+          ], destinations: [
+            ShellDestination(l10n.navDashboard, Icons.space_dashboard_outlined, Icons.space_dashboard),
+            ShellDestination(l10n.navPatients, Icons.people_outline, Icons.people),
+            ShellDestination(l10n.navRequests, Icons.verified_user_outlined, Icons.verified_user),
+            ShellDestination(l10n.navAccount, Icons.manage_accounts_outlined, Icons.manage_accounts),
+          ]);
+        },
         branches: [
           StatefulShellBranch(routes: [GoRoute(path: '/d/home', builder: (_, _) => const DoctorDashboardScreen())]),
           StatefulShellBranch(routes: [GoRoute(path: '/d/patients', builder: (_, s) => DoctorPatientsScreen(initialFilter: s.uri.queryParameters['filter'] ?? 'all'))]),
@@ -217,7 +224,21 @@ final routerProvider = Provider<GoRouter>((ref) {
       page('/a/account', (_) => const SettingsScreen()),
 
       StatefulShellRoute.indexedStack(
-        builder: (context, state, shell) => RoleShell(shell: shell, header: const BrandMark(size: 30), accountRoute: '/a/more', links: _adminLinks, destinations: _adminDestinations),
+        builder: (context, state, shell) {
+          final l10n = AppLocalizations.of(context);
+          return RoleShell(shell: shell, header: const BrandMark(size: 30), accountRoute: '/a/more', links: [
+            ShellLink(l10n.navAuditLogs, Icons.receipt_long_outlined, '/a/audit'),
+            ShellLink(l10n.navNotificationDelivery, Icons.notifications_none_outlined, '/a/notifications'),
+            ShellLink(l10n.navSystemSettings, Icons.tune_outlined, '/a/system'),
+            ShellLink(l10n.navAddDoctor, Icons.person_add_alt_outlined, '/a/doctors/new'),
+          ], destinations: [
+            ShellDestination(l10n.navDashboard, Icons.space_dashboard_outlined, Icons.space_dashboard),
+            ShellDestination(l10n.navDoctors, Icons.medical_services_outlined, Icons.medical_services),
+            ShellDestination(l10n.navPatients, Icons.people_outline, Icons.people),
+            ShellDestination(l10n.navAccess, Icons.verified_user_outlined, Icons.verified_user),
+            ShellDestination(l10n.navMore, Icons.more_horiz, Icons.more_horiz),
+          ]);
+        },
         branches: [
           StatefulShellBranch(routes: [GoRoute(path: '/a/home', builder: (_, _) => const AdminDashboardScreen())]),
           StatefulShellBranch(routes: [GoRoute(path: '/a/doctors', builder: (_, _) => const AdminDoctorsScreen())]),
@@ -283,7 +304,7 @@ class _NotFoundScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(),
       body: Center(
-        child: EmptyState(icon: Icons.search_off, title: 'Page not found.', actionLabel: 'Go home', onAction: () => context.go('/')),
+        child: EmptyState(icon: Icons.search_off, title: AppLocalizations.of(context).pageNotFoundTitle, actionLabel: AppLocalizations.of(context).goHomeButton, onAction: () => context.go('/')),
       ),
     );
   }

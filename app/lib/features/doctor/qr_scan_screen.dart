@@ -14,6 +14,7 @@ import '../../data/models/patient.dart';
 import '../../data/models/patient_qr.dart';
 import '../../data/models/user.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../access/access_screens.dart';
 
 /// Doctor scans a patient's QR code (profile_screen.dart's PatientQrCard). Scanning only
@@ -85,8 +86,9 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return AppPage(
-      title: 'Scan Patient QR',
+      title: l10n.qrScanPageTitle,
       body: _found == null
           ? Stack(fit: StackFit.expand, children: [
               MobileScanner(
@@ -94,8 +96,8 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> {
                 onDetect: _onDetect,
                 errorBuilder: (context, error) => EmptyState(
                   icon: Icons.camera_alt_outlined,
-                  title: 'Camera unavailable',
-                  message: 'SUSTHITI needs camera access to scan a QR code. You can still use "Add Patient" to enter the details manually.',
+                  title: l10n.qrCameraUnavailableTitle,
+                  message: l10n.qrCameraUnavailableMessage,
                 ),
               ),
               Positioned(
@@ -107,7 +109,7 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> {
                     decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.55), borderRadius: AppRadius.panelBorder),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-                      child: Text('Point the camera at the patient\'s QR code', style: t.bodyMedium?.copyWith(color: Colors.white), textAlign: TextAlign.center),
+                      child: Text(l10n.qrPointCameraHint, style: t.bodyMedium?.copyWith(color: Colors.white), textAlign: TextAlign.center),
                     ),
                   ),
                 ),
@@ -119,30 +121,30 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> {
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     const IconBadge(Icons.mark_email_read_outlined, tone: StatusTone.positive),
                     const SizedBox(height: AppSpacing.md),
-                    Text('Request sent', style: t.titleLarge),
+                    Text(l10n.qrRequestSentTitle, style: t.titleLarge),
                     const SizedBox(height: AppSpacing.sm),
-                    Text('${_sent!.patientName} (${_sent!.patientCode}) will be asked to approve your request. You will be notified when they respond.', style: t.bodyMedium),
+                    Text(l10n.qrRequestSentMessage(_sent!.patientName, _sent!.patientCode), style: t.bodyMedium),
                     const SizedBox(height: AppSpacing.lg),
                     Wrap(spacing: AppSpacing.sm, children: [
-                      FilledButton(onPressed: () => context.go('/d/requests'), child: const Text('View requests')),
-                      OutlinedButton(onPressed: _scanAgain, child: const Text('Scan another')),
+                      FilledButton(onPressed: () => context.go('/d/requests'), child: Text(l10n.qrViewRequestsButton)),
+                      OutlinedButton(onPressed: _scanAgain, child: Text(l10n.qrScanAnotherButton)),
                     ]),
                   ]),
                 )
               else
                 AppCard(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('Patient identity', style: t.titleMedium),
+                    Text(l10n.qrPatientIdentityHeader, style: t.titleMedium),
                     const SizedBox(height: AppSpacing.md),
-                    KeyValueRow('Name', _found!.fullName),
-                    KeyValueRow('Patient ID', _found!.patientCode),
+                    KeyValueRow(l10n.commonNameLabel, _found!.fullName),
+                    KeyValueRow(l10n.doctorPatientIdLabel, _found!.patientCode),
                     const SizedBox(height: AppSpacing.md),
-                    Text('Confirm this is the right patient before requesting access. They must still approve it.', style: t.bodySmall),
+                    Text(l10n.qrConfirmPatientNote, style: t.bodySmall),
                     if (_error != null) Padding(padding: const EdgeInsets.only(top: AppSpacing.md), child: Text(_error!, style: const TextStyle(color: AppColors.error))),
                     const SizedBox(height: AppSpacing.lg),
                     Wrap(spacing: AppSpacing.sm, children: [
-                      BusyButton(label: 'Request Access', onPressed: _sending ? null : _requestAccess),
-                      OutlinedButton(onPressed: _sending ? null : _scanAgain, child: const Text('Scan again')),
+                      BusyButton(label: l10n.doctorRequestAccessButton, onPressed: _sending ? null : _requestAccess),
+                      OutlinedButton(onPressed: _sending ? null : _scanAgain, child: Text(l10n.qrScanAgainButton)),
                     ]),
                   ]),
                 ),

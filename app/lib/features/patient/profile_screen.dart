@@ -20,6 +20,7 @@ import '../../core/widgets/labels.dart';
 import '../../data/models/patient.dart';
 import '../../data/models/patient_qr.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../authentication/auth_controller.dart';
 import '../notifications/notifications.dart';
 
@@ -34,23 +35,24 @@ class PatientQrCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return AppCard(
       child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
         Row(children: [
           Icon(Icons.qr_code_2, size: 18, color: AppColors.primary),
           const SizedBox(width: AppSpacing.sm),
-          Text('Your QR code', style: t.titleSmall),
+          Text(l10n.profileYourQrCode, style: t.titleSmall),
         ]),
         const SizedBox(height: AppSpacing.md),
         QrImageView(
           data: PatientQrPayload(patientCode: patientCode, fullName: fullName).encode(),
           size: 180,
           backgroundColor: Colors.white,
-          semanticsLabel: 'QR code for Patient ID $patientCode',
+          semanticsLabel: l10n.profileQrSemanticLabel(patientCode),
         ),
         const SizedBox(height: AppSpacing.sm),
         Text(
-          'Show this to a doctor in person so they can request access. It contains no medical information.',
+          l10n.profileQrHelp,
           style: t.bodySmall,
           textAlign: TextAlign.center,
         ),
@@ -96,14 +98,15 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final value = ref.watch(myProfileProvider);
     final t = Theme.of(context).textTheme;
     return AppPage(
-      title: 'Profile',
+      title: l10n.profileTitle,
       large: true,
       actions: [
         const NotificationBell(),
-        IconButton(tooltip: 'Settings', onPressed: () => context.push('/p/settings'), icon: const Icon(Icons.settings_outlined)),
+        IconButton(tooltip: l10n.settingsTitle, onPressed: () => context.push('/p/settings'), icon: const Icon(Icons.settings_outlined)),
       ],
       body: PageBody(
         maxWidth: 720,
@@ -119,7 +122,7 @@ class ProfileScreen extends ConsumerWidget {
                   Positioned(
                     right: -6,
                     bottom: -6,
-                    child: IconButton.filledTonal(tooltip: 'Change photo', iconSize: 16, onPressed: () => _changePhoto(context, ref, p), icon: const Icon(Icons.photo_camera_outlined)),
+                    child: IconButton.filledTonal(tooltip: l10n.profileChangePhotoTooltip, iconSize: 16, onPressed: () => _changePhoto(context, ref, p), icon: const Icon(Icons.photo_camera_outlined)),
                   ),
                 ]),
                 const SizedBox(width: AppSpacing.lg),
@@ -133,31 +136,31 @@ class ProfileScreen extends ConsumerWidget {
               const SizedBox(height: AppSpacing.xl),
               PatientIdTile(p.patientCode),
               const SizedBox(height: AppSpacing.sm),
-              Text('Share your Patient ID only with doctors you trust. They also need your name, and you approve every request.', style: t.bodySmall),
+              Text(l10n.profileShareIdNote, style: t.bodySmall),
               const SizedBox(height: AppSpacing.lg),
               PatientQrCard(patientCode: p.patientCode, fullName: p.fullName),
               const SizedBox(height: AppSpacing.section),
-              SectionHeader('Personal details', action: TextButton.icon(onPressed: () => _edit(context, ref, p), icon: const Icon(Icons.edit_outlined, size: 18), label: const Text('Edit'))),
+              SectionHeader(l10n.profilePersonalDetailsHeader, action: TextButton.icon(onPressed: () => _edit(context, ref, p), icon: const Icon(Icons.edit_outlined, size: 18), label: Text(l10n.commonEdit))),
               AppCard(
                 child: Column(children: [
-                  KeyValueRow('Date of birth', p.dateOfBirth == null ? 'Not set' : Fmt.date(p.dateOfBirth)),
-                  KeyValueRow('Age', p.age == null ? 'Not set' : '${p.age}'),
-                  KeyValueRow('Gender', p.gender ?? 'Not set'),
-                  KeyValueRow('Phone', p.phone ?? 'Not set'),
+                  KeyValueRow(l10n.authDateOfBirth, p.dateOfBirth == null ? l10n.commonNotSet : Fmt.date(p.dateOfBirth)),
+                  KeyValueRow(l10n.commonAgeLabel, p.age == null ? l10n.commonNotSet : '${p.age}'),
+                  KeyValueRow(l10n.authGender, p.gender ?? l10n.commonNotSet),
+                  KeyValueRow(l10n.authPhone, p.phone ?? l10n.commonNotSet),
                 ]),
               ),
               const SizedBox(height: AppSpacing.section),
-              const SectionHeader('Body measurements'),
+              SectionHeader(l10n.doctorBodyMeasurementsHeader),
               BodyMeasurementsCard(body: p.body, patientId: p.id, canEdit: true),
               const SizedBox(height: AppSpacing.section),
-              const SectionHeader('Emergency contact'),
+              SectionHeader(l10n.doctorEmergencyContactLabel),
               AppCard(
                 child: p.emergencyContact.isEmpty
-                    ? Text('No emergency contact added.', style: t.bodyMedium?.copyWith(color: AppColors.textSecondary))
+                    ? Text(l10n.profileNoEmergencyContact, style: t.bodyMedium?.copyWith(color: AppColors.textSecondary))
                     : Column(children: [
-                        KeyValueRow('Name', p.emergencyContact.name ?? '—'),
-                        KeyValueRow('Relationship', p.emergencyContact.relationship ?? '—'),
-                        KeyValueRow('Phone', p.emergencyContact.phone ?? '—'),
+                        KeyValueRow(l10n.commonNameLabel, p.emergencyContact.name ?? '—'),
+                        KeyValueRow(l10n.commonRelationshipLabel, p.emergencyContact.relationship ?? '—'),
+                        KeyValueRow(l10n.authPhone, p.emergencyContact.phone ?? '—'),
                       ]),
               ),
               const SizedBox(height: AppSpacing.section),
@@ -166,17 +169,17 @@ class ProfileScreen extends ConsumerWidget {
                 child: Column(children: [
                   ListTile(
                     leading: const Icon(Icons.monitor_heart_outlined, color: AppColors.primary),
-                    title: const Text('Health profile'),
-                    subtitle: const Text('Height, weight, medical history, habits and symptoms'),
+                    title: Text(l10n.profileHealthProfileLabel),
+                    subtitle: Text(l10n.profileHealthProfileSubtitle),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => context.push('/r/${p.id}/health-profile'),
                   ),
                   const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
-                  ListTile(leading: const Icon(Icons.verified_user_outlined, color: AppColors.primary), title: const Text('Doctor access'), trailing: const Icon(Icons.chevron_right), onTap: () => context.push('/p/access')),
+                  ListTile(leading: const Icon(Icons.verified_user_outlined, color: AppColors.primary), title: Text(l10n.settingsDoctorAccess), trailing: const Icon(Icons.chevron_right), onTap: () => context.push('/p/access')),
                   const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
-                  ListTile(leading: const Icon(Icons.watch_outlined, color: AppColors.primary), title: const Text('Connected devices'), trailing: const Icon(Icons.chevron_right), onTap: () => context.push('/p/devices')),
+                  ListTile(leading: const Icon(Icons.watch_outlined, color: AppColors.primary), title: Text(l10n.settingsConnectedDevices), trailing: const Icon(Icons.chevron_right), onTap: () => context.push('/p/devices')),
                   const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
-                  ListTile(leading: const Icon(Icons.settings_outlined, color: AppColors.primary), title: const Text('Settings'), trailing: const Icon(Icons.chevron_right), onTap: () => context.push('/p/settings')),
+                  ListTile(leading: const Icon(Icons.settings_outlined, color: AppColors.primary), title: Text(l10n.settingsTitle), trailing: const Icon(Icons.chevron_right), onTap: () => context.push('/p/settings')),
                 ]),
               ),
             ]),
@@ -187,18 +190,19 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Future<void> _changePhoto(BuildContext context, WidgetRef ref, PatientProfile p) async {
+    final l10n = AppLocalizations.of(context);
     try {
-      final file = await FilePicker.pickFile(type: FileType.custom, allowedExtensions: const ['jpg', 'jpeg', 'png'], dialogTitle: 'Choose a photo');
+      final file = await FilePicker.pickFile(type: FileType.custom, allowedExtensions: const ['jpg', 'jpeg', 'png'], dialogTitle: l10n.profileChoosePhotoDialogTitle);
       if (file == null) return;
       final bytes = await file.readAsBytes();
       if (bytes.length > 5 * 1024 * 1024) {
-        if (context.mounted) showToast(context, 'Photo must be 5 MB or smaller.', error: true);
+        if (context.mounted) showToast(context, l10n.profilePhotoTooLargeError, error: true);
         return;
       }
       await ref.read(patientRepositoryProvider).uploadPhoto(bytes, file.name);
       ref.invalidate(patientPhotoProvider(p.id));
       ref.invalidate(myProfileProvider);
-      if (context.mounted) showToast(context, 'Photo updated');
+      if (context.mounted) showToast(context, l10n.profilePhotoUpdatedToast);
     } catch (e) {
       if (context.mounted) showFailure(context, e);
     }
@@ -208,7 +212,7 @@ class ProfileScreen extends ConsumerWidget {
     final saved = await showModalBottomSheet<bool>(context: context, isScrollControlled: true, builder: (_) => _EditProfileSheet(profile: p));
     if (saved == true) {
       ref.invalidate(myProfileProvider);
-      if (context.mounted) showToast(context, 'Profile updated');
+      if (context.mounted) showToast(context, AppLocalizations.of(context).profileUpdatedToast);
     }
   }
 }
@@ -262,21 +266,23 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SheetForm(
-      title: 'Edit profile',
+      title: l10n.settingsEditProfile,
       form: _form,
       children: [
-        AppTextField(label: 'Full name', controller: _name, validator: (v) => Validators.required(v, 'Full name'), textCapitalization: TextCapitalization.words),
-        DateTimeField(label: 'Date of birth', value: _dob, onChanged: (d) => setState(() => _dob = d), validator: (d) => Validators.notFuture(d, 'Date of birth')),
-        ChoiceField<String>(label: 'Gender', options: const ['Male', 'Female'], value: _gender, labelOf: (g) => g, onChanged: (g) => setState(() => _gender = g), helper: 'Used as a diabetes model input.'),
-        AppTextField(label: 'Phone', controller: _phone, optional: true, keyboardType: TextInputType.phone, validator: Validators.optionalPhone),
+        AppTextField(label: l10n.authFullName, controller: _name, validator: (v) => Validators.required(l10n, v, l10n.authFullName), textCapitalization: TextCapitalization.words),
+        DateTimeField(label: l10n.authDateOfBirth, value: _dob, onChanged: (d) => setState(() => _dob = d), validator: (d) => Validators.notFuture(l10n, d, l10n.authDateOfBirth)),
+        // Options are sent verbatim as the diabetes model's gender input -- not translated, same as any other API value.
+        ChoiceField<String>(label: l10n.authGender, options: const ['Male', 'Female'], value: _gender, labelOf: (g) => g == 'Male' ? l10n.genderMale : l10n.genderFemale, onChanged: (g) => setState(() => _gender = g), helper: l10n.profileGenderModelInputHelper, requiredMessage: l10n.choiceRequiredMessage),
+        AppTextField(label: l10n.authPhone, controller: _phone, optional: true, keyboardType: TextInputType.phone, validator: (v) => Validators.optionalPhone(l10n, v)),
         const SizedBox(height: AppSpacing.sm),
-        Text('Emergency contact', style: Theme.of(context).textTheme.titleSmall),
+        Text(l10n.doctorEmergencyContactLabel, style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: AppSpacing.md),
-        AppTextField(label: 'Name', controller: _ecName, optional: true, textCapitalization: TextCapitalization.words),
-        AppTextField(label: 'Relationship', controller: _ecRelationship, optional: true),
-        AppTextField(label: 'Phone', controller: _ecPhone, optional: true, keyboardType: TextInputType.phone, validator: Validators.optionalPhone),
-        BusyButton(label: 'Save', onPressed: _save, expand: true),
+        AppTextField(label: l10n.commonNameLabel, controller: _ecName, optional: true, textCapitalization: TextCapitalization.words),
+        AppTextField(label: l10n.commonRelationshipLabel, controller: _ecRelationship, optional: true),
+        AppTextField(label: l10n.authPhone, controller: _ecPhone, optional: true, keyboardType: TextInputType.phone, validator: (v) => Validators.optionalPhone(l10n, v)),
+        BusyButton(label: l10n.commonSave, onPressed: _save, expand: true),
       ],
     );
   }

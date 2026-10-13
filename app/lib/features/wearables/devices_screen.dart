@@ -11,6 +11,7 @@ import '../../core/widgets/labels.dart';
 import '../../data/models/health.dart';
 import '../../data/models/tracking.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import 'health_connection.dart';
 
 export 'health_connection.dart' show devicesProvider, wearableProvidersProvider;
@@ -24,13 +25,14 @@ class DevicesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final devices = ref.watch(devicesProvider);
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     void refresh() {
       ref.invalidate(devicesProvider);
       ref.invalidate(wearableProvidersProvider);
     }
 
     return AppPage(
-      title: 'Connected Devices',
+      title: l10n.wearDevicesPageTitle,
       body: PageBody(maxWidth: 760, onRefresh: () async => refresh(), children: [
         AsyncBody(
           value: devices,
@@ -42,13 +44,13 @@ class DevicesScreen extends ConsumerWidget {
             return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               HealthConnectionCard(devices: items, onChanged: refresh, showManage: false),
               const SizedBox(height: AppSpacing.section),
-              const SectionHeader('Health data sources', subtitle: 'Synced data is stored in your SUSTHITI record, so it is the same on your phone, tablet and the web.'),
+              SectionHeader(l10n.wearHealthSourcesHeader, subtitle: l10n.wearHealthSourcesSubtitle),
               if (health.isEmpty && demo.isEmpty)
                 AppCard(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('No health device connected.', style: t.titleSmall),
+                    Text(l10n.wearNoDeviceTitle, style: t.titleSmall),
                     const SizedBox(height: 4),
-                    Text('Connect a supported health platform to automatically sync your lifestyle data.', style: t.bodySmall),
+                    Text(l10n.wearNoDeviceBody, style: t.bodySmall),
                   ]),
                 )
               else
@@ -56,11 +58,7 @@ class DevicesScreen extends ConsumerWidget {
               const SizedBox(height: AppSpacing.section),
               _DemoSection(connected: demo.isNotEmpty, onChanged: refresh),
               const SizedBox(height: AppSpacing.md),
-              Text(
-                'Disconnecting stops new data from syncing. Data already synced stays in your history. '
-                'To change what SUSTHITI may read, use Health Connect (Android) or Settings, then Health (iPhone).',
-                style: t.bodySmall,
-              ),
+              Text(l10n.wearDisconnectNote, style: t.bodySmall),
             ]);
           },
         ),
@@ -83,30 +81,32 @@ class _ConnectedSourceTileState extends ConsumerState<ConnectedSourceTile> {
   bool _syncing = false;
 
   Future<void> _sync() async {
+    final l10n = AppLocalizations.of(context);
     setState(() => _syncing = true);
     try {
       final outcome = await ref.read(wearableServiceProvider).sync(widget.device);
       widget.onChanged();
-      if (mounted && !outcome.device.syncFailed) showToast(context, outcome.upToDate ? 'Already up to date' : 'Synced just now');
+      if (mounted && !outcome.device.syncFailed) showToast(context, outcome.upToDate ? l10n.lifestyleAlreadyUpToDateToast : l10n.lifestyleSyncedJustNowToast);
     } catch (e) {
-      if (mounted) showToast(context, "Sync didn't complete. Check your connection and try again.", error: true);
+      if (mounted) showToast(context, l10n.lifestyleSyncFailedToast, error: true);
     } finally {
       if (mounted) setState(() => _syncing = false);
     }
   }
 
   Future<void> _disconnect() async {
+    final l10n = AppLocalizations.of(context);
     final ok = await confirmAction(
       context,
-      title: 'Disconnect health data?',
-      message: 'SUSTHITI will stop syncing new health data from this source.\n\nPreviously synchronized records will remain available according to your data-retention settings.',
-      confirmLabel: 'Disconnect',
+      title: l10n.wearDisconnectConfirmTitle,
+      message: l10n.wearDisconnectConfirmMessage,
+      confirmLabel: l10n.wearDisconnectButton,
     );
     if (!ok) return;
     try {
       await ref.read(wearableServiceProvider).disconnect(widget.device);
       widget.onChanged();
-      if (mounted) showToast(context, 'Disconnected. Your synced history is kept.');
+      if (mounted) showToast(context, l10n.wearDisconnectedToast);
     } catch (e) {
       if (mounted) showFailure(context, e);
     }
@@ -115,9 +115,10 @@ class _ConnectedSourceTileState extends ConsumerState<ConnectedSourceTile> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final d = widget.device;
     final canSync = ref.read(wearableServiceProvider).canSync(d);
-    final from = switch (d.platform) { 'android' => 'Android phone', 'ios' => 'iPhone', _ => null };
+    final from = switch (d.platform) { 'android' => l10n.wearAndroidPhoneLabel, 'ios' => l10n.wearIphoneLabel, _ => null };
     return AppCard(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
@@ -128,14 +129,14 @@ class _ConnectedSourceTileState extends ConsumerState<ConnectedSourceTile> {
               Wrap(spacing: 6, crossAxisAlignment: WrapCrossAlignment.center, children: [
                 Text(d.deviceName, style: t.titleSmall),
                 if (d.isDemo) const DemoBadge(),
-                StatusPill(d.syncFailed ? 'Sync unavailable' : 'Connected', tone: d.syncFailed ? StatusTone.attention : StatusTone.positive),
+                StatusPill(d.syncFailed ? l10n.wearSyncUnavailablePill : l10n.wearConnectedPill, tone: d.syncFailed ? StatusTone.attention : StatusTone.positive),
               ]),
               const SizedBox(height: 2),
               Text(
                 [
-                  lastSyncedText(d.lastSyncedAt),
-                  if (from != null) 'from your $from',
-                  if (d.connectedAt != null) 'connected ${Fmt.date(d.connectedAt)}',
+                  lastSyncedText(l10n, d.lastSyncedAt),
+                  if (from != null) l10n.wearFromPlatformFragment(from),
+                  if (d.connectedAt != null) l10n.wearConnectedDateNote(Fmt.date(d.connectedAt)),
                 ].join(' · '),
                 style: t.bodySmall,
               ),
@@ -147,7 +148,7 @@ class _ConnectedSourceTileState extends ConsumerState<ConnectedSourceTile> {
           Text(d.lastError!, style: t.bodySmall?.copyWith(color: AppColors.warningText)),
         ],
         const SizedBox(height: AppSpacing.md),
-        Text('Permissions', style: t.labelMedium),
+        Text(l10n.wearPermissionsLabel, style: t.labelMedium),
         const SizedBox(height: AppSpacing.xs),
         Wrap(spacing: AppSpacing.xs, runSpacing: AppSpacing.xs, children: [
           for (final m in d.supportedMetrics)
@@ -158,16 +159,16 @@ class _ConnectedSourceTileState extends ConsumerState<ConnectedSourceTile> {
           if (canSync)
             _syncing
                 ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)))
-                : OutlinedButton.icon(onPressed: _sync, icon: const Icon(Icons.sync, size: 18), label: Text(d.syncFailed ? 'Retry' : 'Sync Now'))
+                : OutlinedButton.icon(onPressed: _sync, icon: const Icon(Icons.sync, size: 18), label: Text(d.syncFailed ? l10n.wearRetryButton : l10n.wearSyncNowButton))
           else if (!d.isDemo)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-              child: Text('Syncs from your ${from ?? 'phone'}. Open SUSTHITI there to sync.', style: t.bodySmall),
+              child: Text(l10n.wearSyncsFromPhoneNote(from ?? l10n.wearGenericPhoneLabel), style: t.bodySmall),
             ),
           TextButton.icon(
             onPressed: _disconnect,
             icon: const Icon(Icons.link_off, size: 18),
-            label: const Text('Disconnect'),
+            label: Text(l10n.wearDisconnectButton),
             style: TextButton.styleFrom(foregroundColor: AppColors.errorText),
           ),
         ]),
@@ -183,8 +184,9 @@ class _PermissionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Semantics(
-      label: '$label: ${granted ? 'shared' : 'not shared'}',
+      label: '$label: ${granted ? l10n.wearPermissionShared : l10n.wearPermissionNotShared}',
       excludeSemantics: true,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -217,14 +219,15 @@ class _DemoSectionState extends ConsumerState<_DemoSection> {
     final providers = ref.watch(wearableProvidersProvider).value ?? const [];
     if (widget.connected || !providers.any((p) => p.isDemo)) return const SizedBox.shrink();
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return AppCard(
       child: Row(children: [
         const IconBadge(Icons.science_outlined, tone: StatusTone.attention),
         const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [Text('Try with DEMO data', style: t.titleSmall), const SizedBox(width: 6), const DemoBadge()]),
-            Text('Development only. Adds clearly labelled demo values; never real health data.', style: t.bodySmall),
+            Row(children: [Text(l10n.wearDemoTryTitle, style: t.titleSmall), const SizedBox(width: 6), const DemoBadge()]),
+            Text(l10n.wearDemoNote, style: t.bodySmall),
           ]),
         ),
         OutlinedButton(
@@ -241,7 +244,7 @@ class _DemoSectionState extends ConsumerState<_DemoSection> {
                     if (mounted) setState(() => _busy = false);
                   }
                 },
-          child: const Text('Add'),
+          child: Text(l10n.commonAdd),
         ),
       ]),
     );

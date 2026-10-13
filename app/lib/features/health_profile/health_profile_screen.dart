@@ -10,6 +10,7 @@ import '../../core/widgets/feedback.dart';
 import '../../data/models/health_data.dart';
 import '../../data/models/user.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../authentication/auth_controller.dart';
 import '../diabetes/diabetes_providers.dart';
 import '../patient/patient_sync.dart';
@@ -26,7 +27,7 @@ class HealthProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final value = ref.watch(healthProfileProvider(patientId));
     return AppPage(
-      title: 'Health profile',
+      title: AppLocalizations.of(context).profileHealthProfileLabel,
       body: AsyncBody(
         value: value,
         onRetry: () => ref.invalidate(healthProfileProvider(patientId)),
@@ -58,14 +59,14 @@ class _HealthProfileFormState extends ConsumerState<_HealthProfileForm> {
   }
 
   Future<void> _save() async {
-    final result = _answers.changes();
+    final result = _answers.changes(AppLocalizations.of(context));
     setState(() => _error = result.error);
     if (result.error != null || result.values.isEmpty) return;
     setState(() => _saving = true);
     try {
       await ref.read(patientRepositoryProvider).updateHealthProfile(widget.patientId, result.values);
       healthDataChanged(ref, widget.patientId);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Health profile saved.')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).healthProfileSavedToast)));
     } on Failure catch (e) {
       if (mounted) setState(() => _error = e.message);
     } finally {
@@ -75,6 +76,7 @@ class _HealthProfileFormState extends ConsumerState<_HealthProfileForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final profile = widget.profile;
     final role = ref.watch(currentUserProvider)?.role;
     final canEdit = role == UserRole.patient || role == UserRole.doctor;
@@ -84,14 +86,13 @@ class _HealthProfileFormState extends ConsumerState<_HealthProfileForm> {
     bool canEditField(HealthProfileField f) => canEdit && !(f.doctorOnly && role == UserRole.patient);
     return PageBody(maxWidth: 760, children: [
       Text(
-        'SUSTHITI keeps these answers once and uses them wherever they are needed, including your future diabetes risk estimate. '
-        'Answer what you know; "Not sure" is always fine and is never treated as "No".',
+        l10n.healthProfileIntroText,
         style: Theme.of(context).textTheme.bodyMedium,
       ),
       const SizedBox(height: AppSpacing.lg),
       for (final group in profile.groups)
         if (profile.fieldsIn(group.value).isNotEmpty) ...[
-          SectionHeader(group.label, subtitle: profileGroupIntro[group.value]),
+          SectionHeader(group.label, subtitle: profileGroupIntro(l10n)[group.value]),
           AppCard(
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               for (final (i, field) in profile.fieldsIn(group.value).indexed) ...[
@@ -110,7 +111,7 @@ class _HealthProfileFormState extends ConsumerState<_HealthProfileForm> {
       if (canEdit)
         FilledButton(
           onPressed: _saving ? null : _save,
-          child: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Save health profile'),
+          child: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : Text(l10n.saveHealthProfileButton),
         ),
       const Disclaimer(),
     ]);

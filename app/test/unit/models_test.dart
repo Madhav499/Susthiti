@@ -4,8 +4,10 @@ import 'package:susthiti/data/models/ai_summary.dart';
 import 'package:susthiti/data/models/care.dart';
 import 'package:susthiti/data/models/diabetes.dart';
 import 'package:susthiti/data/models/patient.dart';
+import 'package:susthiti/l10n/app_localizations_en.dart';
 
 void main() {
+  final l10n = AppLocalizationsEn();
   group('DiabetesAssessment', () {
     Map<String, dynamic> json(String prediction) => {
           'id': 'a1', 'assessment_code': 'DA-000001', 'patient_id': 'p1', 'assessed_at': '2026-09-20T10:00:00Z',
@@ -70,29 +72,29 @@ void main() {
 
   group('validators', () {
     test('Patient ID format', () {
-      expect(Validators.patientId('SUS-P-8A42F1'), isNull);
-      expect(Validators.patientId('sus-p-8a42f1'), isNull);
-      expect(Validators.patientId('SUS-D-8A42F1'), isNotNull);
-      expect(Validators.patientId(''), isNotNull);
+      expect(Validators.patientId(l10n, 'SUS-P-8A42F1'), isNull);
+      expect(Validators.patientId(l10n, 'sus-p-8a42f1'), isNull);
+      expect(Validators.patientId(l10n, 'SUS-D-8A42F1'), isNotNull);
+      expect(Validators.patientId(l10n, ''), isNotNull);
     });
 
     test('glucose ranges depend on unit', () {
-      expect(Validators.glucose('110', 'mg/dL'), isNull);
-      expect(Validators.glucose('700', 'mg/dL'), isNotNull);
-      expect(Validators.glucose('6.1', 'mmol/L'), isNull);
-      expect(Validators.glucose('110', 'mmol/L'), isNotNull);
+      expect(Validators.glucose(l10n, '110', 'mg/dL'), isNull);
+      expect(Validators.glucose(l10n, '700', 'mg/dL'), isNotNull);
+      expect(Validators.glucose(l10n, '6.1', 'mmol/L'), isNull);
+      expect(Validators.glucose(l10n, '110', 'mmol/L'), isNotNull);
     });
 
     test('password strength matches the backend rule', () {
-      expect(Validators.password('short1'), isNotNull);
-      expect(Validators.password('lettersonly'), isNotNull);
-      expect(Validators.password('Demo@12345'), isNull);
+      expect(Validators.password(l10n, 'short1'), isNotNull);
+      expect(Validators.password(l10n, 'lettersonly'), isNotNull);
+      expect(Validators.password(l10n, 'Demo@12345'), isNull);
     });
 
     test('dates cannot be in the future', () {
-      expect(Validators.notFuture(DateTime.now().add(const Duration(days: 1))), isNotNull);
-      expect(Validators.notFuture(DateTime.now()), isNull);
-      expect(Validators.notFuture(null), isNotNull);
+      expect(Validators.notFuture(l10n, DateTime.now().add(const Duration(days: 1))), isNotNull);
+      expect(Validators.notFuture(l10n, DateTime.now()), isNull);
+      expect(Validators.notFuture(l10n, null), isNotNull);
     });
   });
 }

@@ -9,6 +9,7 @@ import '../../core/widgets/feedback.dart';
 import '../../data/models/diabetes.dart';
 import '../../data/models/tracking.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../ai/ai_summary_section.dart';
 import 'assessment_widgets.dart';
 import 'diabetes_providers.dart';
@@ -21,9 +22,12 @@ class AssessmentDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final value = ref.watch(assessmentProvider(assessmentId));
     final t = Theme.of(context).textTheme;
     return AppPage(
+      // ScreeningWording's clinical headline/disclaimer stay English: a retired, read-only
+      // model whose wording is also asserted byte-for-byte in models_test.dart.
       title: ScreeningWording.resultTitle,
       body: AsyncBody(
         value: value,
@@ -37,21 +41,21 @@ class AssessmentDetailScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.lg),
           AppCard(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Record', style: t.titleMedium),
+              Text(l10n.commonRecordLabel, style: t.titleMedium),
               const SizedBox(height: AppSpacing.sm),
-              KeyValueRow('Assessment ID', a.assessmentCode),
-              KeyValueRow('Date', Fmt.date(a.assessedAt)),
-              KeyValueRow('Time', Fmt.time(a.assessedAt)),
-              if (a.modelName != null) KeyValueRow('Model', a.modelName!),
-              KeyValueRow('Model version', a.modelVersion),
-              if (a.performedByRole != null) KeyValueRow('Entered by', Fmt.titleCase(a.performedByRole!)),
+              KeyValueRow(l10n.assessmentIdLabel, a.assessmentCode),
+              KeyValueRow(l10n.commonDateColumnLabel, Fmt.date(a.assessedAt)),
+              KeyValueRow(l10n.commonTimeLabel, Fmt.time(a.assessedAt)),
+              if (a.modelName != null) KeyValueRow(l10n.commonModelLabel, a.modelName!),
+              KeyValueRow(l10n.commonModelVersionLabel, a.modelVersion),
+              if (a.performedByRole != null) KeyValueRow(l10n.commonEnteredByLabel, Fmt.titleCase(a.performedByRole!)),
             ]),
           ),
           const SizedBox(height: AppSpacing.lg),
           AppCard(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Model inputs', style: t.titleMedium),
-              Text('All 16 answers exactly as sent to the earlier model.', style: t.bodySmall),
+              Text(l10n.modelInputsHeader, style: t.titleMedium),
+              Text(l10n.sixteenAnswersNote, style: t.bodySmall),
               const SizedBox(height: AppSpacing.sm),
               for (final e in a.inputs.entries) KeyValueRow(e.key, '${e.value ?? '—'}'),
             ]),
@@ -60,12 +64,12 @@ class AssessmentDetailScreen extends ConsumerWidget {
           _SnapshotCard(snapshot: a.lifestyleSnapshot),
           const SizedBox(height: AppSpacing.lg),
           AiSummarySection(
-            title: 'AI Interpretation',
+            title: l10n.aiInterpretationTitle,
             value: AsyncData(a.interpretation),
-            emptyMessage: 'Combine this assessment with your recent lifestyle and glucose data for a calm, forward-looking explanation. This is an AI interpretation, not a new prediction.',
-            generateLabel: 'Generate interpretation',
-            loadingMessage: 'Analyzing lifestyle patterns...',
-            failureReassurance: 'Your assessment result is still saved and unchanged.',
+            emptyMessage: l10n.aiInterpretationEmptyMessage,
+            generateLabel: l10n.generateInterpretationButton,
+            loadingMessage: l10n.analyzingLifestylePatternsMessage,
+            failureReassurance: l10n.assessmentResultSafeMessage,
             onGenerate: () => ref.read(aiRepositoryProvider).lifestyle.interpretAssessment(a.id),
             onGenerated: () => ref.invalidate(assessmentProvider(assessmentId)),
           ),
@@ -83,23 +87,24 @@ class _SnapshotCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final rows = <Widget>[];
     for (final metric in LifestyleMetricType.values) {
       final m = snapshot[metric.apiValue];
       if (m is Map && m['average_7d'] != null) {
-        rows.add(KeyValueRow(metric.label, '${metric.format((m['average_7d'] as num).toDouble())} average (${m['days_recorded_7d']} days)'));
+        rows.add(KeyValueRow(metric.label, l10n.metricAverageDays(metric.format((m['average_7d'] as num).toDouble()), '${m['days_recorded_7d']}')));
       }
     }
     final g = snapshot['glucose'];
-    if (g is Map && g['recent_average_7d'] != null) rows.add(KeyValueRow('Glucose', '${g['recent_average_7d']} mg/dL average (${g['readings_7d']} readings)'));
+    if (g is Map && g['recent_average_7d'] != null) rows.add(KeyValueRow(l10n.navGlucose, l10n.glucoseAverageReadings('${g['recent_average_7d']}', '${g['readings_7d']}')));
     final f = snapshot['food'];
-    if (f is Map) rows.add(KeyValueRow('Food log', '${f['entries_7d']} entries over ${f['days_logged_7d']} days'));
+    if (f is Map) rows.add(KeyValueRow(l10n.navFoodLog, l10n.foodEntriesOverDays('${f['entries_7d']}', '${f['days_logged_7d']}')));
     return AppCard(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Lifestyle snapshot', style: t.titleMedium),
-        Text('Recorded data from the 7 days before this assessment.', style: t.bodySmall),
+        Text(l10n.lifestyleSnapshotHeader, style: t.titleMedium),
+        Text(l10n.last7DaysBeforeAssessmentNote, style: t.bodySmall),
         const SizedBox(height: AppSpacing.sm),
-        if (rows.isEmpty) Text('No lifestyle data was recorded at the time.', style: t.bodyMedium) else ...rows,
+        if (rows.isEmpty) Text(l10n.noLifestyleDataAtTime, style: t.bodyMedium) else ...rows,
       ]),
     );
   }

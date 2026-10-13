@@ -4,14 +4,15 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/utils/formatters.dart';
 import '../../data/models/health_data.dart';
+import '../../l10n/app_localizations.dart';
 
-const profileGroupIntro = {
-  'body': 'Used to calculate BMI and for health risk estimates.',
-  'medical_history': 'Conditions a doctor has diagnosed. Choose "Not sure" if you don\'t know.',
-  'family_history': 'Your parents, brothers and sisters.',
-  'habits': 'Your usual habits. Physical activity is taken from your phone\'s step count when enough is recorded.',
-  'symptoms': 'In the last few weeks, have you noticed any of these? Answers are used for 90 days.',
-};
+Map<String, String> profileGroupIntro(AppLocalizations l10n) => {
+      'body': l10n.profileIntroBody,
+      'medical_history': l10n.profileIntroMedicalHistory,
+      'family_history': l10n.profileIntroFamilyHistory,
+      'habits': l10n.profileIntroHabits,
+      'symptoms': l10n.profileIntroSymptoms,
+    };
 
 /// Answers being edited on a screen: choices and yes/no answers, and the number fields' text.
 /// [changes] turns them into what to save: field -> value (null = "not sure").
@@ -28,7 +29,7 @@ class ProfileAnswers {
 
   /// Every answer shown, re-confirmed ([all]) or only the ones that changed. Returns an error
   /// message instead when a number is out of range.
-  ({Map<String, Object?> values, String? error}) changes({bool all = false, Iterable<String>? only}) {
+  ({Map<String, Object?> values, String? error}) changes(AppLocalizations l10n, {bool all = false, Iterable<String>? only}) {
     final keys = only?.toSet();
     final out = <String, Object?>{};
     for (final f in profile.fields) {
@@ -42,7 +43,7 @@ class ProfileAnswers {
         }
         final number = double.tryParse(text);
         if (number == null || (f.min != null && number < f.min!) || (f.max != null && number > f.max!)) {
-          return (values: const {}, error: '${f.label} must be a number between ${f.min?.toStringAsFixed(0)} and ${f.max?.toStringAsFixed(0)} ${f.unit ?? ''}.');
+          return (values: const {}, error: l10n.numberBetweenError(f.label, f.min?.toStringAsFixed(0) ?? '', f.max?.toStringAsFixed(0) ?? '', f.unit ?? ''));
         }
         final saved = f.value is num ? (f.value as num).toDouble() : null;
         if (all || number != saved || f.needsUpdate) out[f.key] = number;
@@ -55,7 +56,7 @@ class ProfileAnswers {
           continue;
         }
         String? error;
-        final parsed = _parseList(text, f.label, onError: (m) => error = m);
+        final parsed = _parseList(l10n, text, f.label, onError: (m) => error = m);
         if (error != null) return (values: const {}, error: error);
         final original = f.value is List ? List<String>.from(f.value as List) : const <String>[];
         final unchanged = parsed.length == original.length && !List.generate(parsed.length, (i) => parsed[i] != original[i]).contains(true);
@@ -94,19 +95,19 @@ class ProfileAnswers {
 
   /// Splits on commas and newlines, trims each entry, drops empties and case-insensitive
   /// duplicates — mirrors the backend's own cleanup in `profile_fields.py`'s `ProfileField.validate`.
-  static List<String> _parseList(String text, String label, {required void Function(String) onError}) {
+  static List<String> _parseList(AppLocalizations l10n, String text, String label, {required void Function(String) onError}) {
     final seen = <String>[];
     for (final raw in text.split(RegExp(r'[,\n]'))) {
       final cleaned = raw.trim().replaceAll(RegExp(r'\s+'), ' ');
       if (cleaned.isEmpty) continue;
       if (cleaned.length > 200) {
-        onError('$label: each item must be 200 characters or fewer.');
+        onError(l10n.listItemTooLongError(label));
         return const [];
       }
       if (!seen.any((s) => s.toLowerCase() == cleaned.toLowerCase())) seen.add(cleaned);
     }
     if (seen.length > 20) {
-      onError('$label: list up to 20 items.');
+      onError(l10n.listTooManyItemsError(label));
       return const [];
     }
     return seen;
@@ -127,12 +128,13 @@ class ProfileFieldEditor extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final edited = answers.edits.containsKey(field.key);
     final current = edited ? answers.edits[field.key] : field.value;
     final hasAnswer = edited || field.answered;
     final caption = field.answered
-        ? 'Answered ${Fmt.date(field.recordedAt)} by ${field.recordedByRole == 'doctor' ? 'your doctor' : 'you'}'
-        : 'Not answered yet';
+        ? l10n.answeredByLabel(Fmt.date(field.recordedAt), field.recordedByRole == 'doctor' ? l10n.yourDoctorLabel : l10n.commonYou)
+        : l10n.notAnsweredYetLabel;
     Widget editor;
     switch (field.kind) {
       case ProfileFieldKind.yesNo:
@@ -140,13 +142,13 @@ class ProfileFieldEditor extends StatelessWidget {
         editor = SegmentedButton<String>(
           emptySelectionAllowed: true,
           showSelectedIcon: false,
-          segments: const [ButtonSegment(value: 'yes', label: Text('Yes')), ButtonSegment(value: 'no', label: Text('No')), ButtonSegment(value: _unsure, label: Text('Not sure'))],
+          segments: [ButtonSegment(value: 'yes', label: Text(l10n.commonYes)), ButtonSegment(value: 'no', label: Text(l10n.commonNo)), ButtonSegment(value: _unsure, label: Text(l10n.notSureOption))],
           selected: selected,
           onSelectionChanged: canEdit ? (s) => onChanged(s.isEmpty || s.first == _unsure ? null : s.first == 'yes') : null,
         );
       case ProfileFieldKind.choice:
         editor = Wrap(spacing: AppSpacing.sm, runSpacing: AppSpacing.sm, children: [
-          for (final o in [...field.options, const Option(_unsure, 'Not sure')])
+          for (final o in [...field.options, Option(_unsure, l10n.notSureOption)])
             ChoiceChip(
               label: Text(o.label),
               selected: hasAnswer && (o.value == _unsure ? current == null : current == o.value),
@@ -161,7 +163,7 @@ class ProfileFieldEditor extends StatelessWidget {
             controller: answers.numberController(field),
             enabled: canEdit,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(suffixText: field.unit, hintText: 'Not recorded', isDense: true),
+            decoration: InputDecoration(suffixText: field.unit, hintText: l10n.commonNotRecorded, isDense: true),
           ),
         );
       case ProfileFieldKind.list:
@@ -173,8 +175,8 @@ class ProfileFieldEditor extends StatelessWidget {
           maxLines: 6,
           textCapitalization: TextCapitalization.sentences,
           keyboardType: TextInputType.multiline,
-          decoration: const InputDecoration(
-            hintText: 'Not recorded — separate multiple entries with a comma or a new line',
+          decoration: InputDecoration(
+            hintText: l10n.notRecordedListHint,
             isDense: true,
           ),
         );
@@ -189,12 +191,12 @@ class ProfileFieldEditor extends StatelessWidget {
         Row(children: [
           Expanded(
             child: Text(
-              field.needsUpdate ? '$caption. Please confirm it is still correct.' : caption,
+              field.needsUpdate ? l10n.confirmStillCorrectCaption(caption) : caption,
               style: t.bodySmall?.copyWith(color: field.needsUpdate ? AppColors.warningText : null),
             ),
           ),
           if (field.needsUpdate && canEdit && !edited && field.kind != ProfileFieldKind.number && field.kind != ProfileFieldKind.list)
-            TextButton(onPressed: () => onChanged(field.value), child: const Text('Still correct')),
+            TextButton(onPressed: () => onChanged(field.value), child: Text(l10n.stillCorrectButton)),
         ]),
       ],
     ]);

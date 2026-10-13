@@ -11,6 +11,7 @@ import '../../core/widgets/app_page.dart';
 import '../../core/widgets/feedback.dart';
 import '../../data/models/diabetes_risk.dart';
 import '../../data/models/user.dart';
+import '../../l10n/app_localizations.dart';
 import '../authentication/auth_controller.dart';
 import '../lifestyle/trend_card.dart';
 import '../notifications/notifications.dart';
@@ -25,7 +26,7 @@ class DiabetesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppPage(
-      title: 'Diabetes',
+      title: AppLocalizations.of(context).navDiabetes,
       large: true,
       actions: const [NotificationBell()],
       body: DiabetesView(patientId: patientId, canAssess: true),
@@ -49,15 +50,13 @@ class DiabetesView extends ConsumerStatefulWidget {
 class _DiabetesViewState extends ConsumerState<DiabetesView> {
   bool _refreshing = false;
 
-  Future<void> _refresh() async {
+  Future<void> _refresh(AppLocalizations l10n) async {
     setState(() => _refreshing = true);
     try {
       final result = await refreshDiabetesRisk(ref, widget.patientId);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(result.created
-            ? 'Your future diabetes risk estimate has been updated.'
-            : 'Nothing relevant has changed since your last estimate, so it is still current.'),
+        content: Text(result.created ? l10n.diabetesEstimateUpdatedSnack : l10n.diabetesNothingChangedSnack),
       ));
     } on Failure catch (e) {
       if (mounted) showFailure(context, e);
@@ -86,6 +85,7 @@ class _DiabetesViewState extends ConsumerState<DiabetesView> {
   }
 
   Widget _content(BuildContext context, RiskStatus s, UserRole? role) {
+    final l10n = AppLocalizations.of(context);
     final canRefresh = widget.canAssess && !s.offline;
     final latest = s.latest;
     // Patients answer every question again (saved to their health profile) before a new
@@ -97,11 +97,11 @@ class _DiabetesViewState extends ConsumerState<DiabetesView> {
             ? FilledButton.icon(
                 onPressed: () => context.push('/p/diabetes/assess'),
                 icon: const Icon(Icons.fact_check_outlined),
-                label: Text(latest == null ? 'Start assessment' : 'Run new assessment'),
+                label: Text(latest == null ? l10n.dashStartAssessment : l10n.diabetesRunNewAssessment),
               )
             : (s.stale || latest == null)
-                ? FilledButton.icon(onPressed: _refresh, icon: const Icon(Icons.refresh), label: Text(latest == null ? 'Get risk estimate' : 'Refresh assessment'))
-                : OutlinedButton.icon(onPressed: _refresh, icon: const Icon(Icons.refresh), label: const Text('Refresh assessment'));
+                ? FilledButton.icon(onPressed: () => _refresh(l10n), icon: const Icon(Icons.refresh), label: Text(latest == null ? l10n.diabetesGetRiskEstimate : l10n.diabetesRefreshAssessment))
+                : OutlinedButton.icon(onPressed: () => _refresh(l10n), icon: const Icon(Icons.refresh), label: Text(l10n.diabetesRefreshAssessment));
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (s.offline) ...[OfflineRiskBanner(lastUpdated: latest?.createdAt), const SizedBox(height: AppSpacing.md)],
       if (latest == null)
@@ -110,35 +110,34 @@ class _DiabetesViewState extends ConsumerState<DiabetesView> {
         HeroPanel(
           child: RiskResultBlock(assessment: latest, actions: [
             if (canRefresh) mainAction,
-            TextButton(onPressed: () => context.push('/r/${widget.patientId}/diabetes-risk/${latest.id}'), child: const Text('View details')),
+            TextButton(onPressed: () => context.push('/r/${widget.patientId}/diabetes-risk/${latest.id}'), child: Text(l10n.dashViewDetails)),
           ]),
         ),
       if (s.stale) ...[
         const SizedBox(height: AppSpacing.md),
-        StaleBanner(reasons: s.staleReasons, offline: s.offline, onRefresh: canRefresh && !_refreshing ? _refresh : null),
+        StaleBanner(reasons: s.staleReasons, offline: s.offline, onRefresh: canRefresh && !_refreshing ? () => _refresh(l10n) : null),
       ],
       if (latest?.warning != null) ...[const SizedBox(height: AppSpacing.md), RiskWarningNote(latest!.warning!)],
       const SizedBox(height: AppSpacing.section),
-      const SectionHeader('HbA1c Trend', subtitle: 'From confirmed values on your uploaded reports.'),
+      SectionHeader(l10n.diabetesHba1cTrendHeader, subtitle: l10n.diabetesHba1cTrendSubtitle),
       TrendCard(patientId: widget.patientId, metric: 'hba1c', title: 'HbA1c', ranges: TrendCard.clinicalRanges, initialRange: '1y'),
       const SizedBox(height: AppSpacing.section),
       if (latest != null) ...[
-        const SectionHeader('Data used for this assessment', subtitle: 'Only information SUSTHITI already had. Nothing was guessed or filled in.'),
+        SectionHeader(l10n.diabetesDataUsedHeader, subtitle: l10n.diabetesDataUsedSubtitle),
         DataUsedCard(data: latest.dataUsed),
       ] else ...[
-        const SectionHeader('Health information available now', subtitle: 'What an estimate would use, from your SUSTHITI records.'),
+        SectionHeader(l10n.riskHealthInfoAvailableHeader, subtitle: l10n.diabetesHealthInfoSubtitle),
         DataUsedCard(data: s.currentData),
       ],
       if (s.currentData.missing.isNotEmpty) ...[
         const SizedBox(height: AppSpacing.section),
-        SectionHeader('Not recorded yet',
-            subtitle: 'The estimate uses these when they are in your records. Until then they are left out, not assumed. '
-                '${s.currentData.availableCount} of ${s.currentData.totalCount} available.'),
+        SectionHeader(l10n.riskNotRecordedHeader,
+            subtitle: l10n.riskNotRecordedSubtitleDiabetes('${s.currentData.availableCount}', '${s.currentData.totalCount}')),
         MissingDataCard(missing: s.currentData.missing, patientId: widget.patientId, role: role),
       ],
       if (s.historyTotal > 0) ...[
         const SizedBox(height: AppSpacing.section),
-        const SectionHeader('Assessment history', subtitle: 'Every estimate is kept exactly as it was made.'),
+        SectionHeader(l10n.diabetesAssessmentHistoryHeader, subtitle: l10n.diabetesAssessmentHistorySubtitle),
         _History(patientId: widget.patientId),
       ],
       if (s.earlierModelTotal > 0) ...[
@@ -158,17 +157,17 @@ class _Intro extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return HeroPanel(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(RiskWording.title, style: t.titleLarge),
+        Text(RiskWording.title(l10n), style: t.titleLarge),
         const SizedBox(height: AppSpacing.sm),
         Text(
-          'Estimate your future diabetes risk. You\'ll confirm a few questions, already filled in with what SUSTHITI knows; '
-          'values from your medical reports, your lifestyle and connected devices are added automatically.',
+          l10n.diabetesIntroText,
           style: t.bodyMedium,
         ),
         const SizedBox(height: AppSpacing.sm),
-        Text('${status.currentData.availableCount} of ${status.currentData.totalCount} health details are available now.', style: t.bodySmall),
+        Text(l10n.riskHealthDetailsAvailableCaption('${status.currentData.availableCount}', '${status.currentData.totalCount}'), style: t.bodySmall),
         if (action != null) ...[const SizedBox(height: AppSpacing.lg), action!],
       ]),
     );
@@ -199,13 +198,14 @@ class _EarlierModel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final earlier = ref.watch(assessmentHistoryProvider(patientId));
     return AppCard(
       padding: EdgeInsets.zero,
       child: ExpansionTile(
         shape: const Border(),
-        title: Text('Earlier symptom questionnaire', style: t.titleSmall),
-        subtitle: Text('Results from a previous model, kept for your history', style: t.bodySmall),
+        title: Text(l10n.diabetesEarlierSymptomQuestionnaire, style: t.titleSmall),
+        subtitle: Text(l10n.diabetesEarlierModelSubtitle, style: t.bodySmall),
         children: [
           AsyncBody(
             value: earlier,
@@ -214,7 +214,7 @@ class _EarlierModel extends ConsumerWidget {
               for (final a in items)
                 ListTile(
                   title: Text(Fmt.date(a.assessedAt)),
-                  subtitle: Text('Classification: ${a.prediction}'),
+                  subtitle: Text(l10n.diabetesClassificationLabel(a.prediction)),
                   trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
                   onTap: () => context.push('/r/$patientId/assessments/${a.id}'),
                 ),

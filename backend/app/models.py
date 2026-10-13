@@ -53,6 +53,10 @@ class User(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_demo: Mapped[bool] = mapped_column(Boolean, default=False)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # en | hi | gu. Nullable (see AISummary.prompt_version's comment on _add_missing_columns)
+    # so this is added to an existing database without a manual migration; a null value is
+    # read as "en" everywhere -- see services.i18n.normalize_locale().
+    preferred_locale: Mapped[str | None] = mapped_column(String(8))
 
     patient: Mapped["Patient | None"] = relationship(back_populates="user", uselist=False)
     doctor: Mapped["Doctor | None"] = relationship(back_populates="user", uselist=False)
@@ -174,6 +178,15 @@ class AISummary(Base):
     generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     generated_by_user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
     generated_by_role: Mapped[str] = mapped_column(String(16))
+    # The viewer language this row was rendered for (en | hi | gu). Nullable so it can be
+    # added without a migration (see User.preferred_locale); null means "en". A patient
+    # reading in Gujarati and a doctor reading in English each get their own row for the
+    # same underlying source_fingerprint -- the canonical en row is never overwritten.
+    locale: Mapped[str | None] = mapped_column(String(8))
+    # True only when a non-English row had to fall back to the canonical English content
+    # because translation failed or a safety check on the translation didn't pass. Nullable
+    # for the same auto-migration reason as `locale`; null is read as False.
+    translation_fallback: Mapped[bool | None] = mapped_column(Boolean, default=False)
 
 
 class DiabetesAssessment(Base):

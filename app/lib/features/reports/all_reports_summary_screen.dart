@@ -5,6 +5,7 @@ import '../../core/theme/app_tokens.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/widgets/app_page.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../ai/ai_summary_section.dart';
 import 'reports_providers.dart';
 
@@ -16,30 +17,30 @@ class AllReportsSummaryScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final value = ref.watch(allReportsSummaryProvider(patientId));
     final count = value.value?.reportCount ?? 0;
     final t = Theme.of(context).textTheme;
     return AppPage(
-      title: 'All Reports Summary',
+      title: l10n.allReportsSummaryTitle,
       body: PageBody(maxWidth: 820, children: [
         AppCard(
           tinted: true,
           child: Text(
-            'This summary reviews your authorized report history together, in order of report date, and only describes trends that the reports actually support. '
-            'For what a single report says, open that report and use its AI Summary.',
+            l10n.allReportsSummaryDisclaimer,
             style: t.bodyMedium,
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
         AiSummarySection(
-          title: 'Combined report summary',
+          title: l10n.combinedReportSummaryTitle,
           value: value.whenData((v) => v.summary),
-          emptyMessage: 'No combined summary generated yet. $count report${count == 1 ? '' : 's'} available.',
+          emptyMessage: l10n.combinedSummaryEmptyMessage(count),
           canGenerate: count >= 2,
-          cannotGenerateReason: 'At least two reports are needed to look at changes over time.',
-          generateLabel: 'Generate All Reports Summary',
-          loadingMessage: 'Reviewing historical reports...',
-          failureReassurance: 'Your original reports are still safely available.',
+          cannotGenerateReason: l10n.needTwoReportsReason,
+          generateLabel: l10n.generateAllReportsSummaryButton,
+          loadingMessage: l10n.reviewingHistoricalReportsMessage,
+          failureReassurance: l10n.originalReportsSafeMessage,
           onGenerate: () => ref.read(aiRepositoryProvider).reports.generateAllReports(patientId),
           onGenerated: () => ref.invalidate(allReportsSummaryProvider(patientId)),
         ),

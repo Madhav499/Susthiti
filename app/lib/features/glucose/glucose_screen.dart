@@ -14,6 +14,7 @@ import '../../core/widgets/form_fields.dart';
 import '../../core/widgets/labels.dart';
 import '../../data/models/tracking.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../lifestyle/trend_card.dart';
 
 final glucoseOverviewProvider = FutureProvider.autoDispose.family<GlucoseOverview, String>((ref, pid) => ref.watch(glucoseRepositoryProvider).overview(pid));
@@ -26,13 +27,14 @@ class GlucoseScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     return AppPage(
-      title: 'Glucose',
+      title: l10n.navGlucose,
       floatingActionButton: canRecord
           ? FloatingActionButton.extended(
               onPressed: () => showRecordGlucoseSheet(context, ref, patientId),
               icon: const Icon(Icons.add),
-              label: const Text('Record Reading'),
+              label: Text(l10n.glucoseRecordReadingButton),
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               elevation: 1,
@@ -52,6 +54,7 @@ class GlucoseView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final overview = ref.watch(glucoseOverviewProvider(patientId));
     final history = ref.watch(glucoseHistoryProvider(patientId));
     return PageBody(
@@ -70,9 +73,9 @@ class GlucoseView extends ConsumerWidget {
             if (readings.isEmpty) {
               return EmptyState(
                 icon: Icons.water_drop_outlined,
-                title: 'No glucose readings yet.',
-                message: canRecord ? 'Record readings to see your averages and trends here.' : 'The patient has not recorded any glucose readings.',
-                actionLabel: canRecord ? 'Record First Reading' : null,
+                title: l10n.glucoseEmptyTitle,
+                message: canRecord ? l10n.glucoseEmptyMessageCanRecord : l10n.glucoseEmptyMessageViewOnly,
+                actionLabel: canRecord ? l10n.glucoseRecordFirstButton : null,
                 onAction: canRecord ? () => showRecordGlucoseSheet(context, ref, patientId) : null,
               );
             }
@@ -81,15 +84,15 @@ class GlucoseView extends ConsumerWidget {
                 loading: () => const Skeleton(height: 110, radius: 16),
                 error: (e, _) => ErrorState(error: e, compact: true, onRetry: () => ref.invalidate(glucoseOverviewProvider(patientId))),
                 data: (o) => ResponsiveGrid(minItemWidth: 180, children: [
-                  MetricTile(icon: Icons.today_outlined, label: "Today's readings", value: '${o.todayCount}', caption: o.todayCount == 0 ? 'None recorded today' : 'Latest ${o.latestValue?.round()} mg/dL'),
-                  MetricTile(icon: Icons.functions, label: 'Recent average', value: o.average7d == null ? '—' : '${o.average7d!.round()} mg/dL', caption: 'Last 7 days · ${o.readings7d} readings'),
-                  MetricTile(icon: Icons.trending_flat, label: 'Trend', value: switch (o.trend) { 'higher' => 'Higher', 'lower' => 'Lower', 'stable' => 'Stable', _ => 'Not enough data' }, caption: 'This week vs previous weeks'),
+                  MetricTile(icon: Icons.today_outlined, label: l10n.glucoseTodaysReadingsLabel, value: '${o.todayCount}', caption: o.todayCount == 0 ? l10n.glucoseNoneRecordedToday : l10n.glucoseLatestReading('${o.latestValue?.round()}')),
+                  MetricTile(icon: Icons.functions, label: l10n.glucoseRecentAverageLabel, value: o.average7d == null ? '—' : '${o.average7d!.round()} mg/dL', caption: l10n.glucoseLast7DaysCaption('${o.readings7d}')),
+                  MetricTile(icon: Icons.trending_flat, label: l10n.glucoseTrendLabel, value: switch (o.trend) { 'higher' => l10n.glucoseTrendHigher, 'lower' => l10n.glucoseTrendLower, 'stable' => l10n.glucoseTrendStable, _ => l10n.glucoseTrendNotEnoughData }, caption: l10n.glucoseTrendCaption),
                 ]),
               ),
               const SizedBox(height: AppSpacing.lg),
-              TrendCard(patientId: patientId, metric: 'glucose', title: 'Glucose', ranges: ranges),
+              TrendCard(patientId: patientId, metric: 'glucose', title: l10n.navGlucose, ranges: ranges),
               const SizedBox(height: AppSpacing.section),
-              const SectionHeader('History'),
+              SectionHeader(l10n.navHistory),
               AppCard(
                 padding: EdgeInsets.zero,
                 child: Column(children: [
@@ -137,12 +140,13 @@ class _ReadingRow extends StatelessWidget {
 }
 
 Future<void> showRecordGlucoseSheet(BuildContext context, WidgetRef ref, String patientId) async {
+  final l10n = AppLocalizations.of(context);
   final saved = await showModalBottomSheet<bool>(context: context, isScrollControlled: true, builder: (_) => _RecordGlucoseSheet(patientId: patientId));
   if (saved == true) {
     ref.invalidate(glucoseOverviewProvider(patientId));
     ref.invalidate(glucoseHistoryProvider(patientId));
     ref.invalidate(trendProvider);
-    if (context.mounted) showToast(context, 'Reading recorded');
+    if (context.mounted) showToast(context, l10n.glucoseReadingRecordedToast);
   }
 }
 
@@ -181,12 +185,13 @@ class _RecordGlucoseSheetState extends ConsumerState<_RecordGlucoseSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SheetForm(
-      title: 'Record Glucose',
+      title: l10n.glucoseRecordTitle,
       form: _form,
       children: [
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(child: AppTextField(label: 'Value', controller: _value, keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: (v) => Validators.glucose(v, _unit))),
+          Expanded(child: AppTextField(label: l10n.glucoseValueLabel, controller: _value, keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: (v) => Validators.glucose(l10n, v, _unit))),
           const SizedBox(width: AppSpacing.md),
           Padding(
             padding: const EdgeInsets.only(top: 26),
@@ -198,10 +203,10 @@ class _RecordGlucoseSheetState extends ConsumerState<_RecordGlucoseSheet> {
             ),
           ),
         ]),
-        ChoiceField<GlucoseReadingType>(label: 'Reading type', options: GlucoseReadingType.values, value: _type, labelOf: (t) => t.label, onChanged: (t) => setState(() => _type = t)),
-        DateTimeField(label: 'Date and time', value: _at, includeTime: true, onChanged: (d) => setState(() => _at = d), validator: (d) => Validators.notFuture(d, 'Time')),
-        AppTextField(label: 'Context', controller: _context, optional: true, helper: 'For example "after a walk" or "felt dizzy".'),
-        BusyButton(label: 'Save reading', onPressed: _save, expand: true),
+        ChoiceField<GlucoseReadingType>(label: l10n.glucoseReadingTypeLabel, options: GlucoseReadingType.values, value: _type, labelOf: (t) => t.label, onChanged: (t) => setState(() => _type = t), requiredMessage: l10n.choiceRequiredMessage),
+        DateTimeField(label: l10n.glucoseDateTimeLabel, value: _at, includeTime: true, onChanged: (d) => setState(() => _at = d), validator: (d) => Validators.notFuture(l10n, d, l10n.validatorDateLabel)),
+        AppTextField(label: l10n.glucoseContextLabel, controller: _context, optional: true, helper: l10n.glucoseContextHelper),
+        BusyButton(label: l10n.glucoseSaveReadingButton, onPressed: _save, expand: true),
       ],
     );
   }

@@ -1153,10 +1153,10 @@ def test_push_channel_assignment_matches_every_notification_type_in_use(env):
     app_dir = Path(push.__file__).resolve().parents[1]  # backend/app
     used_types = set()
     for py in (app_dir / "routers").rglob("*.py"):
-        for m in re.finditer(r'notify\(\s*db,\s*[^,]+,\s*"([a-z_]+)"', py.read_text()):
+        for m in re.finditer(r'notify\(\s*db,\s*[^,]+,\s*"([a-z_]+)"', py.read_text(encoding="utf-8")):
             used_types.add(m.group(1))
     for py in (app_dir / "services").rglob("*.py"):
-        for m in re.finditer(r'notify\(\s*db,\s*[^,]+,\s*"([a-z_]+)"', py.read_text()):
+        for m in re.finditer(r'notify\(\s*db,\s*[^,]+,\s*"([a-z_]+)"', py.read_text(encoding="utf-8")):
             used_types.add(m.group(1))
     assert {"access_request", "surgery_scheduled", "new_report", "food_reminder"} <= used_types
 

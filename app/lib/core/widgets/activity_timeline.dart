@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
 import '../utils/formatters.dart';
@@ -20,10 +21,12 @@ class TimelineEntry {
 
 /// Vertical activity timeline: a dot per entry joined by a subtle connector.
 class ActivityTimeline extends StatelessWidget {
-  const ActivityTimeline({super.key, required this.entries, this.emptyMessage = 'No recent activity.'});
+  const ActivityTimeline({super.key, required this.entries, this.emptyMessage});
 
   final List<TimelineEntry> entries;
-  final String emptyMessage;
+
+  /// Defaults to [AppLocalizations.docNoRecentActivity] when not given.
+  final String? emptyMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +34,7 @@ class ActivityTimeline extends StatelessWidget {
     if (entries.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-        child: Text(emptyMessage, style: t.bodyMedium?.copyWith(color: AppColors.textSecondary)),
+        child: Text(emptyMessage ?? AppLocalizations.of(context).docNoRecentActivity, style: t.bodyMedium?.copyWith(color: AppColors.textSecondary)),
       );
     }
     return Column(children: [
@@ -46,26 +49,27 @@ class _Row extends StatelessWidget {
   final bool first;
   final bool last;
 
-  static String _when(DateTime at) {
+  static String _when(AppLocalizations l10n, DateTime at) {
     final local = at.toLocal();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final day = DateTime(local.year, local.month, local.day);
     final time = Fmt.time(local);
-    if (day == today) return 'Today, $time';
-    if (day == today.subtract(const Duration(days: 1))) return 'Yesterday, $time';
+    if (day == today) return l10n.timelineTodayAt(time);
+    if (day == today.subtract(const Duration(days: 1))) return l10n.timelineYesterdayAt(time);
     return '${Fmt.date(local)}, $time';
   }
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final content = Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.lg),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(_when(entry.at), style: t.labelMedium),
+            Text(_when(l10n, entry.at), style: t.labelMedium),
             const SizedBox(height: 2),
             Text(entry.title, style: t.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
             if (entry.subtitle != null && entry.subtitle!.isNotEmpty) Text(entry.subtitle!, style: t.bodySmall),
@@ -73,7 +77,7 @@ class _Row extends StatelessWidget {
         ),
         if (entry.onTap != null) ...[
           const SizedBox(width: AppSpacing.sm),
-          Text(entry.actionLabel ?? 'Open', style: t.labelMedium?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600)),
+          Text(entry.actionLabel ?? l10n.timelineOpenLabel, style: t.labelMedium?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600)),
           const Icon(Icons.chevron_right, size: 18, color: AppColors.primary),
         ],
       ]),

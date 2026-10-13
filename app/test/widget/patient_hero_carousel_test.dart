@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -11,6 +12,7 @@ import 'package:susthiti/data/providers.dart';
 import 'package:susthiti/data/repositories/patient_repository.dart';
 import 'package:susthiti/features/authentication/auth_controller.dart';
 import 'package:susthiti/features/patient/patient_dashboard_screen.dart';
+import 'package:susthiti/l10n/app_localizations.dart';
 
 import '../helpers.dart';
 
@@ -44,7 +46,17 @@ void main() {
         currentUserProvider.overrideWithValue(testPatient),
         patientRepositoryProvider.overrideWithValue(patients),
       ],
-      child: MaterialApp(theme: AppTheme.light(), home: const PatientDashboardScreen(patientId: 'pat1')),
+      child: MaterialApp(
+        theme: AppTheme.light(),
+        home: const PatientDashboardScreen(patientId: 'pat1'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+      ),
     ));
     await tester.pumpAndSettle();
   }

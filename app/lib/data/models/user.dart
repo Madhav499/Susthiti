@@ -8,6 +8,13 @@ enum UserRole {
   String get label => switch (this) { patient => 'Patient', doctor => 'Doctor', admin => 'Admin' };
 }
 
+/// Locale codes SUSTHITI's UI is translated into. Kept next to [UserRole] as the other
+/// small, stable enumeration on [AppUser].
+const List<String> kSupportedLocales = ['en', 'hi', 'gu'];
+
+/// Safe fallback for a missing, null, or (future) unsupported locale -- always English.
+String normalizeLocale(String? value) => kSupportedLocales.contains(value) ? value! : 'en';
+
 class AppUser {
   const AppUser({
     required this.id,
@@ -19,6 +26,7 @@ class AppUser {
     this.patientCode,
     this.doctorId,
     this.doctorCode,
+    this.preferredLocale = 'en',
   });
 
   final String id;
@@ -30,6 +38,7 @@ class AppUser {
   final String? patientCode;
   final String? doctorId;
   final String? doctorCode;
+  final String preferredLocale;
 
   factory AppUser.fromJson(Map<String, dynamic> j) => AppUser(
         id: j['id'] as String,
@@ -41,11 +50,13 @@ class AppUser {
         patientCode: j['patient_code'] as String?,
         doctorId: j['doctor_id'] as String?,
         doctorCode: j['doctor_code'] as String?,
+        preferredLocale: normalizeLocale(j['preferred_locale'] as String?),
       );
 
-  AppUser copyWith({String? fullName}) => AppUser(
+  AppUser copyWith({String? fullName, String? preferredLocale}) => AppUser(
         id: id, email: email, role: role, fullName: fullName ?? this.fullName, isDemo: isDemo,
         patientId: patientId, patientCode: patientCode, doctorId: doctorId, doctorCode: doctorCode,
+        preferredLocale: preferredLocale ?? this.preferredLocale,
       );
 }
 

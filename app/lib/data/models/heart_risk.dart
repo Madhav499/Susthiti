@@ -1,5 +1,6 @@
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
+import '../../l10n/app_localizations.dart';
 import 'diabetes_risk.dart' show DataUsed;
 
 export 'diabetes_risk.dart' show DataUsed, DataGroup, DataItem, MissingItem, AddDataTarget;
@@ -7,16 +8,16 @@ export 'diabetes_risk.dart' show DataUsed, DataGroup, DataItem, MissingItem, Add
 /// Wording rules for the heart disease risk SCREENING (supplied model susthiti-heart-v3).
 /// It is a screening signal from a machine-learning model trained on a 20,000-row SYNTHETIC
 /// dataset: never a diagnosis, never a statement that someone has, will get, or will not get
-/// heart disease. Mirrors diabetes_risk.dart's RiskWording for the sibling feature.
+/// heart disease. Mirrors diabetes_risk.dart's RiskWording for the sibling feature; [riskLevel]
+/// itself (the API's own 'low'/'moderate'/'high' value) is never translated or altered.
 abstract final class HeartWording {
-  static const title = 'Heart Disease Risk Screening';
-  static const estimateLabel = 'Model screening result';
-  static const safety =
-      'This is a research and screening estimate from a machine-learning model trained on synthetic data. It is not clinically validated and is not a medical diagnosis. Talk to your doctor about your results.';
-  static const noReportBasis = 'Based on available symptoms and risk factors. No medical report values were used.';
+  static String title(AppLocalizations l10n) => l10n.heartTitle;
+  static String estimateLabel(AppLocalizations l10n) => l10n.heartEstimateLabel;
+  static String safety(AppLocalizations l10n) => l10n.riskSafetyText;
+  static String noReportBasis(AppLocalizations l10n) => l10n.riskNoReportBasis;
 
-  static String reportBasis(String? fieldsLabel) =>
-      fieldsLabel == null ? 'Includes values from your medical reports.' : 'Includes $fieldsLabel from your medical reports.';
+  static String reportBasis(AppLocalizations l10n, String? fieldsLabel) =>
+      fieldsLabel == null ? l10n.riskReportBasisGeneric : l10n.riskReportBasisWithFields(fieldsLabel);
 
   static StatusTone tone(String riskLevel) => switch (riskLevel) {
         'high' => StatusTone.critical,
@@ -24,11 +25,11 @@ abstract final class HeartWording {
         _ => StatusTone.positive,
       };
 
-  /// e.g. "Elevated risk signal" / "No elevated risk signal" -- never "you have heart disease".
-  static String signalLabel(String riskLevel) => switch (riskLevel) {
-        'high' => 'Elevated risk signal',
-        'moderate' => 'Moderate risk signal',
-        _ => 'Low risk signal',
+  /// e.g. "Elevated risk signal" / "Low risk signal" -- never "you have heart disease".
+  static String signalLabel(AppLocalizations l10n, String riskLevel) => switch (riskLevel) {
+        'high' => l10n.heartSignalHigh,
+        'moderate' => l10n.heartSignalModerate,
+        _ => l10n.heartSignalLow,
       };
 
   static String percent(double value) => '${value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1)}%';
@@ -80,8 +81,8 @@ class HeartRiskAssessment {
   final Map<String, Object?> inputFeatures;
 
   String get percentLabel => HeartWording.percent(probabilityPercent);
-  String get basisText => reportAvailable ? HeartWording.reportBasis(reportFieldsLabel) : HeartWording.noReportBasis;
-  String get signalLabel => HeartWording.signalLabel(riskLevel);
+  String basisText(AppLocalizations l10n) => reportAvailable ? HeartWording.reportBasis(l10n, reportFieldsLabel) : HeartWording.noReportBasis(l10n);
+  String signalLabel(AppLocalizations l10n) => HeartWording.signalLabel(l10n, riskLevel);
 
   factory HeartRiskAssessment.fromJson(Map<String, dynamic> j) {
     final probability = j['probability_percent'];

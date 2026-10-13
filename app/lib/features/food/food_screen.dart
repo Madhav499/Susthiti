@@ -12,6 +12,7 @@ import '../../core/widgets/feedback.dart';
 import '../../core/widgets/form_fields.dart';
 import '../../data/models/tracking.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 
 typedef FoodKey = ({String patientId, DateTime start, DateTime end});
 
@@ -54,22 +55,23 @@ class _FoodScreenState extends ConsumerState<FoodScreen> {
     setState(() => _period = p);
   }
 
-  Future<void> _openForm([FoodEntry? entry]) async {
+  Future<void> _openForm(AppLocalizations l10n, [FoodEntry? entry]) async {
     final saved = await showModalBottomSheet<bool>(context: context, isScrollControlled: true, builder: (_) => _FoodForm(patientId: widget.patientId, entry: entry));
     if (saved == true) {
       ref.invalidate(foodEntriesProvider);
-      if (mounted) showToast(context, entry == null ? 'Meal logged' : 'Entry updated. The earlier version is kept in history.');
+      if (mounted) showToast(context, entry == null ? l10n.foodMealLoggedToast : l10n.foodEntryUpdatedToast);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final value = ref.watch(foodEntriesProvider(_key));
     final t = Theme.of(context).textTheme;
     return AppPage(
-      title: 'Food Log',
+      title: l10n.foodLogTitle,
       floatingActionButton: widget.canLog
-          ? FloatingActionButton.extended(onPressed: _openForm, icon: const Icon(Icons.add), label: const Text('Log Food'), backgroundColor: AppColors.primary, foregroundColor: Colors.white, elevation: 1)
+          ? FloatingActionButton.extended(onPressed: () => _openForm(l10n), icon: const Icon(Icons.add), label: Text(l10n.foodLogButton), backgroundColor: AppColors.primary, foregroundColor: Colors.white, elevation: 1)
           : null,
       body: PageBody(
         maxWidth: 760,
@@ -82,7 +84,7 @@ class _FoodScreenState extends ConsumerState<FoodScreen> {
                 Padding(
                   padding: const EdgeInsets.only(right: AppSpacing.sm),
                   child: ChoiceChip(
-                    label: Text(switch (p) { FoodPeriod.today => 'Today', FoodPeriod.yesterday => 'Yesterday', FoodPeriod.week => 'This week', FoodPeriod.custom => _custom == null ? 'Custom date' : '${Fmt.shortDate(_custom!.start)} – ${Fmt.shortDate(_custom!.end)}' }),
+                    label: Text(switch (p) { FoodPeriod.today => l10n.commonToday, FoodPeriod.yesterday => l10n.foodPeriodYesterday, FoodPeriod.week => l10n.foodPeriodThisWeek, FoodPeriod.custom => _custom == null ? l10n.foodPeriodCustomDate : '${Fmt.shortDate(_custom!.start)} – ${Fmt.shortDate(_custom!.end)}' }),
                     selected: _period == p,
                     onSelected: (_) => _selectPeriod(p),
                   ),
@@ -97,9 +99,9 @@ class _FoodScreenState extends ConsumerState<FoodScreen> {
               if (entries.isEmpty) {
                 return EmptyState(
                   icon: Icons.restaurant_outlined,
-                  title: _period == FoodPeriod.today ? 'No meals recorded today.' : 'No meals recorded for this period.',
-                  actionLabel: widget.canLog ? 'Log Food' : null,
-                  onAction: widget.canLog ? _openForm : null,
+                  title: _period == FoodPeriod.today ? l10n.foodEmptyToday : l10n.foodEmptyPeriod,
+                  actionLabel: widget.canLog ? l10n.foodLogButton : null,
+                  onAction: widget.canLog ? () => _openForm(l10n) : null,
                 );
               }
               final byDay = <DateTime, List<FoodEntry>>{};
@@ -117,9 +119,11 @@ class _FoodScreenState extends ConsumerState<FoodScreen> {
                         if (i > 0) const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
                         ListTile(
                           title: Text(byDay[day]![i].foodName),
-                          subtitle: Text('${byDay[day]![i].quantity} · ${byDay[day]![i].mealType.label} · ${Fmt.time(byDay[day]![i].eatenAt)}${byDay[day]![i].isEdited ? ' · edited' : ''}'),
+                          subtitle: Text(
+                            '${l10n.foodEntrySubtitle(byDay[day]![i].quantity, byDay[day]![i].mealType.label, Fmt.time(byDay[day]![i].eatenAt))}${byDay[day]![i].isEdited ? ' · ${l10n.commonEditedTag}' : ''}',
+                          ),
                           trailing: widget.canLog ? const Icon(Icons.edit_outlined, size: 20) : null,
-                          onTap: widget.canLog ? () => _openForm(byDay[day]![i]) : null,
+                          onTap: widget.canLog ? () => _openForm(l10n, byDay[day]![i]) : null,
                         ),
                       ],
                     ]),
@@ -175,15 +179,16 @@ class _FoodFormState extends ConsumerState<_FoodForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SheetForm(
-      title: widget.entry == null ? 'Log Food' : 'Edit Entry',
+      title: widget.entry == null ? l10n.foodLogButton : l10n.foodEditEntryTitle,
       form: _form,
       children: [
-        AppTextField(label: 'Food name', controller: _name, hint: 'e.g. Rice', validator: (v) => Validators.required(v, 'Food name'), textCapitalization: TextCapitalization.sentences),
-        AppTextField(label: 'Quantity', controller: _quantity, hint: 'e.g. 2 bowls', validator: (v) => Validators.required(v, 'Quantity')),
-        ChoiceField<MealType>(label: 'Meal', options: MealType.values, value: _meal, labelOf: (m) => m.label, onChanged: (m) => setState(() => _meal = m)),
-        DateTimeField(label: 'Time', value: _at, includeTime: true, onChanged: (d) => setState(() => _at = d), validator: (d) => Validators.notFuture(d, 'Meal time')),
-        BusyButton(label: 'Save', onPressed: _save, expand: true),
+        AppTextField(label: l10n.foodNameLabel, controller: _name, hint: l10n.foodNameHint, validator: (v) => Validators.required(l10n, v, l10n.foodNameLabel), textCapitalization: TextCapitalization.sentences),
+        AppTextField(label: l10n.foodQuantityLabel, controller: _quantity, hint: l10n.foodQuantityHint, validator: (v) => Validators.required(l10n, v, l10n.foodQuantityLabel)),
+        ChoiceField<MealType>(label: l10n.foodMealLabel, options: MealType.values, value: _meal, labelOf: (m) => m.label, onChanged: (m) => setState(() => _meal = m), requiredMessage: l10n.choiceRequiredMessage),
+        DateTimeField(label: l10n.foodTimeLabel, value: _at, includeTime: true, onChanged: (d) => setState(() => _at = d), validator: (d) => Validators.notFuture(l10n, d, l10n.foodTimeLabel)),
+        BusyButton(label: l10n.commonSave, onPressed: _save, expand: true),
       ],
     );
   }

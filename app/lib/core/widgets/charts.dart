@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
 import '../utils/formatters.dart';
@@ -116,7 +117,7 @@ class TrendLineChart extends StatelessWidget {
           );
 
     return Semantics(
-      label: semanticsLabel ?? 'Chart with ${points.length} recorded values from ${Fmt.date(points.first.date)} to ${Fmt.date(points.last.date)}',
+      label: semanticsLabel ?? AppLocalizations.of(context).chartSemanticLabel(points.length, Fmt.date(points.first.date), Fmt.date(points.last.date)),
       child: SizedBox(height: height, child: Padding(padding: const EdgeInsets.only(right: 8, top: 8), child: chart)),
     );
   }
@@ -149,7 +150,7 @@ class MetricTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     return Semantics(
-      label: '$label: $value${caption != null ? ', $caption' : ''}${isDemo ? ', demo data' : ''}',
+      label: '$label: $value${caption != null ? ', $caption' : ''}${isDemo ? AppLocalizations.of(context).metricDemoDataSuffix : ''}',
       button: onTap != null,
       excludeSemantics: true,
       child: Material(

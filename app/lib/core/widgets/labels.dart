@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
 import 'feedback.dart';
@@ -16,7 +17,7 @@ class StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Status: $label',
+      label: AppLocalizations.of(context).statusPrefixSemantic(label),
       excludeSemantics: true,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -38,13 +39,16 @@ class StatusPill extends StatelessWidget {
 
 /// Marks AI-generated content so it never looks like a doctor's note.
 class AiLabel extends StatelessWidget {
-  const AiLabel({super.key, this.text = 'AI-generated'});
-  final String text;
+  const AiLabel({super.key, this.text});
+
+  /// Defaults to [AppLocalizations.aiGeneratedBadgeLabel] when not given.
+  final String? text;
 
   @override
   Widget build(BuildContext context) {
+    final label = text ?? AppLocalizations.of(context).aiGeneratedBadgeLabel;
     return Semantics(
-      label: text,
+      label: label,
       excludeSemantics: true,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -56,14 +60,16 @@ class AiLabel extends StatelessWidget {
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.auto_awesome_outlined, size: 13, color: AppColors.primary),
           const SizedBox(width: 4),
-          Text(text, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600)),
+          Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600)),
         ]),
       ),
     );
   }
 }
 
-/// Labels development/demo data so it can never be mistaken for real health data.
+/// Labels development/demo data so it can never be mistaken for real health data. The short
+/// "DEMO" badge text itself is left as-is across locales (a compact, universally-recognized
+/// marker, same treatment as the "AI" override above) -- only the explanatory tooltip is localized.
 class DemoBadge extends StatelessWidget {
   const DemoBadge({super.key, this.label = 'DEMO'});
   final String label;
@@ -71,7 +77,7 @@ class DemoBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: 'Demonstration data, not real health data',
+      message: AppLocalizations.of(context).demoBadgeTooltip,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(color: AppColors.warningSoft, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppColors.warning)),
@@ -115,23 +121,24 @@ class PatientIdTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: compact ? AppSpacing.sm : AppSpacing.md),
       decoration: BoxDecoration(color: AppColors.primarySoft, borderRadius: AppRadius.cardBorder),
       child: Row(children: [
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Patient ID', style: t.labelMedium),
+            Text(l10n.doctorPatientIdLabel, style: t.labelMedium),
             const SizedBox(height: 2),
             SelectableText(patientCode, style: t.titleMedium?.copyWith(color: AppColors.primary, letterSpacing: 0.8, fontFeatures: const [FontFeature.tabularFigures()])),
           ]),
         ),
         IconButton(
-          tooltip: 'Copy Patient ID',
+          tooltip: l10n.copyPatientIdTooltip(l10n.doctorPatientIdLabel),
           icon: const Icon(Icons.copy_outlined, color: AppColors.primary),
           onPressed: () async {
             await Clipboard.setData(ClipboardData(text: patientCode));
-            if (context.mounted) showToast(context, 'Patient ID copied');
+            if (context.mounted) showToast(context, l10n.patientIdCopiedToast(l10n.doctorPatientIdLabel));
           },
         ),
       ]),

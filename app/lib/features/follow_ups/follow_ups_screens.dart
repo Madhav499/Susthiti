@@ -14,6 +14,7 @@ import '../../core/widgets/labels.dart';
 import '../../data/models/care.dart';
 import '../../data/models/user.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../authentication/auth_controller.dart';
 
 final followUpTasksProvider = FutureProvider.autoDispose.family<List<FollowUpTask>, String>(
@@ -25,11 +26,11 @@ class FollowUpsScreen extends StatelessWidget {
   final String patientId;
 
   @override
-  Widget build(BuildContext context) => AppPage(title: 'Follow-ups', body: FollowUpsView(patientId: patientId));
+  Widget build(BuildContext context) => AppPage(title: AppLocalizations.of(context).navFollowUps, body: FollowUpsView(patientId: patientId));
 }
 
-/// Patient: read-only. Doctor: can schedule, complete, cancel and reschedule a follow-up task
-/// for any patient they have approved access to.
+/// Patient: read-only. Doctor: can schedule, complete, cancel and reschedule a follow-up
+/// task for any patient they have approved access to.
 class FollowUpsView extends ConsumerWidget {
   const FollowUpsView({super.key, required this.patientId, this.embedded = false});
   final String patientId;
@@ -54,6 +55,7 @@ class FollowUpsView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final isDoctor = ref.watch(currentUserProvider)?.role == UserRole.doctor;
     final value = ref.watch(followUpTasksProvider(patientId));
 
@@ -63,14 +65,17 @@ class FollowUpsView extends ConsumerWidget {
       data: (items) => items.isEmpty
           ? EmptyState(
               icon: Icons.event_repeat_outlined,
-              title: 'No follow-ups scheduled.',
+              title: l10n.followUpsEmptyTitle,
               compact: embedded,
-              actionLabel: isDoctor ? 'Schedule Follow-up' : null,
+              actionLabel: isDoctor ? l10n.followUpsScheduleButton : null,
               onAction: isDoctor ? () => _schedule(context, ref) : null,
             )
           : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               if (isDoctor) ...[
-                Align(alignment: Alignment.centerRight, child: FilledButton.icon(onPressed: () => _schedule(context, ref), icon: const Icon(Icons.add), label: const Text('Schedule Follow-up'))),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.icon(onPressed: () => _schedule(context, ref), icon: const Icon(Icons.add), label: Text(l10n.followUpsScheduleButton)),
+                ),
                 const SizedBox(height: AppSpacing.md),
               ],
               for (final f in _sorted(items)) ...[
@@ -103,16 +108,16 @@ class _FollowUpCard extends ConsumerWidget {
     }
   }
 
-  Future<void> _complete(BuildContext context, WidgetRef ref) async {
-    final ok = await confirmAction(context, title: 'Mark as completed?', message: 'This follow-up will be marked as done.', confirmLabel: 'Mark Completed');
+  Future<void> _complete(BuildContext context, WidgetRef ref, AppLocalizations l10n) async {
+    final ok = await confirmAction(context, title: l10n.followUpMarkCompletedTitle, message: l10n.followUpMarkCompletedMessage, confirmLabel: l10n.commonMarkCompleted);
     if (!context.mounted || !ok) return;
-    await _act(context, ref, () => ref.read(doctorRepositoryProvider).completeFollowUp(followUp.id), 'Follow-up marked completed');
+    await _act(context, ref, () => ref.read(doctorRepositoryProvider).completeFollowUp(followUp.id), l10n.followUpMarkedCompletedToast);
   }
 
-  Future<void> _cancel(BuildContext context, WidgetRef ref) async {
-    final ok = await confirmAction(context, title: 'Cancel this follow-up?', message: 'The patient will be notified that it was cancelled.', confirmLabel: 'Cancel Follow-up', destructive: true);
+  Future<void> _cancel(BuildContext context, WidgetRef ref, AppLocalizations l10n) async {
+    final ok = await confirmAction(context, title: l10n.followUpCancelTitle, message: l10n.followUpCancelMessage, confirmLabel: l10n.followUpCancelConfirmLabel, destructive: true);
     if (!context.mounted || !ok) return;
-    await _act(context, ref, () => ref.read(doctorRepositoryProvider).cancelFollowUp(followUp.id), 'Follow-up cancelled');
+    await _act(context, ref, () => ref.read(doctorRepositoryProvider).cancelFollowUp(followUp.id), l10n.followUpCancelledToast);
   }
 
   Future<void> _reschedule(BuildContext context, WidgetRef ref) async {
@@ -123,9 +128,10 @@ class _FollowUpCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final f = followUp;
     final tone = f.isOverdue ? StatusTone.attention : f.status.tone;
-    final statusLabel = f.isOverdue ? 'Overdue' : f.status.label;
+    final statusLabel = f.isOverdue ? l10n.dashOverdue : f.status.label;
     return AppCard(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -135,7 +141,7 @@ class _FollowUpCard extends ConsumerWidget {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [Expanded(child: Text(f.purpose, style: t.titleSmall)), StatusPill(statusLabel, tone: tone)]),
               const SizedBox(height: 2),
-              Text('Dr. ${f.doctorName} · Due ${Fmt.date(f.dueDate)}', style: t.bodySmall),
+              Text(l10n.dashFollowUpDoctorLine(f.doctorName, Fmt.date(f.dueDate)), style: t.bodySmall),
               if (f.notes != null && f.notes!.isNotEmpty) ...[const SizedBox(height: 4), Text(f.notes!, style: t.bodySmall?.copyWith(color: AppColors.textSecondary))],
             ]),
           ),
@@ -143,9 +149,9 @@ class _FollowUpCard extends ConsumerWidget {
         if (isDoctor && f.status == FollowUpStatus.scheduled) ...[
           const SizedBox(height: AppSpacing.md),
           Wrap(spacing: AppSpacing.sm, runSpacing: AppSpacing.sm, children: [
-            OutlinedButton(onPressed: () => _complete(context, ref), child: const Text('Mark Completed')),
-            OutlinedButton(onPressed: () => _reschedule(context, ref), child: const Text('Reschedule')),
-            TextButton(onPressed: () => _cancel(context, ref), child: const Text('Cancel')),
+            OutlinedButton(onPressed: () => _complete(context, ref, l10n), child: Text(l10n.commonMarkCompleted)),
+            OutlinedButton(onPressed: () => _reschedule(context, ref), child: Text(l10n.commonReschedule)),
+            TextButton(onPressed: () => _cancel(context, ref, l10n), child: Text(l10n.commonCancel)),
           ]),
         ],
       ]),
@@ -184,13 +190,14 @@ class _ScheduleSheetState extends ConsumerState<_ScheduleSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final now = DateTime.now();
-    return SheetForm(title: 'Schedule Follow-up', form: _form, children: [
-      AppTextField(label: 'Purpose', controller: _purpose, maxLines: 2, validator: (v) => Validators.required(v, 'Purpose'), textCapitalization: TextCapitalization.sentences),
+    return SheetForm(title: l10n.followUpsScheduleButton, form: _form, children: [
+      AppTextField(label: l10n.commonPurposeLabel, controller: _purpose, maxLines: 2, validator: (v) => Validators.required(l10n, v, l10n.commonPurposeLabel), textCapitalization: TextCapitalization.sentences),
       const SizedBox(height: AppSpacing.md),
-      DateTimeField(label: 'Due date', value: _due, firstDate: now, lastDate: now.add(const Duration(days: 365)), onChanged: (d) => setState(() => _due = d)),
+      DateTimeField(label: l10n.followUpsDueDateLabel, value: _due, firstDate: now, lastDate: now.add(const Duration(days: 365)), onChanged: (d) => setState(() => _due = d)),
       const SizedBox(height: AppSpacing.lg),
-      BusyButton(label: 'Schedule Follow-up', onPressed: _save, expand: true),
+      BusyButton(label: l10n.followUpsScheduleButton, onPressed: _save, expand: true),
     ]);
   }
 }
@@ -218,13 +225,14 @@ class _RescheduleSheetState extends ConsumerState<_RescheduleSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final now = DateTime.now();
-    return SheetForm(title: 'Reschedule Follow-up', form: GlobalKey<FormState>(), children: [
+    return SheetForm(title: l10n.followUpsRescheduleTitle, form: GlobalKey<FormState>(), children: [
       Text(widget.followUp.purpose, style: Theme.of(context).textTheme.bodyMedium),
       const SizedBox(height: AppSpacing.md),
-      DateTimeField(label: 'New due date', value: _due, firstDate: now, lastDate: now.add(const Duration(days: 365)), onChanged: (d) => setState(() => _due = d)),
+      DateTimeField(label: l10n.followUpsNewDueDateLabel, value: _due, firstDate: now, lastDate: now.add(const Duration(days: 365)), onChanged: (d) => setState(() => _due = d)),
       const SizedBox(height: AppSpacing.lg),
-      BusyButton(label: 'Save New Date', onPressed: _save, expand: true),
+      BusyButton(label: l10n.commonSaveNewDate, onPressed: _save, expand: true),
     ]);
   }
 }

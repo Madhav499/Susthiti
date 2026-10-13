@@ -6,6 +6,7 @@ import '../../core/widgets/app_card.dart';
 import '../../core/widgets/app_page.dart';
 import '../../data/models/ai_summary.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import 'ai_summary_section.dart';
 
 final patientSummaryProvider = FutureProvider.autoDispose.family<AISummary?, String>((ref, pid) => ref.watch(aiRepositoryProvider).patient.latest(pid));
@@ -21,20 +22,21 @@ class PatientSummaryView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     return PageBody(
       maxWidth: 820,
       padding: embedded ? const EdgeInsets.fromLTRB(0, AppSpacing.lg, 0, AppSpacing.xxl) : null,
       onRefresh: () async => ref.invalidate(patientSummaryProvider(patientId)),
       children: [
         AiSummarySection(
-          title: 'AI Patient Summary',
+          title: l10n.aiPatientSummaryTitle,
           value: ref.watch(patientSummaryProvider(patientId)),
           onGenerate: () => ref.read(aiRepositoryProvider).patient.generate(patientId),
           onGenerated: () => ref.invalidate(patientSummaryProvider(patientId)),
-          loadingMessage: 'Reviewing assessments, reports, glucose, lifestyle and care history...',
-          emptyMessage: 'No patient summary yet. Generate one to see an overview of the recorded history.',
-          generateLabel: 'Generate Patient Summary',
-          failureReassurance: 'All original records are unchanged and still available.',
+          loadingMessage: l10n.aiPatientSummaryLoadingMessage,
+          emptyMessage: l10n.aiPatientSummaryEmptyMessage,
+          generateLabel: l10n.aiGeneratePatientSummaryButton,
+          failureReassurance: l10n.aiOriginalRecordsUnchangedNote,
         ),
         const Disclaimer(),
       ],
@@ -47,7 +49,7 @@ class PatientSummaryScreen extends StatelessWidget {
   final String patientId;
 
   @override
-  Widget build(BuildContext context) => AppPage(title: 'AI Patient Summary', body: PatientSummaryView(patientId: patientId));
+  Widget build(BuildContext context) => AppPage(title: AppLocalizations.of(context).aiPatientSummaryTitle, body: PatientSummaryView(patientId: patientId));
 }
 
 /// "Your Health Summary": the patient-facing counterpart to AI Patient Summary. A separate
@@ -59,21 +61,22 @@ class YourHealthSummaryScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     return AppPage(
-      title: 'Your Health Summary',
+      title: l10n.aiYourHealthSummaryTitle,
       body: PageBody(
         maxWidth: 820,
         onRefresh: () async => ref.invalidate(patientFriendlySummaryProvider(patientId)),
         children: [
           AiSummarySection(
-            title: 'Your Health Summary',
+            title: l10n.aiYourHealthSummaryTitle,
             value: ref.watch(patientFriendlySummaryProvider(patientId)),
             onGenerate: () => ref.read(aiRepositoryProvider).patient.generateFriendly(patientId),
             onGenerated: () => ref.invalidate(patientFriendlySummaryProvider(patientId)),
-            loadingMessage: 'Looking at your recorded health information...',
-            emptyMessage: 'Get a short summary of your recorded health information, in plain language.',
-            generateLabel: 'Generate Summary',
-            failureReassurance: 'Your original records are unchanged and still available.',
+            loadingMessage: l10n.aiHealthSummaryLoadingMessage,
+            emptyMessage: l10n.aiHealthSummaryEmptyMessage,
+            generateLabel: l10n.aiGenerateSummaryButton,
+            failureReassurance: l10n.aiYourRecordsUnchangedNote,
           ),
           const Disclaimer(),
         ],
@@ -89,21 +92,22 @@ class LifestyleInsightScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     return AppPage(
-      title: 'Lifestyle Insight',
+      title: l10n.aiLifestyleInsightTitle,
       body: PageBody(
         maxWidth: 820,
         onRefresh: () async => ref.invalidate(lifestyleInsightProvider(patientId)),
         children: [
           AiSummarySection(
-            title: 'Lifestyle Insight',
+            title: l10n.aiLifestyleInsightTitle,
             value: ref.watch(lifestyleInsightProvider(patientId)),
             onGenerate: () => ref.read(aiRepositoryProvider).lifestyle.generateInsight(patientId),
             onGenerated: () => ref.invalidate(lifestyleInsightProvider(patientId)),
-            loadingMessage: 'Looking at your recent activity, sleep, food and glucose...',
-            emptyMessage: 'Get gentle, practical suggestions based on what you have recorded.',
-            generateLabel: 'Generate Insight',
-            failureReassurance: 'Your recorded lifestyle data is unchanged.',
+            loadingMessage: l10n.aiLifestyleLoadingMessage,
+            emptyMessage: l10n.aiLifestyleEmptyMessage,
+            generateLabel: l10n.aiGenerateInsightButton,
+            failureReassurance: l10n.aiLifestyleUnchangedNote,
           ),
           const Disclaimer(),
         ],

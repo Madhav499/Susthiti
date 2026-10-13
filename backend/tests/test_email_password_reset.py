@@ -285,6 +285,25 @@ def test_used_token_fails(env, fake_resend):
     assert r2.json()["detail"]["code"] == "invalid_token"
 
 
+# 11b. Password reset email follows the recipient's own saved language
+def test_password_reset_email_uses_recipients_saved_locale(env, fake_resend):
+    client, _, _ = env
+    headers, _ = register_patient(client, name="Priya Shah", email="priya.locale@example.org")
+    client.patch(f"{API}/auth/language", headers=headers, json={"locale": "gu"})
+
+    r = client.post(f"{API}/auth/forgot-password", json={"email": "priya.locale@example.org"})
+    assert r.status_code == 200
+
+    text = fake_resend.calls[0]["body"]["text"]
+    assert fake_resend.calls[0]["body"]["subject"] == "SUSTHITI પાસવર્ડ રીસેટ"
+    assert "નમસ્તે Priya Shah," in text
+    assert "તમારો પાસવર્ડ રીસેટ કોડ છે:" in text
+    # The code itself is still a bare, untranslated 8-digit number.
+    lines = [line.strip() for line in text.split("\n") if line.strip()]
+    raw_token = lines[lines.index("તમારો પાસવર્ડ રીસેટ કોડ છે:") + 1]
+    assert raw_token.isdigit() and len(raw_token) == 8
+
+
 # 11. Password reset rate limiting remains active
 def test_password_reset_rate_limiting_remains_active(env, fake_resend, monkeypatch):
     client, _, _ = env

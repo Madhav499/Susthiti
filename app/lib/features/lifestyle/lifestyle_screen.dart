@@ -15,6 +15,7 @@ import '../../core/widgets/feedback.dart';
 import '../../core/widgets/form_fields.dart';
 import '../../data/models/tracking.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../notifications/notifications.dart';
 import '../wearables/health_connection.dart';
 import 'trend_card.dart';
@@ -34,7 +35,7 @@ class LifestyleScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppPage(
-      title: 'Lifestyle',
+      title: AppLocalizations.of(context).navLifestyle,
       large: true,
       actions: const [NotificationBell()],
       body: LifestyleView(patientId: patientId, isPatient: true, initialMetric: initialMetric),
@@ -97,20 +98,22 @@ class _LifestyleViewState extends ConsumerState<LifestyleView> {
   }
 
   Future<void> _syncNow(List<WearableConnection> devices) async {
+    final l10n = AppLocalizations.of(context);
     final service = ref.read(wearableServiceProvider);
     final connection = healthConnections(devices).where(service.canSync).firstOrNull;
     if (connection == null) return _refresh(); // web / tablet without the platform: re-read synced data
     try {
       final outcome = await service.sync(connection);
       _refresh();
-      if (mounted) showToast(context, outcome.upToDate ? 'Already up to date' : 'Synced just now');
+      if (mounted) showToast(context, outcome.upToDate ? l10n.lifestyleAlreadyUpToDateToast : l10n.lifestyleSyncedJustNowToast);
     } catch (_) {
-      if (mounted) showToast(context, "Sync didn't complete. Check your connection and try again.", error: true);
+      if (mounted) showToast(context, l10n.lifestyleSyncFailedToast, error: true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final value = ref.watch(lifestyleOverviewProvider(widget.patientId));
     return PageBody(
       maxWidth: 1000,
@@ -135,33 +138,33 @@ class _LifestyleViewState extends ConsumerState<LifestyleView> {
               const SizedBox(height: AppSpacing.lg),
             ],
             SectionHeader(
-              'Today',
-              subtitle: 'Recorded values only. Comparisons appear once there is enough history.',
+              l10n.commonToday,
+              subtitle: l10n.lifestyleTodaySubtitle,
               action: Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
                 SyncIndicator(devices: o.devices, offline: value.hasError, onTap: () => _syncNow(o.devices)),
-                if (widget.isPatient) TextButton.icon(onPressed: () => _addManual(context), icon: const Icon(Icons.add), label: const Text('Add')),
+                if (widget.isPatient) TextButton.icon(onPressed: () => _addManual(context), icon: const Icon(Icons.add), label: Text(l10n.commonAdd)),
               ]),
             ),
             ResponsiveGrid(minItemWidth: 170, children: [
               for (final m in [LifestyleMetricType.steps, LifestyleMetricType.heartRate, LifestyleMetricType.sleep, LifestyleMetricType.activity, LifestyleMetricType.bloodPressure, LifestyleMetricType.spo2])
-                _metricTile(o.metrics[m], m, connected: healthConnections(o.devices).isNotEmpty),
+                _metricTile(l10n, o.metrics[m], m, connected: healthConnections(o.devices).isNotEmpty),
               MetricTile(
                 icon: Icons.water_drop_outlined,
-                label: 'Glucose',
-                value: o.glucose.latestValue == null ? 'No data' : '${o.glucose.latestValue!.round()} mg/dL',
-                caption: o.glucose.latestAt == null ? 'No readings yet' : Fmt.relative(o.glucose.latestAt),
+                label: l10n.navGlucose,
+                value: o.glucose.latestValue == null ? l10n.commonNoData : '${o.glucose.latestValue!.round()} mg/dL',
+                caption: o.glucose.latestAt == null ? l10n.dashNoReadingsYet : Fmt.relative(l10n, o.glucose.latestAt),
                 onTap: widget.isPatient ? () => context.push('/p/glucose') : null,
               ),
               MetricTile(
                 icon: Icons.restaurant_outlined,
-                label: 'Food',
+                label: l10n.lifestyleFoodLabel,
                 value: '${o.foodEntriesToday}',
-                caption: o.foodEntriesToday == 1 ? 'meal logged today' : 'meals logged today',
+                caption: l10n.lifestyleMealsLoggedTodayCaption(o.foodEntriesToday),
                 onTap: widget.isPatient ? () => context.push('/p/food') : null,
               ),
             ]),
             const SizedBox(height: AppSpacing.section),
-            const SectionHeader('Trends'),
+            SectionHeader(l10n.lifestyleTrendsHeader),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(children: [
@@ -188,8 +191,8 @@ class _LifestyleViewState extends ConsumerState<LifestyleView> {
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('Lifestyle Insight', style: Theme.of(context).textTheme.titleSmall),
-                      Text('AI suggestions based on your activity, sleep, food and glucose', style: Theme.of(context).textTheme.bodySmall),
+                      Text(l10n.lifestyleInsightTitle, style: Theme.of(context).textTheme.titleSmall),
+                      Text(l10n.lifestyleInsightSubtitle, style: Theme.of(context).textTheme.bodySmall),
                     ]),
                   ),
                   const Icon(Icons.chevron_right, color: AppColors.primary),
@@ -202,7 +205,7 @@ class _LifestyleViewState extends ConsumerState<LifestyleView> {
     );
   }
 
-  Widget _metricTile(MetricOverview? o, LifestyleMetricType m, {required bool connected}) {
+  Widget _metricTile(AppLocalizations l10n, MetricOverview? o, LifestyleMetricType m, {required bool connected}) {
     final icon = switch (m) {
       LifestyleMetricType.steps => Icons.directions_walk_outlined,
       LifestyleMetricType.heartRate => Icons.favorite_border,
@@ -217,17 +220,17 @@ class _LifestyleViewState extends ConsumerState<LifestyleView> {
       // Never a placeholder value: say plainly that nothing was recorded or provided. Many watches
       // don't measure blood pressure or SpO2, so with a source connected say where the gap is.
       final notFromDevice = connected && (m == LifestyleMetricType.bloodPressure || m == LifestyleMetricType.spo2);
-      return MetricTile(icon: icon, label: m.label, value: 'No data', caption: notFromDevice ? 'Not available from connected device' : 'Not recorded yet');
+      return MetricTile(icon: icon, label: m.label, value: l10n.commonNoData, caption: notFromDevice ? l10n.lifestyleNotAvailableFromDevice : l10n.lifestyleNotRecordedYet);
     }
     final today = o!.isToday;
     String? caption;
     if (today && o.changePercent != null) {
       final sign = o.changePercent! >= 0 ? '+' : '';
-      caption = '$sign${o.changePercent}% vs your recent average';
+      caption = l10n.lifestyleChangeVsAverage('$sign${o.changePercent}');
     } else if (!today) {
-      caption = 'Last recorded ${Fmt.shortDate(latest.date)}';
+      caption = l10n.dashLastRecorded(Fmt.shortDate(latest.date));
     } else {
-      caption = 'today';
+      caption = l10n.commonToday;
     }
     caption = '$caption · ${latest.sourceLabel}';
     return MetricTile(
@@ -244,7 +247,7 @@ class _LifestyleViewState extends ConsumerState<LifestyleView> {
     final saved = await showModalBottomSheet<bool>(context: context, isScrollControlled: true, builder: (_) => _ManualMetricSheet(patientId: widget.patientId));
     if (saved == true) {
       _refresh();
-      if (context.mounted) showToast(context, 'Measurement added');
+      if (context.mounted) showToast(context, AppLocalizations.of(context).lifestyleMeasurementAddedToast);
     }
   }
 }
@@ -264,14 +267,14 @@ class _ManualMetricSheetState extends ConsumerState<_ManualMetricSheet> {
   LifestyleMetricType? _metric;
   DateTime? _at = DateTime.now();
 
-  static const _limits = {
-    LifestyleMetricType.steps: (0, 100000, 'Steps'),
-    LifestyleMetricType.heartRate: (20, 250, 'Heart rate (bpm)'),
-    LifestyleMetricType.sleep: (0, 1440, 'Sleep (minutes)'),
-    LifestyleMetricType.activity: (0, 1440, 'Active minutes'),
-    LifestyleMetricType.bloodPressure: (50, 260, 'Systolic (mmHg)'),
-    LifestyleMetricType.spo2: (50, 100, 'SpO₂ (%)'),
-  };
+  static Map<LifestyleMetricType, (int, int, String)> _limits(AppLocalizations l10n) => {
+        LifestyleMetricType.steps: (0, 100000, l10n.lifestyleStepsLabel),
+        LifestyleMetricType.heartRate: (20, 250, l10n.lifestyleHeartRateFieldLabel),
+        LifestyleMetricType.sleep: (0, 1440, l10n.lifestyleSleepFieldLabel),
+        LifestyleMetricType.activity: (0, 1440, l10n.lifestyleActiveMinutesLabel),
+        LifestyleMetricType.bloodPressure: (50, 260, l10n.lifestyleSystolicLabel),
+        LifestyleMetricType.spo2: (50, 100, l10n.lifestyleSpo2FieldLabel),
+      };
 
   @override
   void dispose() {
@@ -298,31 +301,33 @@ class _ManualMetricSheetState extends ConsumerState<_ManualMetricSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final limit = _metric == null ? null : _limits[_metric];
+    final l10n = AppLocalizations.of(context);
+    final limits = _limits(l10n);
+    final limit = _metric == null ? null : limits[_metric];
     return SheetForm(
-      title: 'Add measurement',
+      title: l10n.lifestyleAddMeasurementTitle,
       form: _form,
       children: [
-        ChoiceField<LifestyleMetricType>(label: 'Measurement', options: _limits.keys.toList(), value: _metric, labelOf: (m) => m.label, onChanged: (m) => setState(() => _metric = m)),
+        ChoiceField<LifestyleMetricType>(label: l10n.lifestyleMeasurementFieldLabel, options: limits.keys.toList(), value: _metric, labelOf: (m) => m.label, onChanged: (m) => setState(() => _metric = m), requiredMessage: l10n.choiceRequiredMessage),
         if (limit != null) ...[
-          AppTextField(label: limit.$3, controller: _value, keyboardType: TextInputType.number, validator: (v) => Validators.numberInRange(v, limit.$1, limit.$2)),
+          AppTextField(label: limit.$3, controller: _value, keyboardType: TextInputType.number, validator: (v) => Validators.numberInRange(l10n, v, limit.$1, limit.$2)),
           if (_metric == LifestyleMetricType.bloodPressure)
             AppTextField(
-              label: 'Diastolic (mmHg)',
+              label: l10n.lifestyleDiastolicLabel,
               controller: _value2,
               keyboardType: TextInputType.number,
               validator: (v) {
-                final base = Validators.numberInRange(v, 30, 200);
+                final base = Validators.numberInRange(l10n, v, 30, 200);
                 if (base != null) return base;
                 final sys = double.tryParse(_value.text.trim());
-                return sys != null && double.parse(v!.trim()) >= sys ? 'Diastolic must be lower than systolic.' : null;
+                return sys != null && double.parse(v!.trim()) >= sys ? l10n.lifestyleDiastolicLowerThanSystolic : null;
               },
             ),
         ],
-        DateTimeField(label: 'Date and time', value: _at, includeTime: true, onChanged: (d) => setState(() => _at = d), validator: (d) => Validators.notFuture(d, 'Time')),
-        Text('Recorded as a manual entry.', style: Theme.of(context).textTheme.bodySmall),
+        DateTimeField(label: l10n.glucoseDateTimeLabel, value: _at, includeTime: true, onChanged: (d) => setState(() => _at = d), validator: (d) => Validators.notFuture(l10n, d, l10n.validatorDateLabel)),
+        Text(l10n.lifestyleManualEntryNote, style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: AppSpacing.md),
-        BusyButton(label: 'Save', onPressed: _save, expand: true),
+        BusyButton(label: l10n.commonSave, onPressed: _save, expand: true),
       ],
     );
   }
@@ -335,14 +340,15 @@ class _OfflineNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
       decoration: BoxDecoration(color: AppColors.warningSoft, borderRadius: AppRadius.cardBorder),
       child: Row(children: [
         const Icon(Icons.cloud_off_outlined, size: 18, color: AppColors.warningText),
         const SizedBox(width: AppSpacing.sm),
-        Expanded(child: Text('Offline. Showing the last values received${lastSynced == null ? '' : ' (${lastSyncedText(lastSynced).toLowerCase()})'}.', style: Theme.of(context).textTheme.bodySmall)),
-        TextButton(onPressed: onRetry, child: const Text('Retry')),
+        Expanded(child: Text('${l10n.lifestyleOfflineNotice}${lastSynced == null ? '' : ' (${lastSyncedText(l10n, lastSynced).toLowerCase()})'}.', style: Theme.of(context).textTheme.bodySmall)),
+        TextButton(onPressed: onRetry, child: Text(l10n.commonTryAgain)),
       ]),
     );
   }

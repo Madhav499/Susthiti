@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
 import '../utils/formatters.dart';
@@ -21,7 +22,7 @@ class LabeledField extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Text(label, style: t.labelLarge?.copyWith(fontWeight: FontWeight.w500)),
-          if (optional) Text('  Optional', style: t.labelMedium),
+          if (optional) Text('  ${AppLocalizations.of(context).fieldOptionalSuffix}', style: t.labelMedium),
         ]),
         const SizedBox(height: 6),
         child,
@@ -95,7 +96,7 @@ class AppTextField extends StatelessWidget {
 }
 
 class PasswordField extends StatefulWidget {
-  const PasswordField({super.key, required this.controller, this.label = 'Password', this.helper, this.validator, this.newPassword = false, this.onSubmitted});
+  const PasswordField({super.key, required this.controller, required this.label, this.helper, this.validator, this.newPassword = false, this.onSubmitted});
 
   final TextEditingController controller;
   final String label;
@@ -122,7 +123,7 @@ class _PasswordFieldState extends State<PasswordField> {
       onFieldSubmitted: widget.onSubmitted,
       autofillHints: [widget.newPassword ? AutofillHints.newPassword : AutofillHints.password],
       suffix: IconButton(
-        tooltip: _hidden ? 'Show password' : 'Hide password',
+        tooltip: _hidden ? AppLocalizations.of(context).passwordShowTooltip : AppLocalizations.of(context).passwordHideTooltip,
         icon: Icon(_hidden ? Icons.visibility_outlined : Icons.visibility_off_outlined),
         onPressed: () => setState(() => _hidden = !_hidden),
       ),
@@ -167,7 +168,7 @@ class DateTimeField extends FormField<DateTime> {
               onChanged(result);
             }
 
-            final text = current == null ? 'Select' : (includeTime ? Fmt.dateTime(current) : Fmt.date(current));
+            final text = current == null ? AppLocalizations.of(context).dateFieldSelectPlaceholder : (includeTime ? Fmt.dateTime(current) : Fmt.date(current));
             return LabeledField(
               label: label,
               optional: optional,
@@ -222,7 +223,7 @@ class ChoiceField<T> extends FormField<T> {
     required ValueChanged<T> onChanged,
     required String Function(T) labelOf,
     String? helper,
-    String requiredMessage = 'Please choose one option.',
+    required String requiredMessage,
   }) : super(
           initialValue: value,
           validator: (v) => v == null ? requiredMessage : null,

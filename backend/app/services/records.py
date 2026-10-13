@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from ..deps import CurrentUser
 from ..models import AuditLog, Counter, Notification, NotificationPreference, User
 from . import push
+from .i18n import localized_notification
 
 
 def next_code(db: Session, name: str, prefix: str, width: int = 6) -> str:
@@ -72,7 +73,15 @@ def notify(
     entity_id: str | None = None,
     patient_id: str | None = None,
     dedupe_key: str | None = None,
+    template_params: dict | None = None,
+    template_key: str | None = None,
 ) -> Notification | None:
+    """`title`/`body` are the English text and always the fallback. When `template_params`
+    is supplied and a template exists for `template_key` (defaulting to `type`; see
+    services/i18n.py), the recipient's OWN preferred_locale is rendered instead -- never the
+    actor's language, so a patient and the doctor acting on their record each read this
+    notification in their own language. `type` itself (used for push routing, preferences
+    and the stored record) is never affected by which template rendered the text."""
     user = db.get(User, user_id)
     if user is None or not user.is_active:
         return None
@@ -81,6 +90,10 @@ def notify(
         return None
     if dedupe_key and db.scalar(select(Notification.id).where(Notification.dedupe_key == dedupe_key)):
         return None
+    if template_params is not None:
+        localized = localized_notification(template_key or type, user.preferred_locale, template_params)
+        if localized is not None:
+            title, body = localized
     notification = Notification(
         user_id=user_id,
         type=type,

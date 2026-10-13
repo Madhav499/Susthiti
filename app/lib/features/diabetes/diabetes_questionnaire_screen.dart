@@ -11,6 +11,7 @@ import '../../core/widgets/feedback.dart';
 import '../../data/models/diabetes_risk.dart';
 import '../../data/models/health_data.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../health_profile/profile_field_editor.dart';
 import '../patient/patient_sync.dart';
 import 'diabetes_providers.dart';
@@ -42,7 +43,7 @@ class DiabetesQuestionnaireScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(healthProfileProvider(patientId));
     return AppPage(
-      title: 'Diabetes risk assessment',
+      title: AppLocalizations.of(context).diabetesRiskAssessmentTitle,
       body: AsyncBody(
         value: profile,
         onRetry: () => ref.invalidate(healthProfileProvider(patientId)),
@@ -66,7 +67,7 @@ class _QuestionnaireState extends ConsumerState<_Questionnaire> {
   late final List<Option> _steps = [
     for (final g in widget.profile.groups)
       if (_fieldsIn(widget.profile, g.value).isNotEmpty) g,
-    const Option('review', 'Review'),
+    Option('review', AppLocalizations.of(context).commonReviewLabel),
   ];
   int _step = 0;
   bool _busy = false;
@@ -83,7 +84,7 @@ class _QuestionnaireState extends ConsumerState<_Questionnaire> {
   void _next() {
     final group = _steps[_step].value;
     if (group != 'review') {
-      final check = _answers.changes(only: _fieldsIn(widget.profile, group).map((f) => f.key));
+      final check = _answers.changes(AppLocalizations.of(context), only: _fieldsIn(widget.profile, group).map((f) => f.key));
       if (check.error != null) {
         setState(() => _error = check.error);
         return;
@@ -96,7 +97,7 @@ class _QuestionnaireState extends ConsumerState<_Questionnaire> {
   }
 
   Future<void> _finish() async {
-    final result = _answers.changes(all: true);
+    final result = _answers.changes(AppLocalizations.of(context), all: true);
     if (result.error != null) {
       setState(() => _error = result.error);
       return;
@@ -123,14 +124,15 @@ class _QuestionnaireState extends ConsumerState<_Questionnaire> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final step = _steps[_step];
     return PageBody(maxWidth: 720, children: [
-      Text('Step ${_step + 1} of ${_steps.length}: ${step.label}', style: t.labelLarge?.copyWith(color: AppColors.primaryDeep)),
+      Text(l10n.stepOfTotalLabel(_step + 1, _steps.length, step.label), style: t.labelLarge?.copyWith(color: AppColors.primaryDeep)),
       const SizedBox(height: AppSpacing.sm),
       LinearProgressIndicator(value: (_step + 1) / _steps.length, minHeight: 6, borderRadius: BorderRadius.circular(3)),
       const SizedBox(height: AppSpacing.lg),
       if (!_isReview) ...[
-        Text(profileGroupIntro[step.value] ?? '', style: t.bodyMedium),
+        Text(profileGroupIntro(l10n)[step.value] ?? '', style: t.bodyMedium),
         const SizedBox(height: AppSpacing.md),
         AppCard(
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -145,19 +147,19 @@ class _QuestionnaireState extends ConsumerState<_Questionnaire> {
       if (_error != null) Padding(padding: const EdgeInsets.only(top: AppSpacing.md), child: Text(_error!, style: const TextStyle(color: AppColors.error))),
       const SizedBox(height: AppSpacing.lg),
       Row(children: [
-        if (_step > 0) OutlinedButton(onPressed: _busy ? null : () => setState(() => _step--), child: const Text('Back')),
+        if (_step > 0) OutlinedButton(onPressed: _busy ? null : () => setState(() => _step--), child: Text(l10n.commonBack)),
         const Spacer(),
         if (!_isReview)
-          FilledButton(onPressed: _next, child: const Text('Next'))
+          FilledButton(onPressed: _next, child: Text(l10n.commonNext))
         else
           FilledButton.icon(
             onPressed: _busy ? null : _finish,
             icon: _busy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.insights_outlined),
-            label: const Text('See my result'),
+            label: Text(l10n.seeMyResultButton),
           ),
       ]),
       const SizedBox(height: AppSpacing.md),
-      Text('Your answers are saved to your health profile, so you won\'t be asked again elsewhere.', style: t.bodySmall),
+      Text(l10n.answersSavedToProfileNote, style: t.bodySmall),
       const RiskSafetyNote(),
     ]);
   }
@@ -172,6 +174,7 @@ class _Review extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final status = ref.watch(riskStatusProvider(patientId));
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return AsyncBody(
       value: status,
       onRetry: () => ref.invalidate(riskStatusProvider(patientId)),
@@ -183,12 +186,12 @@ class _Review extends ConsumerWidget {
           totalCount: 0,
         );
         return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Text('Also used, collected automatically', style: t.titleMedium),
+          Text(l10n.alsoUsedAutoHeader, style: t.titleMedium),
           const SizedBox(height: AppSpacing.xs),
-          Text('Values read from your reports and data from your phone. To change a report value, open the report.', style: t.bodySmall),
+          Text(l10n.autoValuesExplanation, style: t.bodySmall),
           const SizedBox(height: AppSpacing.md),
           if (auto.groups.isEmpty)
-            AppCard(child: Text('No report values or phone data yet. Upload a report with HbA1c or glucose results to include them.', style: t.bodyMedium))
+            AppCard(child: Text(l10n.noAutoDataYetMessage, style: t.bodyMedium))
           else
             DataUsedCard(data: auto),
         ]);

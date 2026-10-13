@@ -8,6 +8,7 @@ import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/widgets/labels.dart';
 import '../../data/models/diabetes.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Responsible result presentation: the model's classification (Positive / Negative) and its
 /// classification probability, worded as a screening pattern, never a diagnosis or future risk.
@@ -19,26 +20,28 @@ class AssessmentResultBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final a = assessment;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('ML screening result', style: t.labelMedium),
+      Text(l10n.mlScreeningResultLabel, style: t.labelMedium),
       const SizedBox(height: AppSpacing.lg),
       Center(child: ClassificationRing(positive: a.isPositive, probability: a.classificationProbability, size: 136)),
       const SizedBox(height: AppSpacing.lg),
       Center(child: ClassificationPill(positive: a.isPositive)),
       const SizedBox(height: AppSpacing.sm),
+      // a.headline is the API's own canonical wording -- see ScreeningWording's note.
       SizedBox(width: double.infinity, child: Text(a.headline, style: t.headlineSmall, textAlign: TextAlign.center)),
       const SizedBox(height: AppSpacing.lg),
       Wrap(spacing: AppSpacing.xl, runSpacing: AppSpacing.md, children: [
-        _Fact('Model classification', a.prediction),
+        _Fact(l10n.modelClassificationLabel, a.prediction),
         _Fact(ScreeningWording.probabilityLabel, Fmt.modelProbability(a.classificationProbability)),
-        _Fact('Assessed', Fmt.dateTime(a.assessedAt)),
+        _Fact(l10n.assessedLabel, Fmt.dateTime(a.assessedAt)),
       ]),
       const SizedBox(height: AppSpacing.sm),
       Text(ScreeningWording.probabilityCaption, style: t.bodySmall),
       if (onMeaning != null) ...[
         const SizedBox(height: AppSpacing.lg),
-        OutlinedButton.icon(onPressed: onMeaning, icon: const Icon(Icons.help_outline), label: const Text('View What This Means')),
+        OutlinedButton.icon(onPressed: onMeaning, icon: const Icon(Icons.help_outline), label: Text(l10n.viewWhatThisMeansButton)),
       ],
     ]);
   }
@@ -56,6 +59,7 @@ class ClassificationRing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final tone = positive ? StatusTone.attention : StatusTone.positive;
     return Semantics(
       label: 'Model classification ${positive ? 'Positive' : 'Negative'}, ${ScreeningWording.probabilityLabel} ${Fmt.modelProbability(probability)}',
@@ -67,7 +71,7 @@ class ClassificationRing extends StatelessWidget {
           child: Center(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               Text(Fmt.modelProbability(probability), style: t.headlineSmall?.copyWith(fontSize: size * 0.2, fontFeatures: const [FontFeature.tabularFigures()])),
-              Text('probability', style: t.labelSmall),
+              Text(l10n.probabilityShortLabel, style: t.labelSmall),
             ]),
           ),
         ),
@@ -119,18 +123,18 @@ class ResultMeaningCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(color: AppColors.surface, borderRadius: AppRadius.cardBorder, border: Border.all(color: AppColors.border)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('What this means', style: t.titleSmall),
+        Text(l10n.whatThisMeansHeader, style: t.titleSmall),
         const SizedBox(height: AppSpacing.xs),
+        // assessment.explanation is the API's own canonical wording -- never retranslated here.
         Text(assessment.explanation, style: t.bodyMedium),
         const SizedBox(height: AppSpacing.xs),
         Text(
-          assessment.isPositive
-              ? 'Consider sharing this result with a doctor. Tests such as fasting glucose or HbA1c are how diabetes is actually diagnosed.'
-              : 'This does not rule out diabetes. If you have symptoms or concerns, talk to a doctor.',
+          assessment.isPositive ? l10n.shareWithDoctorPositiveNote : l10n.doesNotRuleOutNote,
           style: t.bodySmall,
         ),
       ]),
@@ -146,6 +150,7 @@ class ResultDisclaimerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(color: AppColors.surfaceSecondary, borderRadius: AppRadius.cardBorder),
@@ -154,7 +159,7 @@ class ResultDisclaimerCard extends StatelessWidget {
         const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Important', style: t.titleSmall),
+            Text(l10n.commonImportantLabel, style: t.titleSmall),
             const SizedBox(height: AppSpacing.xs),
             Text(text, style: t.bodySmall?.copyWith(color: AppColors.textPrimary)),
           ]),
@@ -231,6 +236,7 @@ class _Fact extends StatelessWidget {
 
 Future<void> showAssessmentMeaning(BuildContext context) {
   final t = Theme.of(context).textTheme;
+  final l10n = AppLocalizations.of(context);
   Widget section(String title, String body) => Padding(
         padding: const EdgeInsets.only(bottom: AppSpacing.lg),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -250,20 +256,16 @@ Future<void> showAssessmentMeaning(BuildContext context) {
         controller: controller,
         padding: const EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.xxl),
         children: [
-          Text('What this assessment means', style: t.titleLarge),
+          Text(l10n.whatAssessmentMeansHeader, style: t.titleLarge),
           const SizedBox(height: AppSpacing.lg),
-          section('What the model does',
-              'A trained machine-learning model (an RBF support vector machine) looks at your age, gender and 14 yes/no symptom answers and classifies whether they match a pattern associated with diabetes in the data it was trained on.'),
-          section(ScreeningWording.probabilityLabel,
-              'The probability the model assigns to the Positive (diabetes-related pattern) class for the answers you gave. A low value goes with a Negative result. It is not the probability that you have or will develop diabetes.'),
-          section("What it can't tell you",
-              "It is not a diagnosis, and it cannot predict whether or when you might develop diabetes. The training data doesn't include long-term follow-up, so no timeframe can be estimated."),
-          section('What to do next',
-              'Share the result with your doctor, especially if it shows an elevated risk pattern or your symptoms continue. Tests such as fasting glucose or HbA1c are how diabetes is actually diagnosed.'),
+          section(l10n.whatModelDoesHeader, l10n.whatModelDoesText),
+          section(ScreeningWording.probabilityLabel, l10n.probabilityExplanationText),
+          section(l10n.whatItCantTellHeader, l10n.whatItCantTellText),
+          section(l10n.whatToDoNextHeader, l10n.whatToDoNextText),
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(color: AppColors.primarySoft, borderRadius: AppRadius.controlBorder),
-            child: Text('If you feel very unwell, seek medical care promptly. SUSTHITI does not replace professional medical diagnosis, treatment, or emergency care.', style: t.bodySmall?.copyWith(color: AppColors.textPrimary)),
+            child: Text(l10n.seekCareIfUnwellNote, style: t.bodySmall?.copyWith(color: AppColors.textPrimary)),
           ),
         ],
       ),

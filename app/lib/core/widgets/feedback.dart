@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../errors/failures.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
@@ -71,12 +72,13 @@ class ErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     final failure = asFailure(error);
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final heading = title ??
         switch (failure) {
-          NetworkFailure() || TimeoutFailure() => 'Unable to load this right now.',
-          AuthorizationFailure() => 'Access not available.',
-          NotFoundFailure() => 'Not found.',
-          _ => 'Something went wrong.',
+          NetworkFailure() || TimeoutFailure() => l10n.errorUnableToLoad,
+          AuthorizationFailure() => l10n.errorAccessNotAvailable,
+          NotFoundFailure() => l10n.errorNotFound,
+          _ => l10n.errorSomethingWrong,
         };
     return Semantics(
       liveRegion: true,
@@ -94,7 +96,7 @@ class ErrorState extends StatelessWidget {
           ],
           if (onRetry != null && failure.isRetryable) ...[
             const SizedBox(height: AppSpacing.lg),
-            OutlinedButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('Try Again')),
+            OutlinedButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: Text(l10n.commonTryAgain)),
           ],
         ]),
       ),
@@ -145,7 +147,7 @@ class SkeletonList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Loading',
+      label: AppLocalizations.of(context).commonLoading,
       child: Column(children: [
         for (var i = 0; i < count; i++) ...[
           Skeleton(height: itemHeight, radius: AppRadius.card),
@@ -197,7 +199,7 @@ Future<bool> confirmAction(
       title: Text(title),
       content: Text(message),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+        TextButton(onPressed: () => Navigator.pop(context, false), child: Text(AppLocalizations.of(context).commonCancel)),
         FilledButton(
           style: destructive ? FilledButton.styleFrom(backgroundColor: AppColors.error) : null,
           onPressed: () => Navigator.pop(context, true),

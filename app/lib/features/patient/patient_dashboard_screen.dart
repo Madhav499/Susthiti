@@ -17,6 +17,7 @@ import '../../data/models/heart_risk.dart';
 import '../../data/models/system.dart';
 import '../../data/models/tracking.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../diabetes/risk_widgets.dart';
 import '../glucose/glucose_screen.dart';
 import '../heart/heart_widgets.dart';
@@ -59,8 +60,9 @@ class _PatientDashboardScreenState extends ConsumerState<PatientDashboardScreen>
     void refresh() => ref.invalidate(patientDashboardProvider(patientId));
     final name = value.value?.patientName;
     final birthday = value.value?.isBirthday ?? false;
+    final l10n = AppLocalizations.of(context);
     return AppPage(
-      title: name == null ? 'Home' : '${birthday ? 'Happy birthday' : Fmt.greeting()}, ${Fmt.firstName(name)}',
+      title: name == null ? l10n.navHome : '${birthday ? l10n.dashHappyBirthday : Fmt.greeting(l10n)}, ${Fmt.firstName(name)}',
       subtitle: Fmt.date(DateTime.now()),
       large: true,
       brand: true,
@@ -91,39 +93,40 @@ class _DashboardBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Theme.of(context).textTheme;
     final size = context.screenSize;
+    final l10n = AppLocalizations.of(context);
     final hero = _PredictionCarousel(d: d);
 
     final today = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      const SectionHeader("Today's Overview"),
+      SectionHeader(l10n.dashTodaysOverview),
       ResponsiveGrid(minItemWidth: 150, maxColumns: size == ScreenSize.desktop ? 2 : 4, children: [
         MetricTile(
           icon: Icons.water_drop_outlined,
-          label: 'Glucose',
-          value: d.glucose.latestValue == null ? 'No data' : '${d.glucose.latestValue!.round()} mg/dL',
-          caption: d.glucose.latestAt == null ? 'No readings yet' : Fmt.relative(d.glucose.latestAt),
+          label: l10n.navGlucose,
+          value: d.glucose.latestValue == null ? l10n.commonNoData : '${d.glucose.latestValue!.round()} mg/dL',
+          caption: d.glucose.latestAt == null ? l10n.dashNoReadingsYet : Fmt.relative(l10n, d.glucose.latestAt),
           onTap: () => context.push('/p/glucose'),
         ),
-        for (final m in [LifestyleMetricType.steps, LifestyleMetricType.sleep, LifestyleMetricType.heartRate]) _metric(d.metrics[m], m, context),
+        for (final m in [LifestyleMetricType.steps, LifestyleMetricType.sleep, LifestyleMetricType.heartRate]) _metric(d.metrics[m], m, context, l10n),
       ]),
     ]);
 
-    final appointment = _nextAppointmentCard(context, d.nextAppointment);
-    final followUp = _nextFollowUpCard(context, d.nextFollowUp);
-    final surgery = _nextSurgeryCard(context, d.nextSurgery);
+    final appointment = _nextAppointmentCard(context, d.nextAppointment, l10n);
+    final followUp = _nextFollowUpCard(context, d.nextFollowUp, l10n);
+    final surgery = _nextSurgeryCard(context, d.nextSurgery, l10n);
 
     final actions = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      const SectionHeader('Quick Actions'),
+      SectionHeader(l10n.dashQuickActions),
       ResponsiveGrid(minItemWidth: 100, maxColumns: 5, children: [
-        ActionTile(icon: Icons.upload_file_outlined, label: 'Upload Report', onTap: () => context.push('/r/$patientId/reports/upload')),
+        ActionTile(icon: Icons.upload_file_outlined, label: l10n.dashUploadReport, onTap: () => context.push('/r/$patientId/reports/upload')),
         ActionTile(
           icon: Icons.water_drop_outlined,
-          label: 'Record Glucose',
+          label: l10n.dashRecordGlucose,
           onTap: () => showRecordGlucoseSheet(context, ref, patientId).then((_) => ref.invalidate(patientDashboardProvider(patientId))),
         ),
-        ActionTile(icon: Icons.restaurant_outlined, label: 'Log Food', onTap: () => context.push('/p/food')),
-        ActionTile(icon: Icons.insights_outlined, label: 'Diabetes Risk', onTap: () => context.go('/p/diabetes')),
-        ActionTile(icon: Icons.healing_outlined, label: 'Report Side Effect', onTap: () => context.push('/p/side-effects/new')),
-        ActionTile(icon: Icons.event_repeat_outlined, label: 'Follow-ups', onTap: () => context.push('/p/follow-ups')),
+        ActionTile(icon: Icons.restaurant_outlined, label: l10n.dashLogFood, onTap: () => context.push('/p/food')),
+        ActionTile(icon: Icons.insights_outlined, label: l10n.dashDiabetesRisk, onTap: () => context.go('/p/diabetes')),
+        ActionTile(icon: Icons.healing_outlined, label: l10n.dashReportSideEffect, onTap: () => context.push('/p/side-effects/new')),
+        ActionTile(icon: Icons.event_repeat_outlined, label: l10n.navFollowUps, onTap: () => context.push('/p/follow-ups')),
       ]),
     ]);
 
@@ -137,17 +140,17 @@ class _DashboardBody extends ConsumerWidget {
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Wrap(spacing: AppSpacing.sm, runSpacing: AppSpacing.xs, crossAxisAlignment: WrapCrossAlignment.center, children: [
-              Text('AI Lifestyle Insight', style: t.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+              Text(l10n.dashAiLifestyleInsight, style: t.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
               const AiLabel(),
             ]),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              d.insightHeadline ?? 'Generate suggestions based on your activity, sleep, food and glucose.',
+              d.insightHeadline ?? l10n.dashInsightPlaceholder,
               style: t.bodyMedium?.copyWith(color: AppColors.textSecondary),
             ),
             if (d.insightGeneratedAt != null) ...[
               const SizedBox(height: AppSpacing.xs),
-              Text('Generated ${Fmt.relative(d.insightGeneratedAt)}', style: t.labelSmall),
+              Text(l10n.dashGenerated(Fmt.relative(l10n, d.insightGeneratedAt)), style: t.labelSmall),
             ],
           ]),
         ),
@@ -157,14 +160,14 @@ class _DashboardBody extends ConsumerWidget {
     );
 
     final reports = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      SectionHeader('Recent Reports', action: TextButton(onPressed: () => context.go('/p/reports'), child: const Text('View all'))),
+      SectionHeader(l10n.dashRecentReports, action: TextButton(onPressed: () => context.go('/p/reports'), child: Text(l10n.commonViewAll))),
       if (d.recentReports.isEmpty)
         AppCard(
           child: EmptyState(
             icon: Icons.description_outlined,
-            title: 'No reports available.',
+            title: l10n.dashNoReportsAvailable,
             compact: true,
-            actionLabel: 'Upload Report',
+            actionLabel: l10n.dashUploadReport,
             onAction: () => context.push('/r/$patientId/reports/upload'),
           ),
         )
@@ -176,19 +179,19 @@ class _DashboardBody extends ConsumerWidget {
     ]);
 
     final records = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      const SectionHeader('My Records'),
+      SectionHeader(l10n.dashMyRecords),
       AppCard(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
         child: Column(children: [
-          _RecordLink(icon: Icons.medication_outlined, label: 'Prescriptions', onTap: () => context.push('/r/$patientId/prescriptions')),
-          _RecordLink(icon: Icons.event_note_outlined, label: 'Doctor visits', onTap: () => context.push('/r/$patientId/visits')),
-          _RecordLink(icon: Icons.healing_outlined, label: 'Side effects', onTap: () => context.push('/r/$patientId/side-effects')),
-          _RecordLink(icon: Icons.event_available_outlined, label: 'Appointment recommendations', onTap: () => context.push('/p/appointments')),
-          _RecordLink(icon: Icons.event_repeat_outlined, label: 'Follow-ups', onTap: () => context.push('/p/follow-ups')),
-          _RecordLink(icon: Icons.local_hospital_outlined, label: 'Surgeries', onTap: () => context.push('/p/surgeries')),
-          _RecordLink(icon: Icons.timeline_outlined, label: 'Health timeline', onTap: () => context.push('/p/timeline')),
-          _RecordLink(icon: Icons.summarize_outlined, label: 'Your Health Summary', onTap: () => context.push('/p/health-summary')),
-          _RecordLink(icon: Icons.verified_user_outlined, label: 'Doctor access', onTap: () => context.push('/p/access'), last: true),
+          _RecordLink(icon: Icons.medication_outlined, label: l10n.navPrescriptions, onTap: () => context.push('/r/$patientId/prescriptions')),
+          _RecordLink(icon: Icons.event_note_outlined, label: l10n.dashDoctorVisits, onTap: () => context.push('/r/$patientId/visits')),
+          _RecordLink(icon: Icons.healing_outlined, label: l10n.navSideEffects, onTap: () => context.push('/r/$patientId/side-effects')),
+          _RecordLink(icon: Icons.event_available_outlined, label: l10n.dashAppointmentRecommendations, onTap: () => context.push('/p/appointments')),
+          _RecordLink(icon: Icons.event_repeat_outlined, label: l10n.navFollowUps, onTap: () => context.push('/p/follow-ups')),
+          _RecordLink(icon: Icons.local_hospital_outlined, label: l10n.navSurgeries, onTap: () => context.push('/p/surgeries')),
+          _RecordLink(icon: Icons.timeline_outlined, label: l10n.dashHealthTimeline, onTap: () => context.push('/p/timeline')),
+          _RecordLink(icon: Icons.summarize_outlined, label: l10n.dashHealthSummary, onTap: () => context.push('/p/health-summary')),
+          _RecordLink(icon: Icons.verified_user_outlined, label: l10n.settingsDoctorAccess, onTap: () => context.push('/p/access'), last: true),
         ]),
       ),
     ]);
@@ -201,7 +204,7 @@ class _DashboardBody extends ConsumerWidget {
             child: Row(children: [
               const IconBadge(Icons.cake_outlined, size: 44),
               const SizedBox(width: AppSpacing.lg),
-              Expanded(child: Text('Happy birthday, ${Fmt.firstName(d.patientName)}! Wishing you a happy and healthy year ahead.', style: t.titleSmall)),
+              Expanded(child: Text(l10n.dashHappyBirthdayMessage(Fmt.firstName(d.patientName)), style: t.titleSmall)),
             ]),
           )
         : null;
@@ -219,7 +222,7 @@ class _DashboardBody extends ConsumerWidget {
       if (birthday != null) ...[birthday, gap],
       // Top-aligned rather than IntrinsicHeight: the metric grid uses a LayoutBuilder.
       Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Expanded(flex: 6, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [const SectionHeader('Your Health'), hero])),
+        Expanded(flex: 6, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [SectionHeader(l10n.dashYourHealth), hero])),
         hgap,
         Expanded(flex: 5, child: today),
       ]),
@@ -240,7 +243,7 @@ class _DashboardBody extends ConsumerWidget {
     ]);
   }
 
-  Widget _metric(MetricOverview? o, LifestyleMetricType m, BuildContext context) {
+  Widget _metric(MetricOverview? o, LifestyleMetricType m, BuildContext context, AppLocalizations l10n) {
     final icon = switch (m) {
       LifestyleMetricType.steps => Icons.directions_walk_outlined,
       LifestyleMetricType.sleep => Icons.bedtime_outlined,
@@ -250,8 +253,8 @@ class _DashboardBody extends ConsumerWidget {
     return MetricTile(
       icon: icon,
       label: m.label,
-      value: latest == null ? 'No data' : m.format(latest.value, latest.value2),
-      caption: latest == null ? 'Not recorded yet' : (o!.isToday ? 'today' : 'Last recorded ${Fmt.shortDate(latest.date)}'),
+      value: latest == null ? l10n.commonNoData : m.format(latest.value, latest.value2),
+      caption: latest == null ? l10n.dashNoReadingsYet : (o!.isToday ? l10n.commonToday : l10n.dashLastRecorded(Fmt.shortDate(latest.date))),
       isDemo: latest?.isDemo ?? false,
       onTap: () => context.go('/p/lifestyle'),
     );
@@ -259,7 +262,7 @@ class _DashboardBody extends ConsumerWidget {
 
   /// Null when there is nothing to show — an empty "Upcoming Appointment" section would just be
   /// clutter, and the full list is always reachable from Quick Actions.
-  Widget? _nextAppointmentCard(BuildContext context, AppointmentRecommendation? a) {
+  Widget? _nextAppointmentCard(BuildContext context, AppointmentRecommendation? a, AppLocalizations l10n) {
     if (a == null) return null;
     final t = Theme.of(context).textTheme;
     final timing = a.timing;
@@ -269,11 +272,12 @@ class _DashboardBody extends ConsumerWidget {
       AppointmentTiming.past => StatusTone.inactive,
     };
     final subtitle = switch (timing) {
-      AppointmentTiming.unscheduled => 'Contact the clinic to schedule a time',
+      AppointmentTiming.unscheduled => l10n.dashContactClinic,
       _ => Fmt.dateTime(a.recommendedFor),
     };
+    final doctorLine = l10n.dashAppointmentDoctorLine(a.doctorName, subtitle);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      const SectionHeader('Upcoming Appointment'),
+      SectionHeader(l10n.dashUpcomingAppointment),
       AppCard(
         onTap: () => context.push('/p/appointments'),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -283,7 +287,7 @@ class _DashboardBody extends ConsumerWidget {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [Expanded(child: Text(a.reason, style: t.titleSmall)), StatusPill(timing.label, tone: tone)]),
               const SizedBox(height: 2),
-              Text('Dr. ${a.doctorName} · $subtitle', style: t.bodySmall),
+              Text(doctorLine, style: t.bodySmall),
             ]),
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -295,12 +299,12 @@ class _DashboardBody extends ConsumerWidget {
 
   /// Null when there is nothing to show — only a follow-up still scheduled (never a completed
   /// or cancelled one) is worth surfacing on the home screen.
-  Widget? _nextFollowUpCard(BuildContext context, FollowUpTask? f) {
+  Widget? _nextFollowUpCard(BuildContext context, FollowUpTask? f, AppLocalizations l10n) {
     if (f == null) return null;
     final t = Theme.of(context).textTheme;
     final tone = f.isOverdue ? StatusTone.attention : StatusTone.info;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      const SectionHeader('Upcoming Follow-up'),
+      SectionHeader(l10n.dashUpcomingFollowUp),
       AppCard(
         onTap: () => context.push('/p/follow-ups'),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -308,9 +312,9 @@ class _DashboardBody extends ConsumerWidget {
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [Expanded(child: Text(f.purpose, style: t.titleSmall)), StatusPill(f.isOverdue ? 'Overdue' : 'Scheduled', tone: tone)]),
+              Row(children: [Expanded(child: Text(f.purpose, style: t.titleSmall)), StatusPill(f.isOverdue ? l10n.dashOverdue : l10n.dashScheduled, tone: tone)]),
               const SizedBox(height: 2),
-              Text('Dr. ${f.doctorName} · Due ${Fmt.date(f.dueDate)}', style: t.bodySmall),
+              Text(l10n.dashFollowUpDoctorLine(f.doctorName, Fmt.date(f.dueDate)), style: t.bodySmall),
             ]),
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -322,13 +326,13 @@ class _DashboardBody extends ConsumerWidget {
 
   /// Null when there is nothing to show — only a surgery still scheduled is worth surfacing
   /// on the home screen, and never with internal (doctor-only) information.
-  Widget? _nextSurgeryCard(BuildContext context, Surgery? s) {
+  Widget? _nextSurgeryCard(BuildContext context, Surgery? s, AppLocalizations l10n) {
     if (s == null) return null;
     final t = Theme.of(context).textTheme;
     final tone = s.isOverdue ? StatusTone.attention : StatusTone.info;
-    final when = s.scheduledAt == null ? 'Date to be confirmed' : Fmt.dateTime(s.scheduledAt);
+    final when = s.scheduledAt == null ? l10n.dashDateTbc : Fmt.dateTime(s.scheduledAt);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      const SectionHeader('Upcoming Surgery'),
+      SectionHeader(l10n.dashUpcomingSurgery),
       AppCard(
         onTap: () => context.push('/p/surgeries'),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -336,9 +340,9 @@ class _DashboardBody extends ConsumerWidget {
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [Expanded(child: Text(s.name, style: t.titleSmall)), StatusPill(s.isOverdue ? 'Overdue' : 'Scheduled', tone: tone)]),
+              Row(children: [Expanded(child: Text(s.name, style: t.titleSmall)), StatusPill(s.isOverdue ? l10n.dashOverdue : l10n.dashScheduled, tone: tone)]),
               const SizedBox(height: 2),
-              Text('Dr. ${s.doctorName} · $when', style: t.bodySmall),
+              Text(l10n.dashSurgeryDoctorLine(s.doctorName, when), style: t.bodySmall),
               if (s.hospital != null && s.hospital!.isNotEmpty) Text(s.hospital!, style: t.bodySmall),
             ]),
           ),
@@ -430,38 +434,39 @@ class _DiabetesHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     final size = context.screenSize;
+    final l10n = AppLocalizations.of(context);
     final risk = d.risk;
     return HeroPanel(
       onTap: () => context.go('/p/diabetes'),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-            Text(RiskWording.title, style: t.labelMedium?.copyWith(color: AppColors.primaryDeep)),
+            Text(RiskWording.title(l10n), style: t.labelMedium?.copyWith(color: AppColors.primaryDeep)),
             const SizedBox(height: AppSpacing.sm),
             if (risk == null) ...[
-              Text('No estimate yet', style: t.headlineSmall),
+              Text(l10n.dashNoEstimateYet, style: t.headlineSmall),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                'Estimate your future diabetes risk. A few questions, already filled in with what SUSTHITI knows.',
+                l10n.dashEstimateFutureRisk,
                 style: t.bodyMedium?.copyWith(color: AppColors.textSecondary),
               ),
               const SizedBox(height: AppSpacing.lg),
-              FilledButton(onPressed: () => context.push('/p/diabetes/assess'), child: const Text('Start assessment')),
+              FilledButton(onPressed: () => context.push('/p/diabetes/assess'), child: Text(l10n.dashStartAssessment)),
             ] else ...[
               Wrap(spacing: AppSpacing.sm, crossAxisAlignment: WrapCrossAlignment.center, children: [
                 Text(risk.percentLabel, style: t.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
                 RiskCategoryPill(risk.riskCategory),
               ]),
-              Text(RiskWording.estimateLabel, style: t.bodyMedium?.copyWith(color: AppColors.textSecondary)),
+              Text(RiskWording.estimateLabel(l10n), style: t.bodyMedium?.copyWith(color: AppColors.textSecondary)),
               const SizedBox(height: AppSpacing.xs),
-              Text(risk.reportAvailable ? 'Includes medical report values' : 'Based on symptoms and risk factors only', style: t.bodySmall),
-              Text('Updated ${Fmt.relative(risk.assessedAt)}', style: t.bodySmall),
+              Text(risk.reportAvailable ? l10n.dashIncludesReportValues : l10n.dashBasedOnSymptomsOnly, style: t.bodySmall),
+              Text(l10n.dashRiskUpdated(Fmt.relative(l10n, risk.assessedAt)), style: t.bodySmall),
               if (d.riskStale) ...[
                 const SizedBox(height: AppSpacing.sm),
-                Text('Updated health information is available. Refresh your assessment to include it.', style: t.bodySmall?.copyWith(color: AppColors.primaryDeep)),
+                Text(l10n.dashUpdatedRiskInfo, style: t.bodySmall?.copyWith(color: AppColors.primaryDeep)),
               ],
               const SizedBox(height: AppSpacing.lg),
-              FilledButton(onPressed: () => context.go('/p/diabetes'), child: Text(d.riskStale ? 'Review and refresh' : 'View details')),
+              FilledButton(onPressed: () => context.go('/p/diabetes'), child: Text(d.riskStale ? l10n.dashReviewAndRefresh : l10n.dashViewDetails)),
             ],
           ]),
         ),
@@ -485,38 +490,39 @@ class _HeartHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     final size = context.screenSize;
+    final l10n = AppLocalizations.of(context);
     final risk = d.heartRisk;
     return HeroPanel(
       onTap: () => context.go('/p/heart'),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-            Text(HeartWording.title, style: t.labelMedium?.copyWith(color: AppColors.primaryDeep)),
+            Text(HeartWording.title(l10n), style: t.labelMedium?.copyWith(color: AppColors.primaryDeep)),
             const SizedBox(height: AppSpacing.sm),
             if (risk == null) ...[
-              Text('No screening yet', style: t.headlineSmall),
+              Text(l10n.dashNoScreeningYet, style: t.headlineSmall),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                'Screen your heart disease risk. A short form, already filled in with what SUSTHITI knows.',
+                l10n.dashScreenHeartRisk,
                 style: t.bodyMedium?.copyWith(color: AppColors.textSecondary),
               ),
               const SizedBox(height: AppSpacing.lg),
-              FilledButton(onPressed: () => context.push('/p/heart/assess'), child: const Text('Start screening')),
+              FilledButton(onPressed: () => context.push('/p/heart/assess'), child: Text(l10n.dashStartScreening)),
             ] else ...[
               Wrap(spacing: AppSpacing.sm, crossAxisAlignment: WrapCrossAlignment.center, children: [
                 Text(risk.percentLabel, style: t.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
                 HeartRiskLevelPill(risk.riskLevel),
               ]),
-              Text(HeartWording.estimateLabel, style: t.bodyMedium?.copyWith(color: AppColors.textSecondary)),
+              Text(HeartWording.estimateLabel(l10n), style: t.bodyMedium?.copyWith(color: AppColors.textSecondary)),
               const SizedBox(height: AppSpacing.xs),
-              Text(risk.reportAvailable ? 'Includes medical report values' : 'Based on symptoms and risk factors only', style: t.bodySmall),
-              Text('Updated ${Fmt.relative(risk.assessedAt)}', style: t.bodySmall),
+              Text(risk.reportAvailable ? l10n.dashIncludesReportValues : l10n.dashBasedOnSymptomsOnly, style: t.bodySmall),
+              Text(l10n.dashRiskUpdated(Fmt.relative(l10n, risk.assessedAt)), style: t.bodySmall),
               if (d.heartRiskStale) ...[
                 const SizedBox(height: AppSpacing.sm),
-                Text('Updated health information is available. Refresh your screening to include it.', style: t.bodySmall?.copyWith(color: AppColors.primaryDeep)),
+                Text(l10n.dashUpdatedScreeningInfo, style: t.bodySmall?.copyWith(color: AppColors.primaryDeep)),
               ],
               const SizedBox(height: AppSpacing.lg),
-              FilledButton(onPressed: () => context.go('/p/heart'), child: Text(d.heartRiskStale ? 'Review and refresh' : 'View details')),
+              FilledButton(onPressed: () => context.go('/p/heart'), child: Text(d.heartRiskStale ? l10n.dashReviewAndRefresh : l10n.dashViewDetails)),
             ],
           ]),
         ),

@@ -9,6 +9,7 @@ import 'package:susthiti/data/repositories/diabetes_repository.dart';
 import 'package:susthiti/data/services/risk_cache.dart';
 import 'package:susthiti/features/authentication/auth_controller.dart';
 import 'package:susthiti/features/diabetes/diabetes_providers.dart';
+import 'package:susthiti/l10n/app_localizations_en.dart';
 
 import '../helpers.dart';
 import '../risk_fixtures.dart';
@@ -16,6 +17,8 @@ import '../risk_fixtures.dart';
 class MockDiabetesRepository extends Mock implements DiabetesRepository {}
 
 void main() {
+  final l10n = AppLocalizationsEn();
+
   test('an assessment keeps the API\'s own numbers, category and report basis', () {
     final a = RiskAssessment.fromJson(assessmentJson());
     expect(a.riskPercent, 43.21);
@@ -23,7 +26,7 @@ void main() {
     expect(a.riskCategory, 'Moderate');
     expect(a.reportAvailable, isTrue);
     expect(a.reportFieldsPresent, ['hba1c', 'fasting_glucose']);
-    expect(a.basisText, 'Includes HbA1c and fasting glucose from your medical reports.');
+    expect(a.basisText(l10n), 'Includes HbA1c and fasting glucose from your medical reports.');
     expect(a.riskThresholds['moderate'], '>40-65%');
     expect(a.dataUsed.groups.map((g) => g.key), ['profile', 'report', 'wearable']);
     expect(a.dataUsed.missing.single.target, AddDataTarget.healthProfile);
@@ -31,8 +34,8 @@ void main() {
 
   test('without report values the basis says so, and never implies a normal result', () {
     final a = RiskAssessment.fromJson(assessmentJson(report: false));
-    expect(a.basisText, RiskWording.noReportBasis);
-    expect(a.basisText.toLowerCase(), isNot(contains('normal')));
+    expect(a.basisText(l10n), RiskWording.noReportBasis(l10n));
+    expect(a.basisText(l10n).toLowerCase(), isNot(contains('normal')));
     expect(a.dataUsed.missing.map((m) => m.target), contains(AddDataTarget.reportValues));
   });
 
@@ -42,7 +45,7 @@ void main() {
   });
 
   test('risk band tones follow the API category', () {
-    expect(RiskWording.categoryLabel('High'), 'High risk');
+    expect(RiskWording.categoryLabel(l10n, 'High'), 'High risk');
     expect(RiskWording.tone('High'), isNot(RiskWording.tone('Low')));
   });
 

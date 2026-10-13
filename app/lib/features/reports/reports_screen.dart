@@ -12,6 +12,7 @@ import '../../core/widgets/feedback.dart';
 import '../../core/widgets/labels.dart';
 import '../../data/models/report.dart';
 import '../../data/models/user.dart';
+import '../../l10n/app_localizations.dart';
 import '../authentication/auth_controller.dart';
 import '../notifications/notifications.dart';
 import 'report_detail_screen.dart';
@@ -31,18 +32,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final patientId = widget.patientId;
     // Admin uploads go through the admin route so the admin is recorded as the uploader.
     final uploadRoute = ref.watch(currentUserProvider)?.role == UserRole.admin ? '/a/patients/$patientId/upload' : '/r/$patientId/reports/upload';
     final desktop = context.screenSize == ScreenSize.desktop;
     return AppPage(
-      title: 'Reports',
+      title: l10n.navReports,
       large: true,
       actions: const [NotificationBell()],
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(uploadRoute),
         icon: const Icon(Icons.upload_file_outlined),
-        label: const Text('Upload Report'),
+        label: Text(l10n.dashUploadReport),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 1,
@@ -58,7 +60,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               Expanded(
                 flex: 6,
                 child: _selected == null
-                    ? const Center(child: EmptyState(icon: Icons.description_outlined, title: 'Select a report', message: 'Its details, original file and AI summary appear here.'))
+                    ? Center(child: EmptyState(icon: Icons.description_outlined, title: l10n.reportsSelectReportTitle, message: l10n.reportsSelectReportMessage))
                     : ReportDetailBody(key: ValueKey(_selected), reportId: _selected!, showTitle: true),
               ),
             ]),
@@ -106,6 +108,7 @@ class _ReportsViewState extends ConsumerState<ReportsView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final value = ref.watch(reportsControllerProvider(_key));
     final t = Theme.of(context).textTheme;
     return PageBody(
@@ -119,7 +122,7 @@ class _ReportsViewState extends ConsumerState<ReportsView> {
           Expanded(
             child: TextField(
               controller: _search,
-              decoration: const InputDecoration(hintText: 'Search reports...', prefixIcon: Icon(Icons.search), isDense: true),
+              decoration: InputDecoration(hintText: l10n.reportsSearchHint, prefixIcon: const Icon(Icons.search), isDense: true),
               onChanged: (v) => _debouncer(() => setState(() => _query = _query.copyWith(search: v))),
             ),
           ),
@@ -128,7 +131,7 @@ class _ReportsViewState extends ConsumerState<ReportsView> {
             isLabelVisible: _query.hasFilters,
             backgroundColor: AppColors.primary,
             smallSize: 8,
-            child: IconButton.outlined(tooltip: 'Filter reports', onPressed: _openFilters, icon: const Icon(Icons.tune)),
+            child: IconButton.outlined(tooltip: l10n.reportsFilterTooltip, onPressed: _openFilters, icon: const Icon(Icons.tune)),
           ),
         ]),
         const SizedBox(height: AppSpacing.md),
@@ -150,22 +153,22 @@ class _ReportsViewState extends ConsumerState<ReportsView> {
         AsyncBody(
           value: value,
           onRetry: () => ref.invalidate(reportsControllerProvider(_key)),
-          errorTitle: 'Unable to load your reports.',
+          errorTitle: l10n.reportsUnableToLoad,
           data: (state) {
             if (state.items.isEmpty) {
               final filtered = _query.search.isNotEmpty || _query.hasFilters;
               return filtered
-                  ? const EmptyState(icon: Icons.search_off_outlined, title: 'No matching reports', message: 'Try a different search or filter.')
+                  ? EmptyState(icon: Icons.search_off_outlined, title: l10n.reportsNoMatchTitle, message: l10n.reportsNoMatchMessage)
                   : EmptyState(
                       icon: Icons.description_outlined,
-                      title: 'No reports yet.',
-                      message: 'Upload your first medical report to begin building your health history.',
-                      actionLabel: 'Upload Report',
+                      title: l10n.reportsEmptyTitle,
+                      message: l10n.reportsEmptyMessage,
+                      actionLabel: l10n.dashUploadReport,
                       onAction: () => context.push(widget.uploadRoute),
                     );
             }
             return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              Text('${state.total} report${state.total == 1 ? '' : 's'}', style: t.labelMedium),
+              Text(l10n.reportsCountLabel(state.total), style: t.labelMedium),
               const SizedBox(height: AppSpacing.sm),
               for (final r in state.items) ...[
                 ReportTile(
@@ -180,7 +183,7 @@ class _ReportsViewState extends ConsumerState<ReportsView> {
                 Center(
                   child: state.loadingMore
                       ? const Padding(padding: EdgeInsets.all(AppSpacing.lg), child: CircularProgressIndicator())
-                      : TextButton(onPressed: () => ref.read(reportsControllerProvider(_key).notifier).loadMore(), child: const Text('Load more')),
+                      : TextButton(onPressed: () => ref.read(reportsControllerProvider(_key).notifier).loadMore(), child: Text(l10n.commonLoadMore)),
                 ),
             ]);
           },
@@ -197,6 +200,7 @@ class _AllReportsSummaryLink extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return AppCard(
       tinted: true,
       onTap: () => context.push('/r/$patientId/reports-summary'),
@@ -205,8 +209,8 @@ class _AllReportsSummaryLink extends StatelessWidget {
         const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('All Reports Summary', style: t.titleSmall),
-            Text('What your collection of reports shows over time', style: t.bodySmall),
+            Text(l10n.allReportsSummaryTitle, style: t.titleSmall),
+            Text(l10n.allReportsSummarySubtitle, style: t.bodySmall),
           ]),
         ),
         const Icon(Icons.chevron_right, color: AppColors.primary),
@@ -225,10 +229,11 @@ class ReportTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return AppCard(
       onTap: onTap,
       tinted: selected,
-      semanticLabel: '${report.title}, report date ${Fmt.date(report.reportDate)}, uploaded ${Fmt.date(report.uploadedAt)} by ${report.uploadedBy.roleLabel}',
+      semanticLabel: l10n.reportTileSemantic(report.title, Fmt.date(report.reportDate), Fmt.date(report.uploadedAt), report.uploadedBy.roleLabel),
       child: Row(children: [
         IconBadge(report.isPdf ? Icons.picture_as_pdf_outlined : Icons.image_outlined),
         const SizedBox(width: AppSpacing.md),
@@ -238,7 +243,7 @@ class ReportTile extends StatelessWidget {
             const SizedBox(height: 2),
             Text(Fmt.date(report.reportDate), style: t.bodyMedium),
             const SizedBox(height: 2),
-            Text('Uploaded ${Fmt.date(report.uploadedAt)} · by ${report.uploadedBy.roleLabel}', style: t.bodySmall),
+            Text(l10n.reportUploadedByLine(Fmt.date(report.uploadedAt), report.uploadedBy.roleLabel), style: t.bodySmall),
           ]),
         ),
         const Icon(Icons.chevron_right, color: AppColors.textSecondary),
@@ -271,46 +276,47 @@ class _FilterSheetState extends State<_FilterSheet> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.xl),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Filter Reports', style: t.titleLarge),
+          Text(l10n.reportsFilterSheetTitle, style: t.titleLarge),
           const SizedBox(height: AppSpacing.lg),
-          Text('Category', style: t.labelLarge),
+          Text(l10n.commonCategoryLabel, style: t.labelLarge),
           const SizedBox(height: AppSpacing.sm),
           Wrap(spacing: AppSpacing.sm, children: [
             for (final g in ReportFilterGroup.values)
               ChoiceChip(label: Text(g.label), selected: _q.group == g, onSelected: (_) => setState(() => _q = _q.copyWith(group: g))),
           ]),
           const SizedBox(height: AppSpacing.lg),
-          Text('Report date', style: t.labelLarge),
+          Text(l10n.uploadReportDateLabel, style: t.labelLarge),
           const SizedBox(height: AppSpacing.sm),
           Row(children: [
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: _pickRange,
                 icon: const Icon(Icons.date_range_outlined),
-                label: Text(_q.start == null ? 'Any' : '${Fmt.date(_q.start)} – ${Fmt.date(_q.end)}'),
+                label: Text(_q.start == null ? l10n.commonAny : '${Fmt.date(_q.start)} – ${Fmt.date(_q.end)}'),
               ),
             ),
-            if (_q.start != null) IconButton(tooltip: 'Clear dates', onPressed: () => setState(() => _q = _q.copyWith(clearDates: true)), icon: const Icon(Icons.close)),
+            if (_q.start != null) IconButton(tooltip: l10n.reportsClearDatesTooltip, onPressed: () => setState(() => _q = _q.copyWith(clearDates: true)), icon: const Icon(Icons.close)),
           ]),
           const SizedBox(height: AppSpacing.lg),
-          Text('Sort', style: t.labelLarge),
+          Text(l10n.commonSortLabel, style: t.labelLarge),
           RadioGroup<bool>(
             groupValue: _q.newestFirst,
             onChanged: (v) => setState(() => _q = _q.copyWith(newestFirst: v)),
-            child: const Column(children: [
-              RadioListTile<bool>(value: true, title: Text('Newest'), contentPadding: EdgeInsets.zero),
-              RadioListTile<bool>(value: false, title: Text('Oldest'), contentPadding: EdgeInsets.zero),
+            child: Column(children: [
+              RadioListTile<bool>(value: true, title: Text(l10n.commonNewest), contentPadding: EdgeInsets.zero),
+              RadioListTile<bool>(value: false, title: Text(l10n.commonOldest), contentPadding: EdgeInsets.zero),
             ]),
           ),
           const SizedBox(height: AppSpacing.md),
           Row(children: [
-            TextButton(onPressed: () => Navigator.pop(context, ReportQuery(search: _q.search)), child: const Text('Reset')),
+            TextButton(onPressed: () => Navigator.pop(context, ReportQuery(search: _q.search)), child: Text(l10n.commonReset)),
             const Spacer(),
-            FilledButton(onPressed: () => Navigator.pop(context, _q), child: const Text('Apply')),
+            FilledButton(onPressed: () => Navigator.pop(context, _q), child: Text(l10n.commonApply)),
           ]),
         ]),
       ),

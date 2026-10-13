@@ -13,6 +13,7 @@ import '../../core/widgets/feedback.dart';
 import '../../core/widgets/labels.dart';
 import '../../data/models/report.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../ai/ai_summary_section.dart';
 import 'report_values_section.dart';
 import 'reports_providers.dart';
@@ -26,7 +27,7 @@ class ReportDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final report = ref.watch(reportProvider(reportId));
     return AppPage(
-      title: report.value?.title ?? 'Report',
+      title: report.value?.title ?? AppLocalizations.of(context).reportFallbackTitle,
       body: ReportDetailBody(reportId: reportId),
     );
   }
@@ -43,6 +44,7 @@ class ReportDetailBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final report = ref.watch(reportProvider(reportId));
     return AsyncBody(
       value: report,
@@ -58,11 +60,11 @@ class ReportDetailBody extends ConsumerWidget {
           ReportValuesSection(reportId: reportId, patientId: r.patientId),
           const SizedBox(height: AppSpacing.lg),
           AiSummarySection(
-            title: 'AI Summary',
+            title: l10n.aiSummaryTitle,
             value: ref.watch(individualSummaryProvider(reportId)),
-            emptyMessage: 'No summary generated yet.',
-            loadingMessage: 'Analyzing report...',
-            failureReassurance: 'Your original report is still safely available.',
+            emptyMessage: l10n.noSummaryGeneratedYet,
+            loadingMessage: l10n.analyzingReportMessage,
+            failureReassurance: l10n.originalReportSafeMessage,
             onGenerate: () => ref.read(aiRepositoryProvider).reports.generateIndividual(reportId),
             onGenerated: () => ref.invalidate(individualSummaryProvider(reportId)),
           ),
@@ -79,6 +81,7 @@ class _Metadata extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,11 +98,11 @@ class _Metadata extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: AppSpacing.sm),
               child: Wrap(spacing: AppSpacing.xs, runSpacing: AppSpacing.xs, children: [for (final c in report.allCategories) StatusPill(c.label, dot: false)]),
             ),
-          KeyValueRow('Report date', Fmt.date(report.reportDate)),
-          KeyValueRow('Uploaded', Fmt.dateTime(report.uploadedAt)),
-          KeyValueRow('Uploaded by', report.uploadedBy.display, trailing: SourceLabel(report.uploadedBy.role)),
-          KeyValueRow('Report ID', report.reportCode),
-          if (report.description != null) KeyValueRow('Description', report.description!),
+          KeyValueRow(l10n.uploadReportDateLabel, Fmt.date(report.reportDate)),
+          KeyValueRow(l10n.commonUploadedLabel, Fmt.dateTime(report.uploadedAt)),
+          KeyValueRow(l10n.commonUploadedByLabel, report.uploadedBy.display, trailing: SourceLabel(report.uploadedBy.role)),
+          KeyValueRow(l10n.reportIdLabel, report.reportCode),
+          if (report.description != null) KeyValueRow(l10n.commonDescriptionLabel, report.description!),
         ],
       ),
     );
@@ -156,11 +159,12 @@ class _OriginalReportState extends ConsumerState<_OriginalReport> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Original Report', style: t.titleMedium),
+          Text(l10n.originalReportHeader, style: t.titleMedium),
           const SizedBox(height: AppSpacing.xs),
           Text('${widget.report.originalFilename} · ${Fmt.fileSize(widget.report.fileSize)}', style: t.bodySmall),
           const SizedBox(height: AppSpacing.md),
@@ -168,8 +172,8 @@ class _OriginalReportState extends ConsumerState<_OriginalReport> {
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,
             children: [
-              FilledButton.icon(onPressed: _busy ? null : _view, icon: const Icon(Icons.visibility_outlined), label: const Text('View')),
-              OutlinedButton.icon(onPressed: _busy ? null : _download, icon: const Icon(Icons.download_outlined), label: const Text('Download')),
+              FilledButton.icon(onPressed: _busy ? null : _view, icon: const Icon(Icons.visibility_outlined), label: Text(l10n.commonView)),
+              OutlinedButton.icon(onPressed: _busy ? null : _download, icon: const Icon(Icons.download_outlined), label: Text(l10n.commonDownload)),
               if (_busy)
                 const Padding(
                   padding: EdgeInsets.all(12),
@@ -190,6 +194,7 @@ class OriginalFileViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(title: Text(report.originalFilename, overflow: TextOverflow.ellipsis)),
       backgroundColor: AppColors.neutralSoft,
@@ -210,7 +215,7 @@ class OriginalFileViewer extends StatelessWidget {
                   bytes,
                   semanticLabel: report.title,
                   errorBuilder: (_, _, _) =>
-                      const EmptyState(icon: Icons.image_not_supported_outlined, title: "This image can't be previewed here.", message: 'Use Download to open it in another app.'),
+                      EmptyState(icon: Icons.image_not_supported_outlined, title: l10n.imageCannotPreview, message: l10n.useDownloadToOpen),
                 ),
               ),
             ),

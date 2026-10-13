@@ -17,6 +17,7 @@ import '../../core/widgets/labels.dart';
 import '../../data/models/patient.dart';
 import '../../data/models/user.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../access/access_screens.dart';
 import '../notifications/notifications.dart';
 import 'doctor_patient_detail_screen.dart';
@@ -27,7 +28,10 @@ final doctorPatientsProvider = FutureProvider.autoDispose.family<List<DoctorPati
   (ref, k) => ref.watch(doctorRepositoryProvider).patients(query: k.query, filter: k.filter),
 );
 
-const doctorPatientFilters = {'all': 'All', 'recent_activity': 'Recent activity', 'follow_up': 'Follow-up due', 'side_effects': 'Side effects'};
+const doctorPatientFilterKeys = ['all', 'recent_activity', 'follow_up', 'side_effects'];
+
+Map<String, String> doctorPatientFilterLabels(AppLocalizations l10n) =>
+    {'all': l10n.notifFilterAll, 'recent_activity': l10n.doctorFilterRecentActivity, 'follow_up': l10n.doctorFilterFollowUpDue, 'side_effects': l10n.navSideEffects};
 
 class DoctorPatientsScreen extends ConsumerStatefulWidget {
   const DoctorPatientsScreen({super.key, this.initialFilter = 'all'});
@@ -41,7 +45,7 @@ class _DoctorPatientsScreenState extends ConsumerState<DoctorPatientsScreen> {
   final _debouncer = Debouncer();
   final _search = TextEditingController();
   String _query = '';
-  late String _filter = doctorPatientFilters.containsKey(widget.initialFilter) ? widget.initialFilter : 'all';
+  late String _filter = doctorPatientFilterKeys.contains(widget.initialFilter) ? widget.initialFilter : 'all';
 
   /// Desktop list | details: the selected patient shows beside the list.
   String? _selected;
@@ -49,7 +53,7 @@ class _DoctorPatientsScreenState extends ConsumerState<DoctorPatientsScreen> {
   @override
   void didUpdateWidget(DoctorPatientsScreen old) {
     super.didUpdateWidget(old);
-    if (old.initialFilter != widget.initialFilter && doctorPatientFilters.containsKey(widget.initialFilter)) _filter = widget.initialFilter;
+    if (old.initialFilter != widget.initialFilter && doctorPatientFilterKeys.contains(widget.initialFilter)) _filter = widget.initialFilter;
   }
 
   @override
@@ -61,47 +65,49 @@ class _DoctorPatientsScreenState extends ConsumerState<DoctorPatientsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final key = (query: _query, filter: _filter);
     final t = Theme.of(context).textTheme;
     return AppPage(
-      title: 'Patients',
+      title: l10n.navPatients,
       large: true,
-      actions: [IconButton(tooltip: 'Scan Patient QR', onPressed: () => context.push('/d/scan'), icon: const Icon(Icons.qr_code_scanner_outlined)), const NotificationBell()],
+      actions: [IconButton(tooltip: l10n.doctorScanPatientQrTooltip, onPressed: () => context.push('/d/scan'), icon: const Icon(Icons.qr_code_scanner_outlined)), const NotificationBell()],
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/d/patients/add'),
         icon: const Icon(Icons.person_add_alt_outlined),
-        label: const Text('Add Patient'),
+        label: Text(l10n.navAddPatient),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 1,
       ),
       body: context.screenSize != ScreenSize.desktop
-          ? _list(key, t, push: true)
+          ? _list(l10n, key, t, push: true)
           : Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              SizedBox(width: 420, child: _list(key, t, push: false)),
+              SizedBox(width: 420, child: _list(l10n, key, t, push: false)),
               const VerticalDivider(width: 1),
               Expanded(
                 child: _selected == null
-                    ? const Center(child: EmptyState(icon: Icons.people_outline, title: 'Select a patient', message: 'Their overview, records and lifestyle data appear here.'))
+                    ? Center(child: EmptyState(icon: Icons.people_outline, title: l10n.doctorSelectPatientTitle, message: l10n.doctorSelectPatientMessage))
                     : DoctorPatientDetailScreen(key: ValueKey(_selected), patientId: _selected!),
               ),
             ]),
     );
   }
 
-  Widget _list(DoctorPatientsKey key, TextTheme t, {required bool push}) {
+  Widget _list(AppLocalizations l10n, DoctorPatientsKey key, TextTheme t, {required bool push}) {
+    final filterLabels = doctorPatientFilterLabels(l10n);
     return PageBody(maxWidth: 900, onRefresh: () async => ref.invalidate(doctorPatientsProvider(key)), children: [
         TextField(
           controller: _search,
-          decoration: const InputDecoration(hintText: 'Search by name or Patient ID', prefixIcon: Icon(Icons.search)),
+          decoration: InputDecoration(hintText: l10n.doctorSearchHint, prefixIcon: const Icon(Icons.search)),
           onChanged: (v) => _debouncer(() => setState(() => _query = v.trim())),
         ),
         const SizedBox(height: AppSpacing.md),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(children: [
-            for (final e in doctorPatientFilters.entries)
-              Padding(padding: const EdgeInsets.only(right: AppSpacing.sm), child: ChoiceChip(label: Text(e.value), selected: _filter == e.key, onSelected: (_) => setState(() => _filter = e.key))),
+            for (final key in doctorPatientFilterKeys)
+              Padding(padding: const EdgeInsets.only(right: AppSpacing.sm), child: ChoiceChip(label: Text(filterLabels[key]!), selected: _filter == key, onSelected: (_) => setState(() => _filter = key))),
           ]),
         ),
         const SizedBox(height: AppSpacing.lg),
@@ -111,9 +117,9 @@ class _DoctorPatientsScreenState extends ConsumerState<DoctorPatientsScreen> {
           data: (items) => items.isEmpty
               ? EmptyState(
                   icon: Icons.people_outline,
-                  title: _query.isEmpty && _filter == 'all' ? 'No patients yet.' : 'No patients match.',
-                  message: _query.isEmpty && _filter == 'all' ? 'Request access with the patient\'s name and Patient ID. They approve it in their app.' : null,
-                  actionLabel: _query.isEmpty && _filter == 'all' ? 'Add Patient' : null,
+                  title: _query.isEmpty && _filter == 'all' ? l10n.doctorNoPatientsYet : l10n.doctorNoPatientsMatch,
+                  message: _query.isEmpty && _filter == 'all' ? l10n.doctorNoPatientsMessage : null,
+                  actionLabel: _query.isEmpty && _filter == 'all' ? l10n.navAddPatient : null,
                   onAction: () => context.push('/d/patients/add'),
                 )
               : Column(children: [
@@ -128,12 +134,12 @@ class _DoctorPatientsScreenState extends ConsumerState<DoctorPatientsScreen> {
                           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                             Text(p.name, style: t.titleSmall),
                             Text([p.patientCode, if (p.age != null) '${p.age} yrs', ?p.gender].join(' · '), style: t.bodySmall),
-                            if (p.lastActivityAt != null) Text('Last activity ${Fmt.relative(p.lastActivityAt)}', style: t.bodySmall),
+                            if (p.lastActivityAt != null) Text(l10n.doctorLastActivityLabel(Fmt.relative(l10n, p.lastActivityAt)), style: t.bodySmall),
                           ]),
                         ),
                         Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                          if (p.openSideEffects > 0) StatusPill('${p.openSideEffects} side effect${p.openSideEffects == 1 ? '' : 's'}', tone: StatusTone.attention),
-                          if (p.nextFollowUp != null) ...[const SizedBox(height: 4), Text('Follow-up ${Fmt.shortDate(p.nextFollowUp)}', style: t.labelMedium?.copyWith(color: AppColors.primary))],
+                          if (p.openSideEffects > 0) StatusPill(l10n.doctorSideEffectsCountPill(p.openSideEffects), tone: StatusTone.attention),
+                          if (p.nextFollowUp != null) ...[const SizedBox(height: 4), Text(l10n.doctorFollowUpShortDate(Fmt.shortDate(p.nextFollowUp)), style: t.labelMedium?.copyWith(color: AppColors.primary))],
                         ]),
                         const Icon(Icons.chevron_right, color: AppColors.textSecondary),
                       ]),
@@ -170,7 +176,7 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
     super.dispose();
   }
 
-  Future<void> _submit() async {
+  Future<void> _submit(AppLocalizations l10n) async {
     if (!_form.currentState!.validate()) return;
     try {
       final r = await ref.read(doctorRepositoryProvider).requestAccess(patientName: _name.text, patientCode: _code.text, message: _message.text);
@@ -183,22 +189,23 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final t = Theme.of(context).textTheme;
     return AppPage(
-      title: 'Add Patient',
-      actions: [IconButton(tooltip: 'Scan Patient QR', onPressed: () => context.push('/d/scan'), icon: const Icon(Icons.qr_code_scanner_outlined))],
+      title: l10n.navAddPatient,
+      actions: [IconButton(tooltip: l10n.doctorScanPatientQrTooltip, onPressed: () => context.push('/d/scan'), icon: const Icon(Icons.qr_code_scanner_outlined))],
       body: PageBody(maxWidth: 560, children: [
         if (_sent != null)
           AppCard(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const IconBadge(Icons.mark_email_read_outlined, tone: StatusTone.positive),
               const SizedBox(height: AppSpacing.md),
-              Text('Request sent', style: t.titleLarge),
+              Text(l10n.doctorRequestSentTitle, style: t.titleLarge),
               const SizedBox(height: AppSpacing.sm),
-              Text('${_sent!.patientName} (${_sent!.patientCode}) will be asked to approve your request. You will be notified when they respond.', style: t.bodyMedium),
+              Text(l10n.doctorRequestSentMessage(_sent!.patientName, _sent!.patientCode), style: t.bodyMedium),
               const SizedBox(height: AppSpacing.lg),
               Wrap(spacing: AppSpacing.sm, children: [
-                FilledButton(onPressed: () => context.go('/d/requests'), child: const Text('View requests')),
+                FilledButton(onPressed: () => context.go('/d/requests'), child: Text(l10n.doctorViewRequestsButton)),
                 OutlinedButton(
                   onPressed: () {
                     _name.clear();
@@ -206,7 +213,7 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
                     _message.clear();
                     setState(() => _sent = null);
                   },
-                  child: const Text('Add another'),
+                  child: Text(l10n.doctorAddAnotherButton),
                 ),
               ]),
             ]),
@@ -215,27 +222,27 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
           Form(
             key: _form,
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              Text('Enter the patient\'s full name and Patient ID exactly as shown in their SUSTHITI profile. The patient must approve before you can see any records.', style: t.bodyMedium?.copyWith(color: AppColors.textSecondary)),
+              Text(l10n.doctorAddPatientInstructions, style: t.bodyMedium?.copyWith(color: AppColors.textSecondary)),
               const SizedBox(height: AppSpacing.xl),
-              AppTextField(label: 'Patient full name', controller: _name, validator: (v) => Validators.required(v, 'Patient name'), textCapitalization: TextCapitalization.words),
+              AppTextField(label: l10n.doctorPatientFullNameLabel, controller: _name, validator: (v) => Validators.required(l10n, v, l10n.doctorPatientNameLabel), textCapitalization: TextCapitalization.words),
               LabeledField(
-                label: 'Patient ID',
+                label: l10n.doctorPatientIdLabel,
                 child: TextFormField(
                   controller: _code,
-                  validator: Validators.patientId,
+                  validator: (v) => Validators.patientId(l10n, v),
                   textCapitalization: TextCapitalization.characters,
                   inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9-]')), _UpperCaseFormatter()],
                   decoration: const InputDecoration(hintText: 'SUS-P-XXXXXX'),
                 ),
               ),
-              AppTextField(label: 'Message to patient', controller: _message, optional: true, maxLines: 3, textCapitalization: TextCapitalization.sentences),
-              BusyButton(label: 'Request Access', onPressed: _submit, expand: true),
+              AppTextField(label: l10n.doctorMessageToPatientLabel, controller: _message, optional: true, maxLines: 3, textCapitalization: TextCapitalization.sentences),
+              BusyButton(label: l10n.doctorRequestAccessButton, onPressed: () => _submit(l10n), expand: true),
               const SizedBox(height: AppSpacing.md),
               Center(
                 child: TextButton.icon(
                   onPressed: () => context.push('/d/scan'),
                   icon: const Icon(Icons.qr_code_scanner_outlined, size: 18),
-                  label: const Text('Or scan the patient\'s QR code instead'),
+                  label: Text(l10n.doctorScanInsteadButton),
                 ),
               ),
             ]),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -14,6 +15,7 @@ import 'package:susthiti/features/lifestyle/lifestyle_screen.dart';
 import 'package:susthiti/features/lifestyle/trend_card.dart';
 import 'package:susthiti/features/wearables/health_connect_screen.dart';
 import 'package:susthiti/features/wearables/health_connection.dart';
+import 'package:susthiti/l10n/app_localizations.dart';
 
 import '../helpers.dart';
 import '../unit/health_test.dart' show FakeHealthPlatform, MockWearableRepository, connection;
@@ -41,7 +43,12 @@ void main() {
     await tester.pumpWidget(ProviderScope(
       retry: (_, _) => null,
       overrides: [healthPlatformProvider.overrideWithValue(platform), wearableRepositoryProvider.overrideWithValue(repo)],
-      child: MaterialApp.router(theme: AppTheme.light(), routerConfig: router),
+      child: MaterialApp.router(
+        theme: AppTheme.light(),
+        routerConfig: router,
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: const [AppLocalizations.delegate, GlobalMaterialLocalizations.delegate, GlobalWidgetsLocalizations.delegate, GlobalCupertinoLocalizations.delegate],
+      ),
     ));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();

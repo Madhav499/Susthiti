@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/l10n/enum_labels.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../core/utils/formatters.dart';
@@ -11,6 +12,7 @@ import '../../core/widgets/labels.dart';
 import '../../data/models/patient.dart';
 import '../../data/models/user.dart';
 import '../../data/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../authentication/auth_controller.dart';
 
 final accessRequestsProvider = FutureProvider.autoDispose.family<List<AccessRequest>, UserRole>((ref, role) {
@@ -47,17 +49,18 @@ class _AccessRequestsScreenState extends ConsumerState<AccessRequestsScreen> {
 
   Future<void> _act(AccessRequest r, String action) async {
     final role = _role;
+    final l10n = AppLocalizations.of(context);
     if (action != 'approve') {
       final ok = await confirmAction(
         context,
-        title: switch (action) { 'reject' => 'Reject request?', _ => 'Revoke access?' },
+        title: switch (action) { 'reject' => l10n.accessRejectConfirmTitle, _ => l10n.accessRevokeConfirmTitle },
         message: switch (action) {
-          'reject' => 'Dr. ${r.doctorName} will not be able to see your records.',
+          'reject' => l10n.accessRejectConfirmMessage(r.doctorName),
           _ => role == UserRole.admin
-              ? 'Dr. ${r.doctorName} will immediately lose access to ${r.patientName}\'s records. The patient and doctor are notified.'
-              : 'Dr. ${r.doctorName} will immediately lose access to your records. Records they created stay in your history.',
+              ? l10n.accessRevokeConfirmMessageAdmin(r.doctorName, r.patientName)
+              : l10n.accessRevokeConfirmMessagePatient(r.doctorName),
         },
-        confirmLabel: action == 'reject' ? 'Reject' : 'Revoke',
+        confirmLabel: action == 'reject' ? l10n.accessRejectButton : l10n.accessRevokeButton,
         destructive: true,
       );
       if (!ok) return;
@@ -72,7 +75,7 @@ class _AccessRequestsScreenState extends ConsumerState<AccessRequestsScreen> {
           await ref.read(patientRepositoryProvider).respondToAccess(r.id, approve: action == 'approve');
       }
       ref.invalidate(accessRequestsProvider(role));
-      if (mounted) showToast(context, switch (action) { 'approve' => 'Access approved', 'reject' => 'Request rejected', _ => 'Access revoked' });
+      if (mounted) showToast(context, switch (action) { 'approve' => l10n.accessApprovedToast, 'reject' => l10n.accessRejectedToast, _ => l10n.accessRevokedToast });
     } catch (e) {
       if (mounted) showFailure(context, e);
     }
@@ -83,15 +86,16 @@ class _AccessRequestsScreenState extends ConsumerState<AccessRequestsScreen> {
     final role = ref.watch(currentUserProvider)?.role ?? UserRole.patient;
     final value = ref.watch(accessRequestsProvider(role));
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     return AppPage(
-      title: switch (role) { UserRole.patient => 'Doctor Access', UserRole.doctor => 'Access Requests', UserRole.admin => 'Access Review' },
+      title: switch (role) { UserRole.patient => l10n.accessPatientPageTitle, UserRole.doctor => l10n.docAccessRequests, UserRole.admin => l10n.accessAdminPageTitle },
       large: widget.large,
       body: PageBody(
         maxWidth: 820,
         onRefresh: () async => ref.invalidate(accessRequestsProvider(role)),
         children: [
           if (role == UserRole.patient) ...[
-            Text('Doctors can only see your records after you approve them. You can revoke access at any time.', style: t.bodyMedium?.copyWith(color: AppColors.textSecondary)),
+            Text(l10n.accessPatientIntro, style: t.bodyMedium?.copyWith(color: AppColors.textSecondary)),
             const SizedBox(height: AppSpacing.lg),
           ],
           SingleChildScrollView(
@@ -100,7 +104,7 @@ class _AccessRequestsScreenState extends ConsumerState<AccessRequestsScreen> {
               for (final s in <AccessStatus?>[null, ...AccessStatus.values])
                 Padding(
                   padding: const EdgeInsets.only(right: AppSpacing.sm),
-                  child: ChoiceChip(label: Text(s?.label ?? 'All'), selected: _filter == s, onSelected: (_) => setState(() => _filter = s)),
+                  child: ChoiceChip(label: Text(s == null ? l10n.accessAllFilterLabel : accessStatusLabel(l10n, s)), selected: _filter == s, onSelected: (_) => setState(() => _filter = s)),
                 ),
             ]),
           ),
@@ -113,8 +117,8 @@ class _AccessRequestsScreenState extends ConsumerState<AccessRequestsScreen> {
               if (items.isEmpty) {
                 return EmptyState(
                   icon: Icons.verified_user_outlined,
-                  title: _filter == null ? 'No access requests.' : 'No ${_filter!.label.toLowerCase()} requests.',
-                  message: role == UserRole.patient && _filter == null ? 'When a doctor requests access using your name and Patient ID, it will appear here.' : null,
+                  title: _filter == null ? l10n.accessNoRequestsTitle : l10n.accessNoStatusRequestsTitle(accessStatusLabel(l10n, _filter!).toLowerCase()),
+                  message: role == UserRole.patient && _filter == null ? l10n.accessPatientEmptyHint : null,
                 );
               }
               return Column(children: [
@@ -140,6 +144,7 @@ class _RequestCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final r = request;
     final showDoctor = role != UserRole.doctor;
     final showPatient = role != UserRole.patient;
@@ -150,19 +155,23 @@ class _RequestCard extends StatelessWidget {
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              if (showDoctor) Text('Dr. ${r.doctorName}', style: t.titleSmall),
-              if (showDoctor) Text([r.doctorSpecialization, r.doctorCode].whereType<String>().join(' · '), style: t.bodySmall),
+              if (showDoctor) Text(l10n.accessDoctorNameLabel(r.doctorName), style: t.titleSmall),
+              if (showDoctor && (r.doctorSpecialization != null || r.doctorCode.isNotEmpty))
+                Text([
+                  if (r.doctorSpecialization != null) l10n.accessSpecializationLabel(r.doctorSpecialization!),
+                  if (r.doctorCode.isNotEmpty) l10n.accessDoctorIdLabel(r.doctorCode),
+                ].join(' · '), style: t.bodySmall),
               if (showPatient) ...[
                 if (showDoctor) const SizedBox(height: AppSpacing.xs),
-                Text(showDoctor ? 'Patient: ${r.patientName} · ${r.patientCode}' : r.patientName, style: showDoctor ? t.bodySmall : t.titleSmall),
-                if (!showDoctor) Text(r.patientCode, style: t.bodySmall),
+                Text(showDoctor ? l10n.accessPatientNameCode(r.patientName, r.patientCode) : l10n.accessPatientNameLabel(r.patientName), style: showDoctor ? t.bodySmall : t.titleSmall),
+                if (!showDoctor) Text(l10n.accessPatientIdLabel(r.patientCode), style: t.bodySmall),
               ],
               const SizedBox(height: AppSpacing.xs),
-              Text('Requested ${Fmt.dateTime(r.requestedAt)}', style: t.bodySmall),
-              if (r.respondedAt != null && r.status != AccessStatus.pending) Text('${r.status.label} ${Fmt.dateTime(r.revokedAt ?? r.respondedAt)}', style: t.bodySmall),
+              Text(l10n.accessRequestedOnLabel(Fmt.dateTime(r.requestedAt)), style: t.bodySmall),
+              if (r.respondedAt != null && r.status != AccessStatus.pending) Text('${accessStatusLabel(l10n, r.status)} ${Fmt.dateTime(r.revokedAt ?? r.respondedAt)}', style: t.bodySmall),
             ]),
           ),
-          StatusPill(r.status.label, tone: r.status.tone),
+          StatusPill(accessStatusLabel(l10n, r.status), tone: r.status.tone),
         ]),
         if (r.message != null && r.message!.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.md),
@@ -173,23 +182,23 @@ class _RequestCard extends StatelessWidget {
             child: Text('"${r.message!}"', style: t.bodyMedium),
           ),
         ],
-        ..._actions(),
+        ..._actions(l10n),
       ]),
     );
   }
 
-  List<Widget> _actions() {
+  List<Widget> _actions(AppLocalizations l10n) {
     final buttons = <Widget>[
       if (role == UserRole.patient && request.status == AccessStatus.pending) ...[
-        FilledButton(onPressed: () => onAction('approve'), child: const Text('Approve')),
-        OutlinedButton(onPressed: () => onAction('reject'), child: const Text('Reject')),
+        FilledButton(onPressed: () => onAction('approve'), child: Text(l10n.accessApproveButton)),
+        OutlinedButton(onPressed: () => onAction('reject'), child: Text(l10n.accessRejectButton)),
       ],
       if (request.status == AccessStatus.approved || (role == UserRole.admin && request.status == AccessStatus.pending))
         if (role != UserRole.doctor)
         OutlinedButton(
           onPressed: () => onAction('revoke'),
           style: OutlinedButton.styleFrom(foregroundColor: AppColors.error, side: const BorderSide(color: AppColors.error)),
-          child: const Text('Revoke access'),
+          child: Text(l10n.accessRevokeAccessButton),
         ),
     ];
     if (buttons.isEmpty) return const [];
