@@ -64,11 +64,12 @@ class _Questionnaire extends ConsumerStatefulWidget {
 
 class _QuestionnaireState extends ConsumerState<_Questionnaire> {
   late final ProfileAnswers _answers = ProfileAnswers(widget.profile);
-  late final List<Option> _steps = [
+  late final List<String> _steps = [
     for (final g in widget.profile.groups)
-      if (_fieldsIn(widget.profile, g.value).isNotEmpty) g,
-    Option('review', AppLocalizations.of(context).commonReviewLabel),
+      if (_fieldsIn(widget.profile, g.value).isNotEmpty) g.value,
+    'review',
   ];
+
   int _step = 0;
   bool _busy = false;
   String? _error;
@@ -79,10 +80,10 @@ class _QuestionnaireState extends ConsumerState<_Questionnaire> {
     super.dispose();
   }
 
-  bool get _isReview => _steps[_step].value == 'review';
+  bool get _isReview => _steps[_step] == 'review';
 
   void _next() {
-    final group = _steps[_step].value;
+    final group = _steps[_step];
     if (group != 'review') {
       final check = _answers.changes(AppLocalizations.of(context), only: _fieldsIn(widget.profile, group).map((f) => f.key));
       if (check.error != null) {
@@ -126,17 +127,20 @@ class _QuestionnaireState extends ConsumerState<_Questionnaire> {
     final t = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context);
     final step = _steps[_step];
+    final stepLabel = step == 'review'
+        ? l10n.commonReviewLabel
+        : localizedProfileGroupLabel(l10n, step, widget.profile.groups.where((g) => g.value == step).firstOrNull?.label ?? step);
     return PageBody(maxWidth: 720, children: [
-      Text(l10n.stepOfTotalLabel(_step + 1, _steps.length, step.label), style: t.labelLarge?.copyWith(color: AppColors.primaryDeep)),
+      Text(l10n.stepOfTotalLabel(_step + 1, _steps.length, stepLabel), style: t.labelLarge?.copyWith(color: AppColors.primaryDeep)),
       const SizedBox(height: AppSpacing.sm),
       LinearProgressIndicator(value: (_step + 1) / _steps.length, minHeight: 6, borderRadius: BorderRadius.circular(3)),
       const SizedBox(height: AppSpacing.lg),
       if (!_isReview) ...[
-        Text(profileGroupIntro(l10n)[step.value] ?? '', style: t.bodyMedium),
+        Text(profileGroupIntro(l10n)[step] ?? '', style: t.bodyMedium),
         const SizedBox(height: AppSpacing.md),
         AppCard(
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            for (final (i, field) in _fieldsIn(widget.profile, step.value).indexed) ...[
+            for (final (i, field) in _fieldsIn(widget.profile, step).indexed) ...[
               if (i > 0) const Divider(height: AppSpacing.xl),
               ProfileFieldEditor(field: field, answers: _answers, canEdit: true, onChanged: (v) => setState(() => _answers.edits[field.key] = v)),
             ],

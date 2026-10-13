@@ -4868,4 +4868,161 @@ class AppLocalizationsGu extends AppLocalizations {
   @override
   String get pdfLanguageLimitationNotice =>
       'PDF નિકાસ હાલમાં માત્ર અંગ્રેજીમાં ઉપલબ્ધ છે. સંપૂર્ણ બહુભાષી PDF સપોર્ટ ટૂંક સમયમાં આવી રહ્યો છે.';
+
+  @override
+  String get profileGroupBodyLabel => 'શરીરના માપ';
+
+  @override
+  String get profileGroupMedicalHistoryLabel => 'તબીબી ઇતિહાસ';
+
+  @override
+  String get profileGroupFamilyHistoryLabel => 'કુટુંબનો તબીબી ઇતિહાસ';
+
+  @override
+  String get profileGroupHabitsLabel => 'જીવનશૈલીની આદતો';
+
+  @override
+  String get profileGroupSymptomsLabel => 'લક્ષણો';
+
+  @override
+  String get profileFieldHeight => 'ઊંચાઈ';
+
+  @override
+  String get profileFieldWeight => 'વજન';
+
+  @override
+  String get profileFieldFamilyDiabetes => 'કુટુંબમાં ડાયાબિટીસનો ઇતિહાસ';
+
+  @override
+  String get profileFieldPreviousPrediabetes => 'અગાઉ પ્રી-ડાયાબિટીસ';
+
+  @override
+  String get profileFieldGestationalDiabetes => 'ગર્ભાવસ્થા દરમિયાન ડાયાબિટીસ';
+
+  @override
+  String get profileFieldHypertension => 'હાઈ બ્લડ પ્રેશર';
+
+  @override
+  String get profileFieldHighCholesterol => 'હાઈ કોલેસ્ટ્રોલ';
+
+  @override
+  String get profileFieldPcos => 'PCOS';
+
+  @override
+  String get profileFieldCardiovascularDisease => 'હૃદય અને રક્તવાહિનીનો રોગ';
+
+  @override
+  String get profileFieldFattyLiverDisease => 'ફેટી લિવર';
+
+  @override
+  String get profileFieldPhysicalActivity => 'શારીરિક પ્રવૃત્તિનું સ્તર';
+
+  @override
+  String get profileFieldSedentaryHours => 'દિવસમાં બેસવાના કલાકો';
+
+  @override
+  String get profileFieldDietQuality => 'આહારની ગુણવત્તા';
+
+  @override
+  String get profileFieldSugaryDrinks => 'ખાંડવાળા પીણાંની આવર્તન';
+
+  @override
+  String get profileFieldSmokingStatus => 'ધૂમ્રપાનની સ્થિતિ';
+
+  @override
+  String get profileFieldAlcoholFrequency => 'દારૂ પીવાની આવર્તન';
+
+  @override
+  String get profileFieldStressLevel => 'તણાવનું સ્તર';
+
+  @override
+  String get profileFieldPolyuria => 'વારંવાર પેશાબ થવો';
+
+  @override
+  String get profileFieldPolydipsia => 'વધુ તરસ લાગવી';
+
+  @override
+  String get profileFieldUnexplainedWeightLoss => 'કારણ વગર વજન ઘટવું';
+
+  @override
+  String get profileFieldPolyphagia => 'વધુ ભૂખ લાગવી';
+
+  @override
+  String get profileFieldFamilyHeartDisease => 'કુટુંબમાં હૃદયરોગનો ઇતિહાસ';
+
+  @override
+  String get profileFieldPreviousHeartDisease => 'અગાઉ હૃદયરોગ';
+
+  @override
+  String get profileFieldPreviousHeartAttack => 'અગાઉ હાર્ટ એટેક';
+
+  @override
+  String get profileFieldKidneyDisease => 'કિડનીનો રોગ';
+
+  @override
+  String get profileFieldStrokeHistory => 'સ્ટ્રોકનો ઇતિહાસ';
+
+  @override
+  String get profileHelpPhysicalActivity =>
+      'તમારી સામાન્ય પ્રવૃત્તિને અનુરૂપ વિકલ્પ પસંદ કરો.';
+
+  @override
+  String get profileOptionActivityLow => 'ઓછી';
+
+  @override
+  String get profileOptionActivityModerate => 'મધ્યમ';
+
+  @override
+  String get profileOptionActivityHigh => 'વધુ';
+
+  @override
+  String get profileOptionDietGood => 'સારો';
+
+  @override
+  String get profileOptionDietAverage => 'સરેરાશ';
+
+  @override
+  String get profileOptionDietPoor => 'નબળો';
+
+  @override
+  String get profileOptionSugaryDrinksRarely => 'ભાગ્યે જ';
+
+  @override
+  String get profileOptionSugaryDrinksOneToThree => 'અઠવાડિયામાં 1–3 વાર';
+
+  @override
+  String get profileOptionSugaryDrinksFourToSix => 'અઠવાડિયામાં 4–6 વાર';
+
+  @override
+  String get profileOptionSugaryDrinksDaily => 'દરરોજ';
+
+  @override
+  String get profileOptionSmokingNever => 'ક્યારેય ધૂમ્રપાન કર્યું નથી';
+
+  @override
+  String get profileOptionSmokingFormer => 'અગાઉ ધૂમ્રપાન કરતા હતા';
+
+  @override
+  String get profileOptionSmokingCurrent => 'હાલ ધૂમ્રપાન કરો છો';
+
+  @override
+  String get profileOptionAlcoholNever => 'ક્યારેય નહીં';
+
+  @override
+  String get profileOptionAlcoholOccasionally => 'ક્યારેક';
+
+  @override
+  String get profileOptionAlcoholWeekly => 'અઠવાડિયે';
+
+  @override
+  String get profileOptionAlcoholFrequent => 'વારંવાર';
+
+  @override
+  String get profileOptionStressLow => 'ઓછો';
+
+  @override
+  String get profileOptionStressModerate => 'મધ્યમ';
+
+  @override
+  String get profileOptionStressHigh => 'વધુ';
 }

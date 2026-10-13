@@ -2305,15 +2305,45 @@
   "accessRejectedToast": "Request rejected",
   "accessRevokedToast": "Access revoked",
   "accessDoctorNameLabel": "Doctor: {name}",
-  "@accessDoctorNameLabel": { "placeholders": { "name": { "type": "String" } } },
+  "@accessDoctorNameLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "accessPatientNameLabel": "Patient: {name}",
-  "@accessPatientNameLabel": { "placeholders": { "name": { "type": "String" } } },
+  "@accessPatientNameLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "accessPatientIdLabel": "Patient ID: {id}",
-  "@accessPatientIdLabel": { "placeholders": { "id": { "type": "String" } } },
+  "@accessPatientIdLabel": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
   "accessDoctorIdLabel": "Doctor ID: {id}",
-  "@accessDoctorIdLabel": { "placeholders": { "id": { "type": "String" } } },
+  "@accessDoctorIdLabel": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
   "accessSpecializationLabel": "Specialization: {specialization}",
-  "@accessSpecializationLabel": { "placeholders": { "specialization": { "type": "String" } } },
+  "@accessSpecializationLabel": {
+    "placeholders": {
+      "specialization": {
+        "type": "String"
+      }
+    }
+  },
   "accessPatientNameCode": "Patient: {name} · {code}",
   "@accessPatientNameCode": {
     "placeholders": {
@@ -2644,23 +2674,62 @@
   "aiSummaryKindLifestyle": "Lifestyle Insight",
   "aiSummaryKindInterpretation": "Assessment Interpretation",
   "aiSummaryKindHeartInterpretation": "Heart Risk Screening Interpretation",
-  "accessStatusPending": "Pending",
-  "accessStatusApproved": "Approved",
-  "accessStatusRejected": "Rejected",
-  "accessStatusRevoked": "Revoked",
-  "sideEffectStatusNew": "New",
-  "sideEffectStatusUnderReview": "Under Review",
-  "sideEffectStatusResponded": "Responded",
-  "sideEffectStatusAppointmentRecommended": "Appointment Recommended",
-  "sideEffectStatusResolved": "Resolved",
-  "severityMild": "Mild",
-  "severityModerate": "Moderate",
-  "severitySevere": "Severe",
-  "severityEmergency": "Emergency",
   "followUpStatusUpcoming": "Upcoming",
   "followUpStatusUnscheduled": "Needs scheduling",
   "followUpStatusPast": "Past",
   "aiSummaryFallbackNotice": "Translation unavailable. Showing English version.",
   "aiSummaryRequestTranslation": "Request translation",
-  "pdfLanguageLimitationNotice": "PDF exports are currently available in English only. Full multilingual PDF support coming soon."
+  "pdfLanguageLimitationNotice": "PDF exports are currently available in English only. Full multilingual PDF support coming soon.",
+  "profileGroupBodyLabel": "Body measurements",
+  "profileGroupMedicalHistoryLabel": "Medical history",
+  "profileGroupFamilyHistoryLabel": "Family history",
+  "profileGroupHabitsLabel": "Lifestyle habits",
+  "profileGroupSymptomsLabel": "Symptoms",
+  "profileFieldHeight": "Height",
+  "profileFieldWeight": "Weight",
+  "profileFieldFamilyDiabetes": "Family history of diabetes",
+  "profileFieldPreviousPrediabetes": "Previous prediabetes",
+  "profileFieldGestationalDiabetes": "Gestational diabetes",
+  "profileFieldHypertension": "High blood pressure",
+  "profileFieldHighCholesterol": "High cholesterol",
+  "profileFieldPcos": "PCOS",
+  "profileFieldCardiovascularDisease": "Cardiovascular disease",
+  "profileFieldFattyLiverDisease": "Fatty liver disease",
+  "profileFieldPhysicalActivity": "Physical activity level",
+  "profileFieldSedentaryHours": "Hours sitting per day",
+  "profileFieldDietQuality": "Diet quality",
+  "profileFieldSugaryDrinks": "Sugary drink frequency",
+  "profileFieldSmokingStatus": "Smoking status",
+  "profileFieldAlcoholFrequency": "Alcohol frequency",
+  "profileFieldStressLevel": "Stress level",
+  "profileFieldPolyuria": "Frequent urination",
+  "profileFieldPolydipsia": "Excessive thirst",
+  "profileFieldUnexplainedWeightLoss": "Unexplained weight loss",
+  "profileFieldPolyphagia": "Increased hunger",
+  "profileFieldFamilyHeartDisease": "Family history of heart disease",
+  "profileFieldPreviousHeartDisease": "Previous heart disease",
+  "profileFieldPreviousHeartAttack": "Previous heart attack",
+  "profileFieldKidneyDisease": "Kidney disease",
+  "profileFieldStrokeHistory": "History of stroke",
+  "profileHelpPhysicalActivity": "Choose the option that best describes your usual activity.",
+  "profileOptionActivityLow": "Low",
+  "profileOptionActivityModerate": "Moderate",
+  "profileOptionActivityHigh": "High",
+  "profileOptionDietGood": "Good",
+  "profileOptionDietAverage": "Average",
+  "profileOptionDietPoor": "Poor",
+  "profileOptionSugaryDrinksRarely": "Rarely",
+  "profileOptionSugaryDrinksOneToThree": "1–3 times/week",
+  "profileOptionSugaryDrinksFourToSix": "4–6 times/week",
+  "profileOptionSugaryDrinksDaily": "Daily",
+  "profileOptionSmokingNever": "Never smoked",
+  "profileOptionSmokingFormer": "Former smoker",
+  "profileOptionSmokingCurrent": "Currently smoke",
+  "profileOptionAlcoholNever": "Never",
+  "profileOptionAlcoholOccasionally": "Occasionally",
+  "profileOptionAlcoholWeekly": "Weekly",
+  "profileOptionAlcoholFrequent": "Frequently",
+  "profileOptionStressLow": "Low",
+  "profileOptionStressModerate": "Moderate",
+  "profileOptionStressHigh": "High"
 }

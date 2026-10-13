@@ -4868,4 +4868,162 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pdfLanguageLimitationNotice =>
       'PDF exports are currently available in English only. Full multilingual PDF support coming soon.';
+
+  @override
+  String get profileGroupBodyLabel => 'Body measurements';
+
+  @override
+  String get profileGroupMedicalHistoryLabel => 'Medical history';
+
+  @override
+  String get profileGroupFamilyHistoryLabel => 'Family history';
+
+  @override
+  String get profileGroupHabitsLabel => 'Lifestyle habits';
+
+  @override
+  String get profileGroupSymptomsLabel => 'Symptoms';
+
+  @override
+  String get profileFieldHeight => 'Height';
+
+  @override
+  String get profileFieldWeight => 'Weight';
+
+  @override
+  String get profileFieldFamilyDiabetes => 'Family history of diabetes';
+
+  @override
+  String get profileFieldPreviousPrediabetes => 'Previous prediabetes';
+
+  @override
+  String get profileFieldGestationalDiabetes => 'Gestational diabetes';
+
+  @override
+  String get profileFieldHypertension => 'High blood pressure';
+
+  @override
+  String get profileFieldHighCholesterol => 'High cholesterol';
+
+  @override
+  String get profileFieldPcos => 'PCOS';
+
+  @override
+  String get profileFieldCardiovascularDisease => 'Cardiovascular disease';
+
+  @override
+  String get profileFieldFattyLiverDisease => 'Fatty liver disease';
+
+  @override
+  String get profileFieldPhysicalActivity => 'Physical activity level';
+
+  @override
+  String get profileFieldSedentaryHours => 'Hours sitting per day';
+
+  @override
+  String get profileFieldDietQuality => 'Diet quality';
+
+  @override
+  String get profileFieldSugaryDrinks => 'Sugary drink frequency';
+
+  @override
+  String get profileFieldSmokingStatus => 'Smoking status';
+
+  @override
+  String get profileFieldAlcoholFrequency => 'Alcohol frequency';
+
+  @override
+  String get profileFieldStressLevel => 'Stress level';
+
+  @override
+  String get profileFieldPolyuria => 'Frequent urination';
+
+  @override
+  String get profileFieldPolydipsia => 'Excessive thirst';
+
+  @override
+  String get profileFieldUnexplainedWeightLoss => 'Unexplained weight loss';
+
+  @override
+  String get profileFieldPolyphagia => 'Increased hunger';
+
+  @override
+  String get profileFieldFamilyHeartDisease =>
+      'Family history of heart disease';
+
+  @override
+  String get profileFieldPreviousHeartDisease => 'Previous heart disease';
+
+  @override
+  String get profileFieldPreviousHeartAttack => 'Previous heart attack';
+
+  @override
+  String get profileFieldKidneyDisease => 'Kidney disease';
+
+  @override
+  String get profileFieldStrokeHistory => 'History of stroke';
+
+  @override
+  String get profileHelpPhysicalActivity =>
+      'Choose the option that best describes your usual activity.';
+
+  @override
+  String get profileOptionActivityLow => 'Low';
+
+  @override
+  String get profileOptionActivityModerate => 'Moderate';
+
+  @override
+  String get profileOptionActivityHigh => 'High';
+
+  @override
+  String get profileOptionDietGood => 'Good';
+
+  @override
+  String get profileOptionDietAverage => 'Average';
+
+  @override
+  String get profileOptionDietPoor => 'Poor';
+
+  @override
+  String get profileOptionSugaryDrinksRarely => 'Rarely';
+
+  @override
+  String get profileOptionSugaryDrinksOneToThree => '1–3 times/week';
+
+  @override
+  String get profileOptionSugaryDrinksFourToSix => '4–6 times/week';
+
+  @override
+  String get profileOptionSugaryDrinksDaily => 'Daily';
+
+  @override
+  String get profileOptionSmokingNever => 'Never smoked';
+
+  @override
+  String get profileOptionSmokingFormer => 'Former smoker';
+
+  @override
+  String get profileOptionSmokingCurrent => 'Currently smoke';
+
+  @override
+  String get profileOptionAlcoholNever => 'Never';
+
+  @override
+  String get profileOptionAlcoholOccasionally => 'Occasionally';
+
+  @override
+  String get profileOptionAlcoholWeekly => 'Weekly';
+
+  @override
+  String get profileOptionAlcoholFrequent => 'Frequently';
+
+  @override
+  String get profileOptionStressLow => 'Low';
+
+  @override
+  String get profileOptionStressModerate => 'Moderate';
+
+  @override
+  String get profileOptionStressHigh => 'High';
 }

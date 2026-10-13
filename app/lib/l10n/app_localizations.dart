@@ -8523,6 +8523,318 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'PDF exports are currently available in English only. Full multilingual PDF support coming soon.'**
   String get pdfLanguageLimitationNotice;
+
+  /// No description provided for @profileGroupBodyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Body measurements'**
+  String get profileGroupBodyLabel;
+
+  /// No description provided for @profileGroupMedicalHistoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Medical history'**
+  String get profileGroupMedicalHistoryLabel;
+
+  /// No description provided for @profileGroupFamilyHistoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Family history'**
+  String get profileGroupFamilyHistoryLabel;
+
+  /// No description provided for @profileGroupHabitsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifestyle habits'**
+  String get profileGroupHabitsLabel;
+
+  /// No description provided for @profileGroupSymptomsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Symptoms'**
+  String get profileGroupSymptomsLabel;
+
+  /// No description provided for @profileFieldHeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Height'**
+  String get profileFieldHeight;
+
+  /// No description provided for @profileFieldWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get profileFieldWeight;
+
+  /// No description provided for @profileFieldFamilyDiabetes.
+  ///
+  /// In en, this message translates to:
+  /// **'Family history of diabetes'**
+  String get profileFieldFamilyDiabetes;
+
+  /// No description provided for @profileFieldPreviousPrediabetes.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous prediabetes'**
+  String get profileFieldPreviousPrediabetes;
+
+  /// No description provided for @profileFieldGestationalDiabetes.
+  ///
+  /// In en, this message translates to:
+  /// **'Gestational diabetes'**
+  String get profileFieldGestationalDiabetes;
+
+  /// No description provided for @profileFieldHypertension.
+  ///
+  /// In en, this message translates to:
+  /// **'High blood pressure'**
+  String get profileFieldHypertension;
+
+  /// No description provided for @profileFieldHighCholesterol.
+  ///
+  /// In en, this message translates to:
+  /// **'High cholesterol'**
+  String get profileFieldHighCholesterol;
+
+  /// No description provided for @profileFieldPcos.
+  ///
+  /// In en, this message translates to:
+  /// **'PCOS'**
+  String get profileFieldPcos;
+
+  /// No description provided for @profileFieldCardiovascularDisease.
+  ///
+  /// In en, this message translates to:
+  /// **'Cardiovascular disease'**
+  String get profileFieldCardiovascularDisease;
+
+  /// No description provided for @profileFieldFattyLiverDisease.
+  ///
+  /// In en, this message translates to:
+  /// **'Fatty liver disease'**
+  String get profileFieldFattyLiverDisease;
+
+  /// No description provided for @profileFieldPhysicalActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Physical activity level'**
+  String get profileFieldPhysicalActivity;
+
+  /// No description provided for @profileFieldSedentaryHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Hours sitting per day'**
+  String get profileFieldSedentaryHours;
+
+  /// No description provided for @profileFieldDietQuality.
+  ///
+  /// In en, this message translates to:
+  /// **'Diet quality'**
+  String get profileFieldDietQuality;
+
+  /// No description provided for @profileFieldSugaryDrinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Sugary drink frequency'**
+  String get profileFieldSugaryDrinks;
+
+  /// No description provided for @profileFieldSmokingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Smoking status'**
+  String get profileFieldSmokingStatus;
+
+  /// No description provided for @profileFieldAlcoholFrequency.
+  ///
+  /// In en, this message translates to:
+  /// **'Alcohol frequency'**
+  String get profileFieldAlcoholFrequency;
+
+  /// No description provided for @profileFieldStressLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stress level'**
+  String get profileFieldStressLevel;
+
+  /// No description provided for @profileFieldPolyuria.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequent urination'**
+  String get profileFieldPolyuria;
+
+  /// No description provided for @profileFieldPolydipsia.
+  ///
+  /// In en, this message translates to:
+  /// **'Excessive thirst'**
+  String get profileFieldPolydipsia;
+
+  /// No description provided for @profileFieldUnexplainedWeightLoss.
+  ///
+  /// In en, this message translates to:
+  /// **'Unexplained weight loss'**
+  String get profileFieldUnexplainedWeightLoss;
+
+  /// No description provided for @profileFieldPolyphagia.
+  ///
+  /// In en, this message translates to:
+  /// **'Increased hunger'**
+  String get profileFieldPolyphagia;
+
+  /// No description provided for @profileFieldFamilyHeartDisease.
+  ///
+  /// In en, this message translates to:
+  /// **'Family history of heart disease'**
+  String get profileFieldFamilyHeartDisease;
+
+  /// No description provided for @profileFieldPreviousHeartDisease.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous heart disease'**
+  String get profileFieldPreviousHeartDisease;
+
+  /// No description provided for @profileFieldPreviousHeartAttack.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous heart attack'**
+  String get profileFieldPreviousHeartAttack;
+
+  /// No description provided for @profileFieldKidneyDisease.
+  ///
+  /// In en, this message translates to:
+  /// **'Kidney disease'**
+  String get profileFieldKidneyDisease;
+
+  /// No description provided for @profileFieldStrokeHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History of stroke'**
+  String get profileFieldStrokeHistory;
+
+  /// No description provided for @profileHelpPhysicalActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the option that best describes your usual activity.'**
+  String get profileHelpPhysicalActivity;
+
+  /// No description provided for @profileOptionActivityLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get profileOptionActivityLow;
+
+  /// No description provided for @profileOptionActivityModerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderate'**
+  String get profileOptionActivityModerate;
+
+  /// No description provided for @profileOptionActivityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get profileOptionActivityHigh;
+
+  /// No description provided for @profileOptionDietGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Good'**
+  String get profileOptionDietGood;
+
+  /// No description provided for @profileOptionDietAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'Average'**
+  String get profileOptionDietAverage;
+
+  /// No description provided for @profileOptionDietPoor.
+  ///
+  /// In en, this message translates to:
+  /// **'Poor'**
+  String get profileOptionDietPoor;
+
+  /// No description provided for @profileOptionSugaryDrinksRarely.
+  ///
+  /// In en, this message translates to:
+  /// **'Rarely'**
+  String get profileOptionSugaryDrinksRarely;
+
+  /// No description provided for @profileOptionSugaryDrinksOneToThree.
+  ///
+  /// In en, this message translates to:
+  /// **'1–3 times/week'**
+  String get profileOptionSugaryDrinksOneToThree;
+
+  /// No description provided for @profileOptionSugaryDrinksFourToSix.
+  ///
+  /// In en, this message translates to:
+  /// **'4–6 times/week'**
+  String get profileOptionSugaryDrinksFourToSix;
+
+  /// No description provided for @profileOptionSugaryDrinksDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get profileOptionSugaryDrinksDaily;
+
+  /// No description provided for @profileOptionSmokingNever.
+  ///
+  /// In en, this message translates to:
+  /// **'Never smoked'**
+  String get profileOptionSmokingNever;
+
+  /// No description provided for @profileOptionSmokingFormer.
+  ///
+  /// In en, this message translates to:
+  /// **'Former smoker'**
+  String get profileOptionSmokingFormer;
+
+  /// No description provided for @profileOptionSmokingCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Currently smoke'**
+  String get profileOptionSmokingCurrent;
+
+  /// No description provided for @profileOptionAlcoholNever.
+  ///
+  /// In en, this message translates to:
+  /// **'Never'**
+  String get profileOptionAlcoholNever;
+
+  /// No description provided for @profileOptionAlcoholOccasionally.
+  ///
+  /// In en, this message translates to:
+  /// **'Occasionally'**
+  String get profileOptionAlcoholOccasionally;
+
+  /// No description provided for @profileOptionAlcoholWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
+  String get profileOptionAlcoholWeekly;
+
+  /// No description provided for @profileOptionAlcoholFrequent.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequently'**
+  String get profileOptionAlcoholFrequent;
+
+  /// No description provided for @profileOptionStressLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get profileOptionStressLow;
+
+  /// No description provided for @profileOptionStressModerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderate'**
+  String get profileOptionStressModerate;
+
+  /// No description provided for @profileOptionStressHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get profileOptionStressHigh;
 }
 
 class _AppLocalizationsDelegate

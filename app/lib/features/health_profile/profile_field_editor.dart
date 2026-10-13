@@ -14,6 +14,111 @@ Map<String, String> profileGroupIntro(AppLocalizations l10n) => {
       'symptoms': l10n.profileIntroSymptoms,
     };
 
+/// The health-profile API keeps stable field keys/values and English source labels. Translate
+/// those known presentation strings here so questionnaire text follows the current UI locale;
+/// values sent to or stored by the API remain the original key/value data.
+String localizedProfileGroupLabel(AppLocalizations l10n, String key, String fallback) => switch (key) {
+      'body' => l10n.profileGroupBodyLabel,
+      'medical_history' => l10n.profileGroupMedicalHistoryLabel,
+      'family_history' => l10n.profileGroupFamilyHistoryLabel,
+      'habits' => l10n.profileGroupHabitsLabel,
+      'symptoms' => l10n.profileGroupSymptomsLabel,
+      _ => fallback,
+    };
+
+String localizedProfileFieldLabel(AppLocalizations l10n, String key, String fallback) => switch (key) {
+      'height_cm' => l10n.profileFieldHeight,
+      'weight_kg' => l10n.profileFieldWeight,
+      'family_history_diabetes' => l10n.profileFieldFamilyDiabetes,
+      'previous_prediabetes' => l10n.profileFieldPreviousPrediabetes,
+      'previous_gestational_diabetes' => l10n.profileFieldGestationalDiabetes,
+      'hypertension' => l10n.profileFieldHypertension,
+      'high_cholesterol' => l10n.profileFieldHighCholesterol,
+      'pcos' => l10n.profileFieldPcos,
+      'cardiovascular_disease' => l10n.profileFieldCardiovascularDisease,
+      'fatty_liver_disease' => l10n.profileFieldFattyLiverDisease,
+      'physical_activity_level' => l10n.profileFieldPhysicalActivity,
+      'sedentary_hours_per_day' => l10n.profileFieldSedentaryHours,
+      'diet_quality' => l10n.profileFieldDietQuality,
+      'sugary_drink_frequency' => l10n.profileFieldSugaryDrinks,
+      'smoking_status' => l10n.profileFieldSmokingStatus,
+      'alcohol_frequency' => l10n.profileFieldAlcoholFrequency,
+      'stress_level' => l10n.profileFieldStressLevel,
+      'polyuria' => l10n.profileFieldPolyuria,
+      'polydipsia' => l10n.profileFieldPolydipsia,
+      'unexplained_weight_loss' => l10n.profileFieldUnexplainedWeightLoss,
+      'polyphagia' => l10n.profileFieldPolyphagia,
+      'family_history_heart_disease' => l10n.profileFieldFamilyHeartDisease,
+      'previous_heart_disease' => l10n.profileFieldPreviousHeartDisease,
+      'previous_heart_attack' => l10n.profileFieldPreviousHeartAttack,
+      'kidney_disease' => l10n.profileFieldKidneyDisease,
+      'stroke_history' => l10n.profileFieldStrokeHistory,
+      _ => fallback,
+    };
+
+String localizedProfileFieldHelp(AppLocalizations l10n, String key, String? fallback) => switch (key) {
+      'physical_activity_level' => l10n.profileHelpPhysicalActivity,
+      _ => fallback ?? '',
+    };
+
+String localizedProfileOptionLabel(AppLocalizations l10n, String fieldKey, Option option) => switch ((fieldKey, option.value)) {
+      ('physical_activity_level', 'low') => l10n.profileOptionActivityLow,
+      ('physical_activity_level', 'moderate') => l10n.profileOptionActivityModerate,
+      ('physical_activity_level', 'high') => l10n.profileOptionActivityHigh,
+      ('diet_quality', 'good') => l10n.profileOptionDietGood,
+      ('diet_quality', 'average') => l10n.profileOptionDietAverage,
+      ('diet_quality', 'poor') => l10n.profileOptionDietPoor,
+      ('sugary_drink_frequency', 'never_rarely') => l10n.profileOptionSugaryDrinksRarely,
+      ('sugary_drink_frequency', '1_3_per_week') => l10n.profileOptionSugaryDrinksOneToThree,
+      ('sugary_drink_frequency', '4_6_per_week') => l10n.profileOptionSugaryDrinksFourToSix,
+      ('sugary_drink_frequency', 'daily') => l10n.profileOptionSugaryDrinksDaily,
+      ('smoking_status', 'never') => l10n.profileOptionSmokingNever,
+      ('smoking_status', 'former') => l10n.profileOptionSmokingFormer,
+      ('smoking_status', 'current') => l10n.profileOptionSmokingCurrent,
+      ('alcohol_frequency', 'never') => l10n.profileOptionAlcoholNever,
+      ('alcohol_frequency', 'occasionally') => l10n.profileOptionAlcoholOccasionally,
+      ('alcohol_frequency', 'weekly') => l10n.profileOptionAlcoholWeekly,
+      ('alcohol_frequency', 'frequent') => l10n.profileOptionAlcoholFrequent,
+      ('stress_level', 'low') => l10n.profileOptionStressLow,
+      ('stress_level', 'moderate') => l10n.profileOptionStressModerate,
+      ('stress_level', 'high') => l10n.profileOptionStressHigh,
+      _ => option.label,
+    };
+
+String localizedProfileAnswerValue(AppLocalizations l10n, String key, String value) {
+  final normalized = value.trim().toLowerCase();
+  if (normalized == 'yes' || normalized == 'true') return l10n.commonYes;
+  if (normalized == 'no' || normalized == 'false') return l10n.commonNo;
+  return switch (key) {
+    'physical_activity_level' => switch (normalized) {
+        'low' => l10n.profileOptionActivityLow,
+        'moderate' => l10n.profileOptionActivityModerate,
+        'high' => l10n.profileOptionActivityHigh,
+        _ => value,
+      },
+    'diet_quality' => switch (normalized) {
+        'good' => l10n.profileOptionDietGood,
+        'average' => l10n.profileOptionDietAverage,
+        'poor' => l10n.profileOptionDietPoor,
+        _ => value,
+      },
+    'smoking_status' => switch (normalized) {
+        'never' => l10n.profileOptionSmokingNever,
+        'former' => l10n.profileOptionSmokingFormer,
+        'current' => l10n.profileOptionSmokingCurrent,
+        _ => value,
+      },
+    'alcohol_frequency' => switch (normalized) {
+        'never' => l10n.profileOptionAlcoholNever,
+        'occasionally' => l10n.profileOptionAlcoholOccasionally,
+        'weekly' => l10n.profileOptionAlcoholWeekly,
+        'frequent' => l10n.profileOptionAlcoholFrequent,
+        _ => value,
+      },
+    _ => value,
+  };
+}
+
 /// Answers being edited on a screen: choices and yes/no answers, and the number fields' text.
 /// [changes] turns them into what to save: field -> value (null = "not sure").
 class ProfileAnswers {
@@ -43,7 +148,7 @@ class ProfileAnswers {
         }
         final number = double.tryParse(text);
         if (number == null || (f.min != null && number < f.min!) || (f.max != null && number > f.max!)) {
-          return (values: const {}, error: l10n.numberBetweenError(f.label, f.min?.toStringAsFixed(0) ?? '', f.max?.toStringAsFixed(0) ?? '', f.unit ?? ''));
+          return (values: const {}, error: l10n.numberBetweenError(localizedProfileFieldLabel(l10n, f.key, f.label), f.min?.toStringAsFixed(0) ?? '', f.max?.toStringAsFixed(0) ?? '', f.unit ?? ''));
         }
         final saved = f.value is num ? (f.value as num).toDouble() : null;
         if (all || number != saved || f.needsUpdate) out[f.key] = number;
@@ -56,7 +161,7 @@ class ProfileAnswers {
           continue;
         }
         String? error;
-        final parsed = _parseList(l10n, text, f.label, onError: (m) => error = m);
+        final parsed = _parseList(l10n, text, localizedProfileFieldLabel(l10n, f.key, f.label), onError: (m) => error = m);
         if (error != null) return (values: const {}, error: error);
         final original = f.value is List ? List<String>.from(f.value as List) : const <String>[];
         final unchanged = parsed.length == original.length && !List.generate(parsed.length, (i) => parsed[i] != original[i]).contains(true);
@@ -150,7 +255,7 @@ class ProfileFieldEditor extends StatelessWidget {
         editor = Wrap(spacing: AppSpacing.sm, runSpacing: AppSpacing.sm, children: [
           for (final o in [...field.options, Option(_unsure, l10n.notSureOption)])
             ChoiceChip(
-              label: Text(o.label),
+              label: Text(localizedProfileOptionLabel(l10n, field.key, o)),
               selected: hasAnswer && (o.value == _unsure ? current == null : current == o.value),
               onSelected: canEdit ? (_) => onChanged(o.value == _unsure ? null : o.value) : null,
             ),
@@ -182,8 +287,8 @@ class ProfileFieldEditor extends StatelessWidget {
         );
     }
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(field.label, style: t.titleSmall),
-      if (field.help != null) Text(field.help!, style: t.bodySmall),
+      Text(localizedProfileFieldLabel(l10n, field.key, field.label), style: t.titleSmall),
+      if (field.help != null) Text(localizedProfileFieldHelp(l10n, field.key, field.help), style: t.bodySmall),
       const SizedBox(height: AppSpacing.sm),
       editor,
       if (showCaption) ...[
